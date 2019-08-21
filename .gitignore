@@ -1,0 +1,61 @@
+# Libraries
+*.d
+*.slo
+*.lo
+*.o
+*.obj
+*.gch
+*.pch
+*.lai
+*.la
+*.a
+*.lib
+
+# C++/Go Executables
+*.exe
+*.exe~
+*.dll
+*.out
+*.app
+*.test
+
+# Node
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+node_modules/
+jspm_packages/
+.npm
+.eslintcache
+.yarn-integrity
+.next
+.nuxt
+
+# CMake files
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+# Editor
+.vscode/
+*.sw?
+
+# Folder
+vendor/
+build/
+dist/
+runtime/
+tmp/
+temp/
