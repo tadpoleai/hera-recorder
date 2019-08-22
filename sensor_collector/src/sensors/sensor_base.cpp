@@ -5,17 +5,151 @@
 #include "sensor_base.hpp"
 
 #include <cstdint>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
 #include <map>
+#include <sstream>
 #include <string>
 #include <thread>
+#include <utility>
 
 namespace wayz {
 
 SensorBase::SensorBase(const std::string& storage_path, const std::string& sensor_name) :
-    sensor_status_(SensorStatus::stopped),
-    sensor_realtime_forwarding_(false)
+    sensor_status_(SensorStatus::uninited),
+    // sensor_realtime_forwarding_(false),
+    sensor_fetch_thread_(nullptr),
+    sensor_storage_thread_(nullptr),
+    ofstream_num_count_(0),
+    ofstream_current_bytecount_(0)
 {
-    create_storage(storage_path, sensor_name);
+    if (!create_storage_folder(storage_path, sensor_name)) {
+        sensor_status_ = SensorStatus::error;
+        return;
+    }
+    sensor_storage_thread_ = new std::thread(&SensorBase::sensor_storage_thread_function, this);
+    sensor_fetch_thread_ = new std::thread(&SensorBase::sensor_fetch_thread_function, this);
+}
+SensorBase::~SensorBase()
+{
+    if (sensor_status_ != SensorStatus::error) {
+        sensor_fetch_thread_->join();
+        sensor_storage_thread_->join();
+        delete sensor_fetch_thread_;
+        delete sensor_storage_thread_;
+    }
 }
 
+void SensorBase::start_saving()
+{
+    if (sensor_status_ == SensorStatus::inited || sensor_status_ == SensorStatus::paused) {
+        sensor_status_ = SensorStatus::recording;
+    }
 }
+void SensorBase::pause_saving()
+{
+    if (sensor_status_ == SensorStatus::recording) {
+        sensor_status_ = SensorStatus::paused;
+    }
+}
+void SensorBase::start_realtime_forwarding() {}
+void SensorBase::pause_realtime_forwarding() {}
+
+bool SensorBase::create_storage_folder(const std::string& storage_path,
+                                       const std::string& sensor_name)
+{
+    sensor_storage_path_ = storage_path + "/" + sensor_name + "/";
+    int ret = system(("mkdir -p '" + sensor_storage_path_ + "'").c_str());
+    if (ret == 0) {
+        create_and_open_storage_file();
+        return true;
+    }
+    return false;
+}
+void SensorBase::create_and_open_storage_file()
+{
+    sensor_storage_ofstream_.close();
+
+    std::ostringstream current_filename_stream;
+    current_filename_stream << sensor_storage_path_;
+    current_filename_stream.fill('0');
+    current_filename_stream.width(OfstreamFileNameWidth);
+    current_filename_stream << ofstream_num_count_++;
+    current_filename_stream << ".bin";
+
+    sensor_storage_ofstream_.open(current_filename_stream.str(), std::ios::out | std::ios::binary);
+    ofstream_current_bytecount_ = 0;
+}
+void SensorBase::push_one_data(SensorData* sensor_data_ptr)
+{
+    if (sensor_data_ptr != nullptr) {
+        sensor_data_queue_.push(sensor_data_ptr);
+    }
+}
+void SensorBase::wait_pop_save_one_data(bool if_save)
+{
+    SensorData* sensor_data = sensor_data_queue_.wait_and_pop();
+    if (if_save) {
+        if (ofstream_current_bytecount_ + sensor_data->length > OfstreamMaxSizeByte) {
+            create_and_open_storage_file();
+        }
+        sensor_storage_ofstream_.write(reinterpret_cast<const char*>(sensor_data),
+                                       sensor_data->length);
+        ofstream_current_bytecount_ += sensor_data->length;
+    }
+    delete[] sensor_data;
+}
+
+void SensorBase::sensor_storage_thread_function()
+{
+    while (sensor_status_ != SensorStatus::error && sensor_status_ != SensorStatus::terminated) {
+        if (sensor_status_ == SensorStatus::uninited) {
+        } else {
+            bool if_save = (sensor_status_ == SensorStatus::recording);
+            wait_pop_save_one_data(if_save);
+        }
+    }
+}
+void SensorBase::sensor_fetch_thread_function()
+{
+    while (sensor_status_ != SensorStatus::error && sensor_status_ != SensorStatus::terminated) {
+        if (sensor_status_ == SensorStatus::inited || sensor_status_ == SensorStatus::recording ||
+            sensor_status_ == SensorStatus::paused) {
+            SensorData* sensor_data = do_sensor_fetch();
+            push_one_data(sensor_data);
+        }
+    }
+}
+
+void SensorBase::connect_sensor()
+{
+    connect_sensor(std::vector<Dictionary>());
+}
+void SensorBase::connect_sensor(const std::vector<Dictionary>& sensor_parameters)
+{
+    if (sensor_status_ == SensorStatus::uninited) {
+        if (do_connect_sensor(sensor_parameters)) {
+            sensor_status_ = SensorStatus::inited;
+        } else {
+            sensor_status_ = SensorStatus::error;
+        }
+    }
+}
+void SensorBase::disconnect_sensor()
+{
+    sensor_status_ = SensorStatus::terminated;
+    do_disconnect_sensor();
+}
+bool SensorBase::get_sensor_alive()
+{
+    return true;
+}
+bool SensorBase::set_sensor_parameters(const std::vector<Dictionary>& sensor_parameters)
+{
+    for (auto param : sensor_parameters) {
+    }
+    return true;
+}
+
+}  // namespace wayz
