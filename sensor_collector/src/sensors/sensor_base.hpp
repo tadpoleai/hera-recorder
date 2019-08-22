@@ -10,7 +10,7 @@
 #include <thread>
 #include <utility>
 
-#include <common/data_message/sensor_data.hpp>
+#include <common/data_message/all_data.hpp>
 #include <common/utils/threadsafe_queue.hpp>
 
 

@@ -11,7 +11,7 @@ namespace wayz {
 struct SensorData {
     int32_t length;
     int32_t sensor_type;
-    int32_t sensor_subtype;
+    int32_t sensor_datatype;
     int32_t is_timestamp_synced;
     int64_t timestamp_us;
     int64_t timestamp_recv_us;

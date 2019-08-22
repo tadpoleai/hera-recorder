@@ -6,7 +6,7 @@
 
 #include <chrono>
 
-#include <common/data_message/data_dummy.hpp>
+#include <common/data_message/all_data.hpp>
 
 namespace wayz {
 
@@ -40,8 +40,8 @@ SensorData* SensorDummy::do_sensor_fetch()
     int32_t data_length = sizeof(SensorData) + sizeof(DataDummy);
     SensorData* sensor_data = reinterpret_cast<SensorData*>(new char[data_length]);
     sensor_data->length = data_length;
-    sensor_data->sensor_type = 99;
-    sensor_data->sensor_subtype = 1;
+    sensor_data->sensor_type = static_cast<int32_t>(SensorType::dummy);
+    sensor_data->sensor_datatype = static_cast<int32_t>(SensorDataType::dummy);
     sensor_data->is_timestamp_synced = 0;
     sensor_data->timestamp_us = 0;
     sensor_data->timestamp_recv_us = now_value;
