@@ -10,6 +10,8 @@ set(CMAKE_BUILD_TYPE "Release")
 set(PROJECT_NAME sensor_collector)
 project(${PROJECT_NAME})
 
+find_package(Threads REQUIRED)
+
 file(GLOB_RECURSE
     ALL_SRC
     "src/*.cpp"
@@ -22,14 +24,6 @@ add_executable(sensor_test
     test/sensor_test.cpp
     ${ALL_SRC}
 )
-
-# Find Packages
-find_package(Threads REQUIRED)
-
-add_compile_options(
-    -Wall
-    -Wextra
-    -Werror
-    -pedantic
+target_link_libraries(sensor_test
+    Threads::Threads
 )
-
