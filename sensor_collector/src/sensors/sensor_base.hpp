@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include <common/data_message/all_data.hpp>
+#include <common/data_message/sensor_and_data_types.hpp>
 #include <common/third_party/enum.h>
 #include <common/utils/threadsafe_queue.hpp>
 
@@ -27,7 +27,7 @@ public:
     SensorBase(const std::string& storage_path, const std::string& sensor_name);
     SensorBase(const SensorBase&) = delete;
     SensorBase& operator=(const SensorBase&) = delete;
-    ~SensorBase();
+    virtual ~SensorBase();
 
     // Common Functions
     void start_saving();
@@ -41,6 +41,7 @@ public:
     virtual bool do_connect_sensor() = 0;
     virtual void do_disconnect_sensor() = 0;
     virtual SensorData* do_sensor_fetch() = 0;
+
     virtual std::vector<ParamPair> get_sensor_parameter_names() = 0;
     virtual bool set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters) = 0;
     virtual bool get_sensor_alive();

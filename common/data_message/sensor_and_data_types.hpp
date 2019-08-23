@@ -1,8 +1,8 @@
 //
 // Copyright 2018 Wayz.ai. All Rights Reserved.
 //
-#ifndef __data_message_all_data_hpp__
-#define __data_message_all_data_hpp__
+#ifndef __data_message_sensor_and_data_types_hpp__
+#define __data_message_sensor_and_data_types_hpp__
 #include <cstdint>
 
 #include <common/third_party/enum.h>

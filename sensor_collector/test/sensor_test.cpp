@@ -16,10 +16,9 @@ int main(int argc, char** argv)
     }
     char* storage_folder = argv[1];
 
-    wayz::SensorDummy dummy1(std::string(storage_folder), std::string("dummy1"));
-
-
-    auto parameter_names = dummy1.get_sensor_parameter_names();
+    wayz::SensorBase* dummy1 =
+            new wayz::SensorDummy(std::string(storage_folder), std::string("dummy1"));
+    auto parameter_names = wayz::SensorDummy::get_sensor_dummy_parameter_names();
     for (auto param : parameter_names) {
         std::cout << "ID: " << param.first << ", " << param.second << std::endl;
     }
@@ -30,15 +29,15 @@ int main(int argc, char** argv)
         auto param_pairs = std::vector<wayz::ParamPair>();
         param_pairs.push_back(rate_param_pair);
         param_pairs.push_back(value_param_pair);
-        dummy1.set_sensor_parameters(param_pairs);
+        dummy1->set_sensor_parameters(param_pairs);
     }
 
 
-    dummy1.connect_sensor();
+    dummy1->connect_sensor();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    dummy1.start_saving();
+    dummy1->start_saving();
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    dummy1.pause_saving();
+    dummy1->pause_saving();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     {
@@ -47,15 +46,16 @@ int main(int argc, char** argv)
         auto param_pairs = std::vector<wayz::ParamPair>();
         param_pairs.push_back(rate_param_pair);
         param_pairs.push_back(value_param_pair);
-        dummy1.set_sensor_parameters(param_pairs);
+        dummy1->set_sensor_parameters(param_pairs);
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    dummy1.start_saving();
+    dummy1->start_saving();
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    dummy1.pause_saving();
+    dummy1->pause_saving();
 
-    dummy1.disconnect_sensor();
+    dummy1->disconnect_sensor();
 
+    delete dummy1;
     return 0;
 }

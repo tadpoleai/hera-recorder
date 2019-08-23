@@ -34,13 +34,7 @@ SensorBase::SensorBase(const std::string& storage_path, const std::string& senso
 }
 SensorBase::~SensorBase()
 {
-    if (sensor_status_ != SensorStatus::error) {
-        sensor_status_ = SensorStatus::terminated;
-        sensor_fetch_thread_->join();
-        sensor_storage_thread_->join();
-        delete sensor_fetch_thread_;
-        delete sensor_storage_thread_;
-    }
+    disconnect_sensor();
 }
 
 void SensorBase::start_saving()
@@ -146,8 +140,16 @@ void SensorBase::connect_sensor()
 }
 void SensorBase::disconnect_sensor()
 {
-    sensor_status_ = SensorStatus::terminated;
-    do_disconnect_sensor();
+    auto sensor_status = sensor_status_;
+    if (sensor_status != SensorStatus::error && sensor_status != SensorStatus::terminated) {
+        sensor_status_ = SensorStatus::terminated;
+        do_disconnect_sensor();
+        sensor_fetch_thread_->join();
+        sensor_storage_thread_->join();
+        delete sensor_fetch_thread_;
+        delete sensor_storage_thread_;
+        sensor_data_queue_.clear_and_delete();
+    }
 }
 bool SensorBase::get_sensor_alive()
 {

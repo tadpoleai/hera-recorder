@@ -7,7 +7,7 @@
 #include <chrono>
 #include <cstdlib>
 
-#include <common/data_message/all_data.hpp>
+#include <common/data_message/sensor_and_data_types.hpp>
 #include <common/third_party/enum.h>
 
 namespace wayz {
@@ -16,6 +16,8 @@ SensorDummy::SensorDummy(const std::string& storage_path, const std::string& sen
     SensorBase(storage_path, sensor_name),
     dummy_sensor_period_(1000),
     dummy_sensor_value_(0x12345678){};
+
+SensorDummy::~SensorDummy() {}
 
 bool SensorDummy::do_connect_sensor()
 {
@@ -58,7 +60,7 @@ SensorData* SensorDummy::do_sensor_fetch()
 
 BETTER_ENUM(SensorDummyParameter, int32_t, rate = 0, value)
 
-std::vector<ParamPair> SensorDummy::get_sensor_parameter_names()
+std::vector<ParamPair> SensorDummy::get_sensor_dummy_parameter_names()
 {
     std::vector<ParamPair> ret_list;
     for (auto param : SensorDummyParameter::_values()) {
@@ -66,6 +68,11 @@ std::vector<ParamPair> SensorDummy::get_sensor_parameter_names()
                 std::make_pair<int32_t, std::string>(param._to_integral(), param._to_string()));
     }
     return ret_list;
+}
+
+std::vector<ParamPair> SensorDummy::get_sensor_parameter_names()
+{
+    return get_sensor_dummy_parameter_names();
 }
 
 bool SensorDummy::set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters)

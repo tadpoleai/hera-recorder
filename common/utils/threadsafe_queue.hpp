@@ -36,6 +36,14 @@ public:
         std::lock_guard<std::mutex> _(data_mutex_);
         return data_queue_.empty();
     }
+    void clear_and_delete()
+    {
+        while (!data_queue_.empty()) {
+            T front = data_queue_.front();
+            delete front;
+            data_queue_.pop();
+        }
+    }
 
 private:
     mutable std::mutex data_mutex_;
