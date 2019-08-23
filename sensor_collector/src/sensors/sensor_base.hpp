@@ -9,14 +9,16 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include <common/data_message/all_data.hpp>
+#include <common/third_party/enum.h>
 #include <common/utils/threadsafe_queue.hpp>
 
 
 namespace wayz {
 
-using Dictionary = std::pair<std::string, std::string>;
+using ParamPair = std::pair<int32_t, std::string>;
 
 class SensorBase {
 public:
@@ -31,17 +33,17 @@ public:
     void start_saving();
     void pause_saving();
     void connect_sensor();
-    void connect_sensor(const std::vector<Dictionary>& sensor_parameters);
     void disconnect_sensor();
     void start_realtime_forwarding();
     void pause_realtime_forwarding();
 
     // Sensor Dependent Functions
-    virtual bool do_connect_sensor(const std::vector<Dictionary>& sensor_parameters) = 0;
+    virtual bool do_connect_sensor() = 0;
     virtual void do_disconnect_sensor() = 0;
     virtual SensorData* do_sensor_fetch() = 0;
+    virtual std::vector<ParamPair> get_sensor_parameter_names() = 0;
+    virtual bool set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters) = 0;
     virtual bool get_sensor_alive();
-    virtual bool set_sensor_parameters(const std::vector<Dictionary>& sensor_parameters);
 
 private:
     bool create_storage_folder(const std::string& storage_path, const std::string& sensor_name);
@@ -59,8 +61,8 @@ private:
     std::string sensor_storage_path_;
     int64_t ofstream_num_count_;
     int64_t ofstream_current_bytecount_;
-    //static const int64_t OfstreamMaxSizeByte = 0x7FFFFFFFL;
-    static const int64_t OfstreamMaxSizeByte = 0x100L;
+    static const int64_t OfstreamMaxSizeByte = 0x7FFFFFFFL;
+    // static const int64_t OfstreamMaxSizeByte = 0x100L;
     static const int64_t OfstreamFileNameWidth = 4;
     std::ofstream sensor_storage_ofstream_;
 

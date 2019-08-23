@@ -5,22 +5,20 @@
 #include "sensor_dummy.hpp"
 
 #include <chrono>
+#include <cstdlib>
 
 #include <common/data_message/all_data.hpp>
+#include <common/third_party/enum.h>
 
 namespace wayz {
 
 SensorDummy::SensorDummy(const std::string& storage_path, const std::string& sensor_name) :
     SensorBase(storage_path, sensor_name),
-    dummy_sensor_period_(1000.0){};
+    dummy_sensor_period_(1000),
+    dummy_sensor_value_(0x12345678){};
 
-bool SensorDummy::do_connect_sensor(const std::vector<Dictionary>& sensor_parameters)
+bool SensorDummy::do_connect_sensor()
 {
-    for (auto param : sensor_parameters) {
-        if (param.first == "rate") {
-            dummy_sensor_period_ = 1000.0 / atof(param.second.c_str());
-        }
-    }
     return true;
 }
 
@@ -48,12 +46,44 @@ SensorData* SensorDummy::do_sensor_fetch()
 
     // Data
     DataDummy* data_dummy = reinterpret_cast<DataDummy*>(sensor_data->rawdata);
-    data_dummy->dummy_int = 0x12345678;
-    data_dummy->dummy_float = 1;
+    data_dummy->dummy_int = dummy_sensor_value_;
+    data_dummy->dummy_float = static_cast<float>(dummy_sensor_value_);
     data_dummy->dummy_array[0] = 0x33;
     data_dummy->dummy_array[1] = 0x55;
+    data_dummy->dummy_array[2] = 0x77;
+    data_dummy->dummy_array[3] = 0xFF;
 
     return sensor_data;
+}
+
+BETTER_ENUM(SensorDummyParameter, int32_t, rate = 0, value)
+
+std::vector<ParamPair> SensorDummy::get_sensor_parameter_names()
+{
+    std::vector<ParamPair> ret_list;
+    for (auto param : SensorDummyParameter::_values()) {
+        ret_list.emplace_back(
+                std::make_pair<int32_t, std::string>(param._to_integral(), param._to_string()));
+    }
+    return ret_list;
+}
+
+bool SensorDummy::set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters)
+{
+    for (auto param_pair : sensor_parameters) {
+        auto param_name = SensorDummyParameter::_from_integral(param_pair.first);
+        switch (param_name) {
+        case SensorDummyParameter::rate:
+            dummy_sensor_period_ = 1000.0 / std::stof(param_pair.second);
+            break;
+        case SensorDummyParameter::value:
+            dummy_sensor_value_ = std::stoi(param_pair.second, 0, 0);
+            break;
+        default:
+            break;
+        }
+    }
+    return true;
 }
 
 }  // namespace wayz

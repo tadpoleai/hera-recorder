@@ -13,6 +13,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 namespace wayz {
 
@@ -34,6 +35,7 @@ SensorBase::SensorBase(const std::string& storage_path, const std::string& senso
 SensorBase::~SensorBase()
 {
     if (sensor_status_ != SensorStatus::error) {
+        sensor_status_ = SensorStatus::terminated;
         sensor_fetch_thread_->join();
         sensor_storage_thread_->join();
         delete sensor_fetch_thread_;
@@ -43,13 +45,15 @@ SensorBase::~SensorBase()
 
 void SensorBase::start_saving()
 {
-    if (sensor_status_ == SensorStatus::inited || sensor_status_ == SensorStatus::paused) {
+    auto sensor_status = sensor_status_;
+    if (sensor_status == SensorStatus::inited || sensor_status == SensorStatus::paused) {
         sensor_status_ = SensorStatus::recording;
     }
 }
 void SensorBase::pause_saving()
 {
-    if (sensor_status_ == SensorStatus::recording) {
+    auto sensor_status = sensor_status_;
+    if (sensor_status == SensorStatus::recording) {
         sensor_status_ = SensorStatus::paused;
     }
 }
@@ -103,19 +107,27 @@ void SensorBase::wait_pop_save_one_data(bool if_save)
 
 void SensorBase::sensor_storage_thread_function()
 {
-    while (sensor_status_ != SensorStatus::error && sensor_status_ != SensorStatus::terminated) {
-        if (sensor_status_ == SensorStatus::uninited) {
+    while (true) {
+        auto sensor_status = sensor_status_;
+        if (sensor_status == SensorStatus::error || sensor_status == SensorStatus::terminated) {
+            break;
+        }
+        if (sensor_status == SensorStatus::uninited) {
         } else {
-            bool if_save = (sensor_status_ == SensorStatus::recording);
+            bool if_save = (sensor_status == SensorStatus::recording);
             wait_pop_save_one_data(if_save);
         }
     }
 }
 void SensorBase::sensor_fetch_thread_function()
 {
-    while (sensor_status_ != SensorStatus::error && sensor_status_ != SensorStatus::terminated) {
-        if (sensor_status_ == SensorStatus::inited || sensor_status_ == SensorStatus::recording ||
-            sensor_status_ == SensorStatus::paused) {
+    while (true) {
+        auto sensor_status = sensor_status_;
+        if (sensor_status == SensorStatus::error || sensor_status == SensorStatus::terminated) {
+            break;
+        }
+        if (sensor_status == SensorStatus::inited || sensor_status == SensorStatus::recording ||
+            sensor_status == SensorStatus::paused) {
             SensorData* sensor_data = do_sensor_fetch();
             push_one_data(sensor_data);
         }
@@ -124,12 +136,8 @@ void SensorBase::sensor_fetch_thread_function()
 
 void SensorBase::connect_sensor()
 {
-    connect_sensor(std::vector<Dictionary>());
-}
-void SensorBase::connect_sensor(const std::vector<Dictionary>& sensor_parameters)
-{
     if (sensor_status_ == SensorStatus::uninited) {
-        if (do_connect_sensor(sensor_parameters)) {
+        if (do_connect_sensor()) {
             sensor_status_ = SensorStatus::inited;
         } else {
             sensor_status_ = SensorStatus::error;
@@ -143,12 +151,6 @@ void SensorBase::disconnect_sensor()
 }
 bool SensorBase::get_sensor_alive()
 {
-    return true;
-}
-bool SensorBase::set_sensor_parameters(const std::vector<Dictionary>& sensor_parameters)
-{
-    for (auto param : sensor_parameters) {
-    }
     return true;
 }
 
