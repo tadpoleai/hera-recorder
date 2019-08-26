@@ -17,18 +17,16 @@
 
 namespace wayz {
 
-SensorBase::SensorBase(const std::string& storage_path, const std::string& sensor_name) :
+SensorBase::SensorBase(const std::string& sensor_name) :
     sensor_status_(SensorStatus::uninited),
     // sensor_realtime_forwarding_(false),
     sensor_fetch_thread_(nullptr),
     sensor_storage_thread_(nullptr),
+    sensor_name_(sensor_name),
+    sensor_storage_path_set_(false),
     ofstream_num_count_(0),
     ofstream_current_bytecount_(0)
 {
-    if (!create_storage_folder(storage_path, sensor_name)) {
-        sensor_status_ = SensorStatus::error;
-        return;
-    }
     sensor_storage_thread_ = new std::thread(&SensorBase::sensor_storage_thread_function, this);
     sensor_fetch_thread_ = new std::thread(&SensorBase::sensor_fetch_thread_function, this);
 }
@@ -40,7 +38,13 @@ SensorBase::~SensorBase()
 void SensorBase::start_saving()
 {
     auto sensor_status = sensor_status_;
-    if (sensor_status == SensorStatus::inited || sensor_status == SensorStatus::paused) {
+    if (sensor_status == SensorStatus::inited) {
+        if (sensor_storage_path_set_) {
+            create_storage_folder();
+            sensor_status_ = SensorStatus::recording;
+        }
+    }
+    if (sensor_status == SensorStatus::paused) {
         sensor_status_ = SensorStatus::recording;
     }
 }
@@ -51,13 +55,18 @@ void SensorBase::pause_saving()
         sensor_status_ = SensorStatus::paused;
     }
 }
+void SensorBase::set_storage_folder(const std::string& storage_folder)
+{
+    if (!sensor_storage_path_set_) {
+        sensor_storage_path_ = storage_folder + "/" + sensor_name_ + "/";
+        sensor_storage_path_set_ = true;
+    }
+}
 void SensorBase::start_realtime_forwarding() {}
 void SensorBase::pause_realtime_forwarding() {}
 
-bool SensorBase::create_storage_folder(const std::string& storage_path,
-                                       const std::string& sensor_name)
+bool SensorBase::create_storage_folder()
 {
-    sensor_storage_path_ = storage_path + "/" + sensor_name + "/";
     int ret = system(("mkdir -p '" + sensor_storage_path_ + "'").c_str());
     if (ret == 0) {
         create_and_open_storage_file();
@@ -141,7 +150,7 @@ void SensorBase::connect_sensor()
 void SensorBase::disconnect_sensor()
 {
     auto sensor_status = sensor_status_;
-    if (sensor_status != SensorStatus::error && sensor_status != SensorStatus::terminated) {
+    if (sensor_status != SensorStatus::terminated) {
         sensor_status_ = SensorStatus::terminated;
         do_disconnect_sensor();
         sensor_fetch_thread_->join();
@@ -149,6 +158,7 @@ void SensorBase::disconnect_sensor()
         delete sensor_fetch_thread_;
         delete sensor_storage_thread_;
         sensor_data_queue_.clear_and_delete();
+        sensor_storage_ofstream_.close();
     }
 }
 bool SensorBase::get_sensor_alive()

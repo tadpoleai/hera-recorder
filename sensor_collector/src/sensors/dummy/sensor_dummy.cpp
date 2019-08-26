@@ -6,14 +6,16 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 #include <common/data_message/sensor_and_data_types.hpp>
 #include <common/third_party/enum.h>
 
 namespace wayz {
 
-SensorDummy::SensorDummy(const std::string& storage_path, const std::string& sensor_name) :
-    SensorBase(storage_path, sensor_name),
+SensorDummy::SensorDummy(const std::string& sensor_name) :
+    SensorBase(sensor_name),
     dummy_sensor_period_(1000),
     dummy_sensor_value_(0x12345678){};
 

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "../src/sensors/dummy/sensor_dummy.hpp"
 
@@ -16,8 +17,7 @@ int main(int argc, char** argv)
     }
     char* storage_folder = argv[1];
 
-    wayz::SensorBase* dummy1 =
-            new wayz::SensorDummy(std::string(storage_folder), std::string("dummy1"));
+    wayz::SensorBase* dummy1 = new wayz::SensorDummy(std::string("dummy1"));
     auto parameter_names = wayz::SensorDummy::get_sensor_dummy_parameter_names();
     for (auto param : parameter_names) {
         std::cout << "ID: " << param.first << ", " << param.second << std::endl;
@@ -34,6 +34,7 @@ int main(int argc, char** argv)
 
 
     dummy1->connect_sensor();
+    dummy1->set_storage_folder(storage_folder);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     dummy1->start_saving();
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));

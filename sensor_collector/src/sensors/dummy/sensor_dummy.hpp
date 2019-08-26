@@ -10,7 +10,7 @@ namespace wayz {
 
 class SensorDummy : public SensorBase {
 public:
-    SensorDummy(const std::string& storage_path, const std::string& sensor_name);
+    SensorDummy(const std::string& sensor_name);
     ~SensorDummy();
     bool do_connect_sensor() final;
     void do_disconnect_sensor() final;
@@ -20,7 +20,7 @@ public:
     std::vector<ParamPair> get_sensor_parameter_names() final;
     bool set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters) final;
 
-private: 
+private:
     int64_t dummy_sensor_period_;
     int64_t dummy_sensor_value_;
 };

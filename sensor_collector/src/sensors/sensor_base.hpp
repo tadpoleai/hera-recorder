@@ -24,7 +24,7 @@ class SensorBase {
 public:
     enum struct SensorStatus { error, uninited, terminated, inited, recording, paused };
 
-    SensorBase(const std::string& storage_path, const std::string& sensor_name);
+    SensorBase(const std::string& sensor_name);
     SensorBase(const SensorBase&) = delete;
     SensorBase& operator=(const SensorBase&) = delete;
     virtual ~SensorBase();
@@ -34,6 +34,7 @@ public:
     void pause_saving();
     void connect_sensor();
     void disconnect_sensor();
+    void set_storage_folder(const std::string& storage_folder);
     void start_realtime_forwarding();
     void pause_realtime_forwarding();
 
@@ -47,7 +48,7 @@ public:
     virtual bool get_sensor_alive();
 
 private:
-    bool create_storage_folder(const std::string& storage_path, const std::string& sensor_name);
+    bool create_storage_folder();
     void create_and_open_storage_file();
     void push_one_data(SensorData* sensor_data_ptr);
     void wait_pop_save_one_data(bool if_save);
@@ -59,7 +60,9 @@ private:
     std::thread* sensor_fetch_thread_;
     std::thread* sensor_storage_thread_;
 
+    std::string sensor_name_;
     std::string sensor_storage_path_;
+    bool sensor_storage_path_set_;
     int64_t ofstream_num_count_;
     int64_t ofstream_current_bytecount_;
     static const int64_t OfstreamMaxSizeByte = 0x7FFFFFFFL;
