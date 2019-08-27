@@ -161,7 +161,30 @@ void SensorBase::disconnect_sensor()
         sensor_storage_ofstream_.close();
     }
 }
-bool SensorBase::get_sensor_alive()
+
+std::string SensorBase::get_sensor_name() const
+{
+    return sensor_name_;
+}
+std::string SensorBase::get_sensor_status() const
+{
+    auto sensor_status = sensor_status_;
+    switch (sensor_status) {
+    case SensorStatus::error:
+        return "error";
+    case SensorStatus::uninited:
+        return "uninited";
+    case SensorStatus::inited:
+        return "inited";
+    case SensorStatus::recording:
+        return "recording";
+    case SensorStatus::paused:
+        return "paused";
+    case SensorStatus::terminated:
+        return "terminated";
+    }
+}
+bool SensorBase::get_sensor_alive() const
 {
     return true;
 }

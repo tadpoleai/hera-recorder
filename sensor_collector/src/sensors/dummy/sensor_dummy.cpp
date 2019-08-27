@@ -9,9 +9,6 @@
 #include <string>
 #include <vector>
 
-#include <common/data_message/sensor_and_data_types.hpp>
-#include <common/third_party/enum.h>
-
 namespace wayz {
 
 SensorDummy::SensorDummy(const std::string& sensor_name) :
@@ -60,8 +57,6 @@ SensorData* SensorDummy::do_sensor_fetch()
     return sensor_data;
 }
 
-BETTER_ENUM(SensorDummyParameter, int32_t, rate = 0, value)
-
 std::vector<ParamPair> SensorDummy::get_sensor_dummy_parameter_names()
 {
     std::vector<ParamPair> ret_list;
@@ -79,20 +74,26 @@ std::vector<ParamPair> SensorDummy::get_sensor_parameter_names()
 
 bool SensorDummy::set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters)
 {
+    bool value = true;
     for (auto param_pair : sensor_parameters) {
-        auto param_name = SensorDummyParameter::_from_integral(param_pair.first);
-        switch (param_name) {
-        case SensorDummyParameter::rate:
-            dummy_sensor_period_ = 1000.0 / std::stof(param_pair.second);
-            break;
-        case SensorDummyParameter::value:
-            dummy_sensor_value_ = std::stoi(param_pair.second, 0, 0);
-            break;
-        default:
-            break;
+        auto param_name = SensorDummyParameter::_from_integral_nothrow(param_pair.first);
+        if (!param_name) {
+            value = false;
+        } else {
+            switch (param_name.value()) {
+            case SensorDummyParameter::rate:
+                dummy_sensor_period_ = 1000.0 / std::stof(param_pair.second);
+                break;
+            case SensorDummyParameter::value:
+                dummy_sensor_value_ = std::stoi(param_pair.second, 0, 0);
+                break;
+            default:
+                value = false;
+                break;
+            }
         }
     }
-    return true;
+    return value;
 }
 
 }  // namespace wayz

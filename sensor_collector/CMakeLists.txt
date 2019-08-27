@@ -22,10 +22,19 @@ file(GLOB_RECURSE
 include_directories(
     "../"
 )
+
 add_executable(sensor_test
     test/sensor_test.cpp
     ${ALL_SRC}
 )
 target_link_libraries(sensor_test
+    Threads::Threads
+)
+
+add_executable(sensor_list_factory_test
+    test/sensor_list_factory_test.cpp
+    ${ALL_SRC}
+)
+target_link_libraries(sensor_list_factory_test
     Threads::Threads
 )

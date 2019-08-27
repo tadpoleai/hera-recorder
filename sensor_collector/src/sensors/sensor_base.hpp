@@ -29,7 +29,7 @@ public:
     SensorBase& operator=(const SensorBase&) = delete;
     virtual ~SensorBase();
 
-    // Common Functions
+    // Control
     void start_saving();
     void pause_saving();
     void connect_sensor();
@@ -38,14 +38,13 @@ public:
     void start_realtime_forwarding();
     void pause_realtime_forwarding();
 
-    // Sensor Dependent Functions
-    virtual bool do_connect_sensor() = 0;
-    virtual void do_disconnect_sensor() = 0;
-    virtual SensorData* do_sensor_fetch() = 0;
-
     virtual std::vector<ParamPair> get_sensor_parameter_names() = 0;
     virtual bool set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters) = 0;
-    virtual bool get_sensor_alive();
+
+    // Status
+    std::string get_sensor_name() const;
+    std::string get_sensor_status() const;
+    virtual bool get_sensor_alive() const;
 
 private:
     bool create_storage_folder();
@@ -54,6 +53,11 @@ private:
     void wait_pop_save_one_data(bool if_save);
     void sensor_storage_thread_function();
     void sensor_fetch_thread_function();
+
+    // Sensor Dependent Functions
+    virtual bool do_connect_sensor() = 0;
+    virtual void do_disconnect_sensor() = 0;
+    virtual SensorData* do_sensor_fetch() = 0;
 
     mutable SensorStatus sensor_status_;
     // mutable bool sensor_realtime_forwarding_;

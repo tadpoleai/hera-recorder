@@ -8,7 +8,9 @@
 
 namespace wayz {
 
-class SensorDummy : public SensorBase {
+BETTER_ENUM(SensorDummyParameter, int32_t, rate = 0, value)
+
+class SensorDummy final : public SensorBase {
 public:
     SensorDummy(const std::string& sensor_name);
     ~SensorDummy();
