@@ -57,17 +57,16 @@ SensorData* SensorDummy::do_sensor_fetch()
     return sensor_data;
 }
 
-std::vector<ParamPair> SensorDummy::get_sensor_dummy_parameter_names()
+std::vector<std::string> SensorDummy::get_sensor_dummy_parameter_names()
 {
-    std::vector<ParamPair> ret_list;
+    std::vector<std::string> ret_list;
     for (auto param : SensorDummyParameter::_values()) {
-        ret_list.emplace_back(
-                std::make_pair<int32_t, std::string>(param._to_integral(), param._to_string()));
+        ret_list.emplace_back(param._to_string());
     }
     return ret_list;
 }
 
-std::vector<ParamPair> SensorDummy::get_sensor_parameter_names()
+std::vector<std::string> SensorDummy::get_sensor_parameter_names()
 {
     return get_sensor_dummy_parameter_names();
 }
@@ -76,7 +75,7 @@ bool SensorDummy::set_sensor_parameters(const std::vector<ParamPair>& sensor_par
 {
     bool value = true;
     for (auto param_pair : sensor_parameters) {
-        auto param_name = SensorDummyParameter::_from_integral_nothrow(param_pair.first);
+        auto param_name = SensorDummyParameter::_from_string_nocase_nothrow(param_pair.first.c_str());
         if (!param_name) {
             value = false;
         } else {

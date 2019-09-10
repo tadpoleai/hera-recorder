@@ -182,7 +182,10 @@ std::string SensorBase::get_sensor_status() const
         return "paused";
     case SensorStatus::terminated:
         return "terminated";
+    default:
+        return "error";
     }
+    return "error";
 }
 bool SensorBase::get_sensor_alive() const
 {

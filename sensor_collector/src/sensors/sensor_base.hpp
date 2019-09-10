@@ -18,7 +18,7 @@
 
 namespace wayz {
 
-using ParamPair = std::pair<int32_t, std::string>;
+using ParamPair = std::pair<std::string, std::string>;
 
 class SensorBase {
 public:
@@ -38,7 +38,7 @@ public:
     void start_realtime_forwarding();
     void pause_realtime_forwarding();
 
-    virtual std::vector<ParamPair> get_sensor_parameter_names() = 0;
+    virtual std::vector<std::string> get_sensor_parameter_names() = 0;
     virtual bool set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters) = 0;
 
     // Status

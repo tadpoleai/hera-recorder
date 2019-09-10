@@ -19,10 +19,12 @@ int main(int argc, char** argv)
 
     wayz::SensorListFactory sensors;
 
+    // clang-format off
     std::vector<wayz::SensorConstructor> sensor_constructors({
-        {"dummy1", "dummy", {{0, "8"}, {1, "0x11223344"}}},
-        {"dummy2", "dummy", {{0, "4"}, {1, "0x19144511"}}}
+        { "dummy1", "dummy", {{"rate", "8"}, {"value", "0x11223344"}} },
+        { "dummy2", "dummy", {{"rate", "4"}, {"value", "0x19144511"}} }
     });
+    // clang-format on
 
     sensors.create_sensors(sensor_constructors);
     std::cout << "Sensors created" << std::endl;
@@ -31,13 +33,13 @@ int main(int argc, char** argv)
     std::cout << "Sensors initialzed" << std::endl;
 
     sensors.set_storage_folder(storage_folder);
-    std::cout << "Storage folder set as" << storage_folder << std::endl;
+    std::cout << "Storage folder set as " << storage_folder << std::endl;
 
     sensors.start_saving();
     std::cout << "Start saving" << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-    sensors.set_sensor_parameters(1, {{1, "0x01020304"}});
+    sensors.set_sensor_parameters(1, {{"value", "0x01020304"}});
     std::cout << "Set parameters" << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 

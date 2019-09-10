@@ -19,13 +19,13 @@ int main(int argc, char** argv)
 
     wayz::SensorBase* dummy1 = new wayz::SensorDummy(std::string("dummy1"));
     auto parameter_names = wayz::SensorDummy::get_sensor_dummy_parameter_names();
-    for (auto param : parameter_names) {
-        std::cout << "ID: " << param.first << ", " << param.second << std::endl;
+    for (auto name : parameter_names) {
+        std::cout << name << std::endl;
     }
 
     {
-        auto rate_param_pair = std::make_pair<int32_t, std::string>(0, "4");
-        auto value_param_pair = std::make_pair<int32_t, std::string>(1, "0x19144511");
+        auto rate_param_pair = std::make_pair("rate", "4");
+        auto value_param_pair = std::make_pair("value", "0x19144511");
         auto param_pairs = std::vector<wayz::ParamPair>();
         param_pairs.push_back(rate_param_pair);
         param_pairs.push_back(value_param_pair);
@@ -42,8 +42,8 @@ int main(int argc, char** argv)
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     {
-        auto rate_param_pair = std::make_pair<int32_t, std::string>(0, "10");
-        auto value_param_pair = std::make_pair<int32_t, std::string>(1, "6570806");
+        auto rate_param_pair = std::make_pair("rate", "10");
+        auto value_param_pair = std::make_pair("value", "6570806");
         auto param_pairs = std::vector<wayz::ParamPair>();
         param_pairs.push_back(rate_param_pair);
         param_pairs.push_back(value_param_pair);

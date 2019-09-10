@@ -18,8 +18,8 @@ public:
     void do_disconnect_sensor() final;
     SensorData* do_sensor_fetch() final;
 
-    static std::vector<ParamPair> get_sensor_dummy_parameter_names();
-    std::vector<ParamPair> get_sensor_parameter_names() final;
+    static std::vector<std::string> get_sensor_dummy_parameter_names();
+    std::vector<std::string> get_sensor_parameter_names() final;
     bool set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters) final;
 
 private:
