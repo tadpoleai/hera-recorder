@@ -11,88 +11,111 @@
 
 namespace wayz {
 
-SensorDummy::SensorDummy(const std::string& sensor_name) :
-    SensorBase(sensor_name),
-    dummy_sensor_period_(1000),
-    dummy_sensor_value_(0x12345678){};
+SensorDummy::SensorDummy(int32_t id, const std::string& name) : SensorBase(id, name) {}
 
 SensorDummy::~SensorDummy() {}
 
-bool SensorDummy::do_connect_sensor()
+SensorType SensorDummy::getType() const
 {
-    return true;
+    return SensorType::Dummy;
 }
 
-void SensorDummy::do_disconnect_sensor()
+TronErrno SensorDummy::doConnectSensor()
+{
+    if (parameters_.count(SensorParameterType::DummyValue)) {
+        value_ = std::stoi(parameters_[SensorParameterType::DummyValue]);
+    } else {
+        return setError(TronErrno::InsufficientParameters);
+    }
+
+    if (parameters_.count(SensorParameterType::DummyRate)) {
+        periodMs_ = 1000 / std::stof(parameters_[SensorParameterType::DummyRate]);
+    } else {
+        return setError(TronErrno::InsufficientParameters);
+    }
+    return TronErrno::Success;
+}
+
+void SensorDummy::doDisconnectSensor()
 {
     return;
 }
 
-SensorData* SensorDummy::do_sensor_fetch()
+std::shared_ptr<SensorRawData> SensorDummy::doFetchRawData()
 {
-    std::this_thread::sleep_for(std::chrono::milliseconds(dummy_sensor_period_));
-    auto now = std::chrono::system_clock::now();
-    auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
-    int64_t now_value = now_ms.time_since_epoch().count();
+    // Some Sensors Blocks, Simulate that
+    std::this_thread::sleep_for(std::chrono::milliseconds(periodMs_));
 
-    // Create SensorData
-    int32_t data_length = sizeof(SensorData) + sizeof(DataDummy);
-    SensorData* sensor_data = reinterpret_cast<SensorData*>(new char[data_length]);
-    sensor_data->length = data_length;
-    sensor_data->sensor_type = static_cast<int32_t>(SensorType::dummy);
-    sensor_data->sensor_datatype = static_cast<int32_t>(SensorDataType::dummy);
-    sensor_data->is_timestamp_synced = 0;
-    sensor_data->timestamp_us = 0;
-    sensor_data->timestamp_recv_us = now_value;
+    // Get Rawdata from a Real Sensor
+    // Get Length of Rawdata First
+    int32_t receivedRawdataLength = sizeof(int32_t);
 
-    // Data
-    DataDummy* data_dummy = reinterpret_cast<DataDummy*>(sensor_data->rawdata);
-    data_dummy->dummy_int = dummy_sensor_value_;
-    data_dummy->dummy_float = static_cast<float>(dummy_sensor_value_);
-    data_dummy->dummy_array[0] = 0x33;
-    data_dummy->dummy_array[1] = 0x55;
-    data_dummy->dummy_array[2] = 0x77;
-    data_dummy->dummy_array[3] = 0xFF;
+    // Create a Buff to Store Rawdata
+    int32_t totalLength = sizeof(SensorRawData) + receivedRawdataLength;
+    SensorRawData* data = reinterpret_cast<SensorRawData*>(new uint8_t[totalLength]);
 
-    return sensor_data;
+    // Fullfil Metadata (Header) of Rawdata;
+    data->length = totalLength;
+    data->sensorType = SensorType::Dummy;
+    data->sensorDataType = SensorDataType::Dummy;
+    data->sequence = sequence_++;
+    data->timestampReceiveNs = getSystemTimestamp();
+
+    // Assume Rawdata is in sensorRawataSrc
+    int32_t valueToFill = value_;
+    uint8_t* sensorRawataSrc = reinterpret_cast<uint8_t*>(&valueToFill);
+
+    // Use Memcpy to fill Buff
+    memcpy(reinterpret_cast<uint8_t*>(data->rawdataBuf), sensorRawataSrc, receivedRawdataLength);
+
+    // Return a Shared Ptr
+    return std::shared_ptr<SensorRawData>(data);
 }
 
-std::vector<std::string> SensorDummy::get_sensor_dummy_parameter_names()
+std::shared_ptr<SensorData> SensorDummy::doConvertData(
+        const std::shared_ptr<SensorRawData>& rawdata)
 {
-    std::vector<std::string> ret_list;
-    for (auto param : SensorDummyParameter::_values()) {
-        ret_list.emplace_back(param._to_string());
+    // Create a Buff to Store Data
+    int32_t totalLength = sizeof(SensorData) + sizeof(DataDummy);
+    SensorData* data = reinterpret_cast<SensorData*>(new uint8_t[totalLength]);
+
+    // Fullfil Metadata (Header) of Data;
+    data->length = totalLength;
+    data->sensorType = rawdata->sensorType;
+    data->sensorDataType = rawdata->sensorDataType;
+    data->sequence = rawdata->sequence;
+    data->timestampReceiveNs = rawdata->timestampReceiveNs;
+
+    // A Pointer to Real Data
+    DataDummy* dataDummyBuf = reinterpret_cast<DataDummy*>(data->dataBuf);
+
+    // Parse Rawdata
+    int32_t valueOfDummySensor = *(reinterpret_cast<int32_t*>(rawdata->rawdataBuf));
+
+    // Fullfil Real Data
+    dataDummyBuf->DummyInt = valueOfDummySensor;
+    dataDummyBuf->DummyFloat = valueOfDummySensor;
+    dataDummyBuf->DummyCharArray[0] = 'W';
+    dataDummyBuf->DummyCharArray[1] = 'A';
+    dataDummyBuf->DummyCharArray[2] = 'Y';
+    dataDummyBuf->DummyCharArray[3] = 'Z';
+
+    return std::shared_ptr<SensorData>(data);
+}
+
+TronErrno SensorDummy::doAdjustParameter(SensorParameterType type, const std::string& value)
+{
+    switch (type) {
+    case SensorParameterType::DummyRate:
+        periodMs_ = 1000 / std::stof(value);
+        break;
+    case SensorParameterType::DummyValue:
+        value_ = std::stoi(parameters_[SensorParameterType::DummyValue]);
+        break;
+    default:
+        return TronErrno::UnimplementedParameter;
     }
-    return ret_list;
-}
-
-std::vector<std::string> SensorDummy::get_sensor_parameter_names()
-{
-    return get_sensor_dummy_parameter_names();
-}
-
-bool SensorDummy::set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters)
-{
-    bool value = true;
-    for (auto param_pair : sensor_parameters) {
-        auto param_name = SensorDummyParameter::_from_string_nocase_nothrow(param_pair.first.c_str());
-        if (!param_name) {
-            value = false;
-        } else {
-            switch (param_name.value()) {
-            case SensorDummyParameter::rate:
-                dummy_sensor_period_ = 1000.0 / std::stof(param_pair.second);
-                break;
-            case SensorDummyParameter::value:
-                dummy_sensor_value_ = std::stoi(param_pair.second, 0, 0);
-                break;
-            default:
-                value = false;
-                break;
-            }
-        }
-    }
-    return value;
+    return TronErrno::Success;
 }
 
 }  // namespace wayz

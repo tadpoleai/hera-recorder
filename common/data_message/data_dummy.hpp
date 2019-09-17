@@ -9,9 +9,9 @@
 namespace wayz {
 
 struct DataDummy {
-    int32_t dummy_int;
-    float dummy_float;
-    char dummy_array[4];
+    int32_t DummyInt;
+    float DummyFloat;
+    char DummyCharArray[4];
 };
 
 }  // namespace wayz

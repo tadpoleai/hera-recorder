@@ -15,48 +15,35 @@ int main(int argc, char** argv)
     if (argc != 2) {
         return 1;
     }
-    char* storage_folder = argv[1];
+    char* folder = argv[1];
 
-    wayz::SensorBase* dummy1 = new wayz::SensorDummy(std::string("dummy1"));
-    auto parameter_names = wayz::SensorDummy::get_sensor_dummy_parameter_names();
-    for (auto name : parameter_names) {
-        std::cout << name << std::endl;
-    }
+    wayz::SensorBase* dummy0 = new wayz::SensorDummy(0, "dummy0");
+    dummy0->setParameter("DummyRate", "1");
+    dummy0->setParameter("DummyValue", "2019");
+    
+    dummy0->connect();
+    dummy0->setStorageFolder(folder);
 
-    {
-        auto rate_param_pair = std::make_pair("rate", "4");
-        auto value_param_pair = std::make_pair("value", "0x19144511");
-        auto param_pairs = std::vector<wayz::ParamPair>();
-        param_pairs.push_back(rate_param_pair);
-        param_pairs.push_back(value_param_pair);
-        dummy1->set_sensor_parameters(param_pairs);
-    }
-
-
-    dummy1->connect_sensor();
-    dummy1->set_storage_folder(storage_folder);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    dummy1->start_saving();
+
+    dummy0->startRecord();
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    dummy1->pause_saving();
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    dummy0->pauseRecord();
 
-    {
-        auto rate_param_pair = std::make_pair("rate", "10");
-        auto value_param_pair = std::make_pair("value", "6570806");
-        auto param_pairs = std::vector<wayz::ParamPair>();
-        param_pairs.push_back(rate_param_pair);
-        param_pairs.push_back(value_param_pair);
-        dummy1->set_sensor_parameters(param_pairs);
-    }
+    dummy0->adjustParameter("DummyValue", "1234");
+    
+    std::cout << "Dummy0 has type: " << dummy0->getType() << std::endl;
+    std::cout << "Dummy0 has id: " << dummy0->getId() << std::endl;
+    std::cout << "Dummy0 has name: " << dummy0->getName() << std::endl;
+    std::cout << "Dummy0 is in status: " << dummy0->getStatus() << std::endl;
+    std::cout << "Dummy0 return diagnosis errno: " << dummy0->getDiagnosis() << std::endl;
+    std::cout << "Dummy0 is in status: " << dummy0->getStatus() << std::endl;
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    dummy1->start_saving();
+    dummy0->startRecord();
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    dummy1->pause_saving();
+    dummy0->pauseRecord();
+    dummy0->terminate();
 
-    dummy1->disconnect_sensor();
-
-    delete dummy1;
+    delete dummy0;
     return 0;
 }

@@ -16,8 +16,8 @@ find_package(Threads REQUIRED)
 
 file(GLOB_RECURSE
     ALL_SRC
-    "src/*.cpp"
-    "../../common/*.cpp"
+    "src/**/*.cpp"
+    "../common/**/*.cpp"
 )
 include_directories(
     "../"
@@ -31,10 +31,10 @@ target_link_libraries(sensor_test
     Threads::Threads
 )
 
-add_executable(sensor_list_factory_test
-    test/sensor_list_factory_test.cpp
-    ${ALL_SRC}
-)
-target_link_libraries(sensor_list_factory_test
-    Threads::Threads
-)
+#add_executable(sensor_list_factory_test
+#    test/sensor_list_factory_test.cpp
+#    ${ALL_SRC}
+#)
+#target_link_libraries(sensor_list_factory_test
+#    Threads::Threads
+#)

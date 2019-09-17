@@ -9,9 +9,9 @@
 namespace wayz {
 
 struct DataImu {
-    float acceleration[3];
-    float angular_velocity[3];
-    float magnetic_field[3];
+    double AngularVelocity[3];
+    double LinearAcceleration[3];
+    double MagneticField[3];
 };
 
 }  // namespace wayz

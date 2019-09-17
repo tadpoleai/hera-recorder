@@ -8,23 +8,24 @@
 
 namespace wayz {
 
-BETTER_ENUM(SensorDummyParameter, int32_t, rate = 0, value)
-
 class SensorDummy final : public SensorBase {
 public:
-    SensorDummy(const std::string& sensor_name);
+    SensorDummy(int32_t id, const std::string& name);
+    SensorDummy(const SensorDummy&) = delete;
+    SensorDummy& operator=(const SensorDummy&) = delete;
     ~SensorDummy();
-    bool do_connect_sensor() final;
-    void do_disconnect_sensor() final;
-    SensorData* do_sensor_fetch() final;
 
-    static std::vector<std::string> get_sensor_dummy_parameter_names();
-    std::vector<std::string> get_sensor_parameter_names() final;
-    bool set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters) final;
+    SensorType getType() const final;
+
+    TronErrno doConnectSensor() final;
+    void doDisconnectSensor() final;
+    std::shared_ptr<SensorRawData> doFetchRawData() final;
+    std::shared_ptr<SensorData> doConvertData(const std::shared_ptr<SensorRawData>& rawdata) final;
+    TronErrno doAdjustParameter(SensorParameterType type, const std::string& value) final;
 
 private:
-    int64_t dummy_sensor_period_;
-    int64_t dummy_sensor_value_;
+    int64_t periodMs_;
+    int64_t value_;
 };
 
 }  // namespace wayz

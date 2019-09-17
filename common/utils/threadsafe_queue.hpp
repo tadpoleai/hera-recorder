@@ -17,38 +17,30 @@ public:
     ThreadsafeQueue(const ThreadsafeQueue&) = delete;
     ThreadsafeQueue& operator=(const ThreadsafeQueue&) = delete;
 
-    void push(T value)
+    void push(const T& value)
     {
-        std::lock_guard<std::mutex> _(data_mutex_);
-        data_queue_.push(value);
-        data_cond_.notify_one();
+        std::lock_guard<std::mutex> _(mutex_);
+        queue_.push(value);
+        cond_.notify_one();
     }
     T wait_and_pop()
     {
-        std::unique_lock<std::mutex> _(data_mutex_);
-        data_cond_.wait(_, [this] { return !data_queue_.empty(); });
-        T value = data_queue_.front();
-        data_queue_.pop();
-        return value;
+        std::unique_lock<std::mutex> _(mutex_);
+        cond_.wait(_, [this] { return !queue_.empty(); });
+        T value = queue_.front();
+        queue_.pop();
+        return std::move(value);
     }
     bool empty() const
     {
-        std::lock_guard<std::mutex> _(data_mutex_);
-        return data_queue_.empty();
-    }
-    void clear_and_delete()
-    {
-        while (!data_queue_.empty()) {
-            T front = data_queue_.front();
-            delete front;
-            data_queue_.pop();
-        }
+        std::lock_guard<std::mutex> _(mutex_);
+        return queue_.empty();
     }
 
 private:
-    mutable std::mutex data_mutex_;
-    std::queue<T> data_queue_;
-    std::condition_variable data_cond_;
+    mutable std::mutex mutex_;
+    std::queue<T> queue_;
+    std::condition_variable cond_;
 };
 
 }  // namespace wayz

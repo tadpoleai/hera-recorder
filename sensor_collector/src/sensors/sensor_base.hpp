@@ -6,6 +6,7 @@
 #define __sensor_base_hpp__
 #include <cstdint>
 #include <fstream>
+#include <map>
 #include <string>
 #include <thread>
 #include <utility>
@@ -13,68 +14,82 @@
 
 #include <common/data_message/sensor_and_data_types.hpp>
 #include <common/third_party/enum.h>
+#include <common/tron_errno.h>
+#include <common/utils/system_timestamp.hpp>
 #include <common/utils/threadsafe_queue.hpp>
 
 
 namespace wayz {
 
-using ParamPair = std::pair<std::string, std::string>;
-
 class SensorBase {
 public:
-    enum struct SensorStatus { error, uninited, terminated, inited, recording, paused };
-
-    SensorBase(const std::string& sensor_name);
+    SensorBase(int32_t id, const std::string& name);
     SensorBase(const SensorBase&) = delete;
     SensorBase& operator=(const SensorBase&) = delete;
     virtual ~SensorBase();
 
     // Control
-    void start_saving();
-    void pause_saving();
-    void connect_sensor();
-    void disconnect_sensor();
-    void set_storage_folder(const std::string& storage_folder);
-    void start_realtime_forwarding();
-    void pause_realtime_forwarding();
-
-    virtual std::vector<std::string> get_sensor_parameter_names() = 0;
-    virtual bool set_sensor_parameters(const std::vector<ParamPair>& sensor_parameters) = 0;
+    TronErrno startRecord();
+    TronErrno pauseRecord();
+    TronErrno connect();
+    TronErrno terminate();
+    TronErrno setStorageFolder(const std::string& folder);
+    TronErrno enableForward();
+    TronErrno disableForward();
+    TronErrno setParameter(const std::string& type, const std::string& value);
+    TronErrno adjustParameter(const std::string& type, const std::string& value);
 
     // Status
-    std::string get_sensor_name() const;
-    std::string get_sensor_status() const;
-    virtual bool get_sensor_alive() const;
+    virtual SensorType getType() const = 0;
+    int32_t getId() const;
+    std::string getName() const;
+    std::string getStatus() const;
+    TronErrno getDiagnosis() const;
 
-private:
-    bool create_storage_folder();
-    void create_and_open_storage_file();
-    void push_one_data(SensorData* sensor_data_ptr);
-    void wait_pop_save_one_data(bool if_save);
-    void sensor_storage_thread_function();
-    void sensor_fetch_thread_function();
+protected:
+    TronErrno setError(TronErrno e);
+    std::map<SensorParameterType, std::string> parameters_;
+    int32_t sequence_;
 
     // Sensor Dependent Functions
-    virtual bool do_connect_sensor() = 0;
-    virtual void do_disconnect_sensor() = 0;
-    virtual SensorData* do_sensor_fetch() = 0;
+    virtual TronErrno doConnectSensor() = 0;
+    virtual void doDisconnectSensor() = 0;
+    virtual std::shared_ptr<SensorRawData> doFetchRawData() = 0;
+    virtual std::shared_ptr<SensorData> doConvertData(
+            const std::shared_ptr<SensorRawData>& rawdata) = 0;
+    virtual TronErrno doAdjustParameter(SensorParameterType type, const std::string& value) = 0;
 
-    mutable SensorStatus sensor_status_;
-    // mutable bool sensor_realtime_forwarding_;
-    std::thread* sensor_fetch_thread_;
-    std::thread* sensor_storage_thread_;
+private:
+    TronErrno createStorageFolder();
+    TronErrno openNewStorageFile();
 
-    std::string sensor_name_;
-    std::string sensor_storage_path_;
-    bool sensor_storage_path_set_;
-    int64_t ofstream_num_count_;
-    int64_t ofstream_current_bytecount_;
-    static const int64_t OfstreamMaxSizeByte = 0x7FFFFFFFL;
-    // static const int64_t OfstreamMaxSizeByte = 0x100L;
-    static const int64_t OfstreamFileNameWidth = 4;
-    std::ofstream sensor_storage_ofstream_;
+    void fetchThreadFunc();
+    void storageThreadFunc();
+    void forwardThreadFunc();
+    bool checkNewData() const;
 
-    ThreadsafeQueue<SensorData*> sensor_data_queue_;
+    int32_t id_;
+    std::string name_;
+    std::string storagePath_;
+    bool isStoragePathSet_;
+    int64_t fileNumberCounter_;
+    int64_t fileSizeCounter_;
+    static const int64_t FileMaxSize_ = 0x7FFFFFFFL;
+    static const int64_t FileNameWidth = 4;
+    std::ofstream file_;
+
+    mutable SensorStatus status_;
+    mutable TronErrno latestErrno_;
+    mutable TimestampNs latestDataTimestampNs_;
+    static const DurationNs MaxDataDurationNs_ = 3 * OneSecondToNs;
+    mutable bool isRecordEnabled_;
+    mutable bool isForwardEnabled_;
+
+    std::thread* threadFetch_;
+    std::thread* threadStorage_;
+    std::thread* threadForward_;
+    ThreadsafeQueue<std::shared_ptr<SensorRawData>> queueStorage_;
+    ThreadsafeQueue<std::shared_ptr<SensorRawData>> queueForward_;
 };
 
 }  // namespace wayz

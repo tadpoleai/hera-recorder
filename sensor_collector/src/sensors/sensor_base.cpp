@@ -17,179 +17,307 @@
 
 namespace wayz {
 
-SensorBase::SensorBase(const std::string& sensor_name) :
-    sensor_status_(SensorStatus::uninited),
-    // sensor_realtime_forwarding_(false),
-    sensor_fetch_thread_(nullptr),
-    sensor_storage_thread_(nullptr),
-    sensor_name_(sensor_name),
-    sensor_storage_path_set_(false),
-    ofstream_num_count_(0),
-    ofstream_current_bytecount_(0)
+SensorBase::SensorBase(int32_t id, const std::string& name) :
+    sequence_(0),
+    id_(id),
+    name_(name),
+    isStoragePathSet_(false),
+    fileNumberCounter_(0),
+    fileSizeCounter_(0),
+    status_(SensorStatus::Uninited),
+    latestErrno_(TronErrno::Success),
+    latestDataTimestampNs_(0),
+    isRecordEnabled_(false),
+    isForwardEnabled_(false)
+
 {
-    sensor_storage_thread_ = new std::thread(&SensorBase::sensor_storage_thread_function, this);
-    sensor_fetch_thread_ = new std::thread(&SensorBase::sensor_fetch_thread_function, this);
+    threadFetch_ = new std::thread(&SensorBase::fetchThreadFunc, this);
+    threadStorage_ = new std::thread(&SensorBase::storageThreadFunc, this);
+    threadForward_ = new std::thread(&SensorBase::forwardThreadFunc, this);
 }
+
 SensorBase::~SensorBase()
 {
-    disconnect_sensor();
+    terminate();
 }
 
-void SensorBase::start_saving()
+TronErrno SensorBase::startRecord()
 {
-    auto sensor_status = sensor_status_;
-    if (sensor_status == SensorStatus::inited) {
-        if (sensor_storage_path_set_) {
-            create_storage_folder();
-            sensor_status_ = SensorStatus::recording;
+    auto status = status_;
+    if (status == SensorStatus::Error) {
+        return TronErrno::InStatusError;
+    }
+    if (status == SensorStatus::Inited) {
+        if (!isStoragePathSet_) {
+            createStorageFolder();
         }
+        isRecordEnabled_ = true;
+        return TronErrno::Success;
     }
-    if (sensor_status == SensorStatus::paused) {
-        sensor_status_ = SensorStatus::recording;
-    }
-}
-void SensorBase::pause_saving()
-{
-    auto sensor_status = sensor_status_;
-    if (sensor_status == SensorStatus::recording) {
-        sensor_status_ = SensorStatus::paused;
-    }
-}
-void SensorBase::set_storage_folder(const std::string& storage_folder)
-{
-    if (!sensor_storage_path_set_) {
-        sensor_storage_path_ = storage_folder + "/" + sensor_name_ + "/";
-        sensor_storage_path_set_ = true;
-    }
-}
-void SensorBase::start_realtime_forwarding() {}
-void SensorBase::pause_realtime_forwarding() {}
-
-bool SensorBase::create_storage_folder()
-{
-    int ret = system(("mkdir -p '" + sensor_storage_path_ + "'").c_str());
-    if (ret == 0) {
-        create_and_open_storage_file();
-        return true;
-    }
-    return false;
-}
-void SensorBase::create_and_open_storage_file()
-{
-    sensor_storage_ofstream_.close();
-
-    std::ostringstream current_filename_stream;
-    current_filename_stream << sensor_storage_path_;
-    current_filename_stream.fill('0');
-    current_filename_stream.width(OfstreamFileNameWidth);
-    current_filename_stream << ofstream_num_count_++;
-    current_filename_stream << ".bin";
-
-    sensor_storage_ofstream_.open(current_filename_stream.str(), std::ios::out | std::ios::binary);
-    ofstream_current_bytecount_ = 0;
-}
-void SensorBase::push_one_data(SensorData* sensor_data_ptr)
-{
-    if (sensor_data_ptr != nullptr) {
-        sensor_data_queue_.push(sensor_data_ptr);
-    }
-}
-void SensorBase::wait_pop_save_one_data(bool if_save)
-{
-    SensorData* sensor_data = sensor_data_queue_.wait_and_pop();
-    if (if_save) {
-        if (ofstream_current_bytecount_ + sensor_data->length > OfstreamMaxSizeByte) {
-            create_and_open_storage_file();
-        }
-        sensor_storage_ofstream_.write(reinterpret_cast<const char*>(sensor_data),
-                                       sensor_data->length);
-        ofstream_current_bytecount_ += sensor_data->length;
-    }
-    delete[] sensor_data;
+    return TronErrno::SensorNotReady;
 }
 
-void SensorBase::sensor_storage_thread_function()
+TronErrno SensorBase::pauseRecord()
 {
-    while (true) {
-        auto sensor_status = sensor_status_;
-        if (sensor_status == SensorStatus::error || sensor_status == SensorStatus::terminated) {
-            break;
-        }
-        if (sensor_status == SensorStatus::uninited) {
+    auto status = status_;
+    if (status == SensorStatus::Error) {
+        return TronErrno::InStatusError;
+    }
+    if (status == SensorStatus::Inited) {
+        isRecordEnabled_ = false;
+        return TronErrno::Success;
+    }
+    return TronErrno::SensorNotReady;
+}
+
+TronErrno SensorBase::connect()
+{
+    auto status = status_;
+    if (status == SensorStatus::Error) {
+        return TronErrno::InStatusError;
+    }
+    if (status == SensorStatus::Uninited) {
+        TronErrno e = doConnectSensor();
+        if (e == TronErrno::Success) {
+            status_ = SensorStatus::Inited;
+            return TronErrno::Success;
         } else {
-            bool if_save = (sensor_status == SensorStatus::recording);
-            wait_pop_save_one_data(if_save);
+            setError(e);
         }
     }
+    return TronErrno::SensorAlreadyConnected;
 }
-void SensorBase::sensor_fetch_thread_function()
+
+TronErrno SensorBase::terminate()
 {
-    while (true) {
-        auto sensor_status = sensor_status_;
-        if (sensor_status == SensorStatus::error || sensor_status == SensorStatus::terminated) {
-            break;
-        }
-        if (sensor_status == SensorStatus::inited || sensor_status == SensorStatus::recording ||
-            sensor_status == SensorStatus::paused) {
-            SensorData* sensor_data = do_sensor_fetch();
-            push_one_data(sensor_data);
-        }
+    auto status = status_;
+    if (status != SensorStatus::Terminated) {
+        status_ = SensorStatus::Terminated;
+        isRecordEnabled_ = false;
+        isForwardEnabled_ = false;
+        doDisconnectSensor();
+        threadFetch_->join();
+        threadStorage_->join();
+        threadForward_->join();
+        delete threadFetch_;
+        delete threadStorage_;
+        delete threadForward_;
+        file_.close();
+        return TronErrno::Success;
+    }
+    return TronErrno::SensorAlreadyClosed;
+}
+
+TronErrno SensorBase::setStorageFolder(const std::string& folder)
+{
+    auto status = status_;
+    if (status == SensorStatus::Error) {
+        return TronErrno::InStatusError;
+    }
+    if (!isStoragePathSet_) {
+        storagePath_ = folder + "/" + name_ + "/";
+        isStoragePathSet_ = true;
+        return createStorageFolder();
+    }
+    return TronErrno::StorageFolderAlreadySet;
+}
+
+TronErrno SensorBase::enableForward()
+{
+    auto status = status_;
+    if (status == SensorStatus::Error) {
+        return TronErrno::InStatusError;
+    }
+    if (status == SensorStatus::Inited) {
+        isForwardEnabled_ = true;
+        return TronErrno::Success;
+    }
+    return TronErrno::SensorNotReady;
+}
+TronErrno SensorBase::disableForward()
+{
+    auto status = status_;
+    if (status == SensorStatus::Error) {
+        return TronErrno::InStatusError;
+    }
+    if (status == SensorStatus::Inited) {
+        isForwardEnabled_ = false;
+        return TronErrno::Success;
+    }
+    return TronErrno::SensorNotReady;
+}
+
+TronErrno SensorBase::setParameter(const std::string& type, const std::string& value)
+{
+    auto status = status_;
+    if (status == SensorStatus::Error) {
+        return TronErrno::InStatusError;
+    }
+    auto parameterType = SensorParameterType::_from_string_nocase_nothrow(type.c_str());
+    if (!parameterType) {
+        return TronErrno::InvalidParameterType;
+    } else {
+        parameters_[parameterType.value()] = value;
+        return TronErrno::Success;
     }
 }
 
-void SensorBase::connect_sensor()
+TronErrno SensorBase::adjustParameter(const std::string& type, const std::string& value)
 {
-    if (sensor_status_ == SensorStatus::uninited) {
-        if (do_connect_sensor()) {
-            sensor_status_ = SensorStatus::inited;
-        } else {
-            sensor_status_ = SensorStatus::error;
-        }
+    auto status = status_;
+    if (status == SensorStatus::Error) {
+        return TronErrno::InStatusError;
     }
-}
-void SensorBase::disconnect_sensor()
-{
-    auto sensor_status = sensor_status_;
-    if (sensor_status != SensorStatus::terminated) {
-        sensor_status_ = SensorStatus::terminated;
-        do_disconnect_sensor();
-        sensor_fetch_thread_->join();
-        sensor_storage_thread_->join();
-        delete sensor_fetch_thread_;
-        delete sensor_storage_thread_;
-        sensor_data_queue_.clear_and_delete();
-        sensor_storage_ofstream_.close();
+    auto parameterType = SensorParameterType::_from_string_nocase_nothrow(type.c_str());
+    if (!parameterType) {
+        return TronErrno::InvalidParameterType;
+    } else {
+        parameters_[parameterType.value()] = value;
+        return doAdjustParameter(parameterType.value(), value);
     }
 }
 
-std::string SensorBase::get_sensor_name() const
+// Status
+int32_t SensorBase::getId() const
 {
-    return sensor_name_;
+    return id_;
 }
-std::string SensorBase::get_sensor_status() const
+
+std::string SensorBase::getName() const
 {
-    auto sensor_status = sensor_status_;
-    switch (sensor_status) {
-    case SensorStatus::error:
-        return "error";
-    case SensorStatus::uninited:
-        return "uninited";
-    case SensorStatus::inited:
-        return "inited";
-    case SensorStatus::recording:
-        return "recording";
-    case SensorStatus::paused:
-        return "paused";
-    case SensorStatus::terminated:
-        return "terminated";
+    return name_;
+}
+
+std::string SensorBase::getStatus() const
+{
+    switch (status_) {
+    case SensorStatus::Uninited:
+        return "Uninited";
+    case SensorStatus::Inited:
+        return "Inited";
+    case SensorStatus::Terminated:
+        return "Terminated";
     default:
-        return "error";
+        return "Error";
     }
-    return "error";
+    return "Error";
 }
-bool SensorBase::get_sensor_alive() const
+
+TronErrno SensorBase::getDiagnosis() const
 {
-    return true;
+    if (latestErrno_ == TronErrno::Success) {
+        if (checkNewData()) {
+            return TronErrno::Success;
+        } else {
+            return TronErrno::NoNewData;
+        }
+    }
+    return latestErrno_;
+}
+
+TronErrno SensorBase::setError(TronErrno e)
+{
+    status_ = SensorStatus::Error;
+    return latestErrno_ = e;
+}
+
+// Private
+TronErrno SensorBase::createStorageFolder()
+{
+    auto status = status_;
+    if (status == SensorStatus::Error) {
+        return TronErrno::InStatusError;
+    }
+    int ret = system(("mkdir -p '" + storagePath_ + "'").c_str());
+    if (ret == 0) {
+        return openNewStorageFile();
+    }
+    return setError(TronErrno::CanNotCreateFolder);
+}
+
+TronErrno SensorBase::openNewStorageFile()
+{
+    auto status = status_;
+    if (status == SensorStatus::Error) {
+        return TronErrno::InStatusError;
+    }
+    file_.close();
+
+    std::ostringstream filename;
+    filename << storagePath_;
+    filename.fill('0');
+    filename.width(FileNameWidth);
+    filename << fileNumberCounter_++;
+    filename << ".bin";
+    file_.open(filename.str(), std::ios::out | std::ios::binary);
+
+    if (file_.is_open()) {
+        fileSizeCounter_ = 0;
+        return TronErrno::Success;
+    } else {
+        setError(TronErrno::CanNotOpenFile);
+    }
+
+    return TronErrno::Success;
+}
+
+void SensorBase::fetchThreadFunc()
+{
+    while (true) {
+        auto status = status_;
+        if (status == SensorStatus::Error || status == SensorStatus::Terminated) {
+            break;
+        }
+        if (status == SensorStatus::Inited) {
+            auto rawdata = doFetchRawData();
+            latestDataTimestampNs_ = rawdata->timestampReceiveNs;
+            if (isRecordEnabled_) {
+                queueStorage_.push(rawdata);
+            }
+            if (isForwardEnabled_) {
+                queueForward_.push(rawdata);
+            }
+        }
+    }
+}
+
+void SensorBase::storageThreadFunc()
+{
+    while (true) {
+        auto status = status_;
+        if (status == SensorStatus::Error || status == SensorStatus::Terminated) {
+            break;
+        }
+        if (!queueStorage_.empty()) {
+            auto rawdata = queueStorage_.wait_and_pop();
+            if ((fileSizeCounter_ != 0) && (fileSizeCounter_ + rawdata->length > FileMaxSize_)) {
+                openNewStorageFile();
+            }
+            file_.write(reinterpret_cast<const char*>(rawdata.get()), rawdata->length);
+            fileSizeCounter_ += rawdata->length;
+        }
+    }
+}
+
+void SensorBase::forwardThreadFunc()
+{
+    while (true) {
+        auto status = status_;
+        if (status == SensorStatus::Error || status == SensorStatus::Terminated) {
+            break;
+        }
+        if (!queueForward_.empty()) {
+            auto rawdata = queueForward_.wait_and_pop();
+            auto data = doConvertData(rawdata);
+            // TODO
+            // Send Data via Socket
+        }
+    }
+}
+
+bool SensorBase::checkNewData() const
+{
+    return (getSystemTimestamp() - latestDataTimestampNs_ < MaxDataDurationNs_);
 }
 
 }  // namespace wayz

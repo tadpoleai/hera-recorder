@@ -8,14 +8,23 @@
 
 namespace wayz {
 
+struct SensorRawData {
+    int32_t length;
+    int16_t sensorType;
+    int16_t sensorDataType;
+    int32_t sequence;
+    int64_t timestampReceiveNs;
+    uint8_t rawdataBuf[0];
+};
+
 struct SensorData {
     int32_t length;
-    int32_t sensor_type;
-    int32_t sensor_datatype;
-    int32_t is_timestamp_synced;
-    int64_t timestamp_us;
-    int64_t timestamp_recv_us;
-    char rawdata[0];
+    int16_t sensorType;
+    int16_t sensorDataType;
+    int32_t sequence;
+    int64_t timestampReceiveNs;
+    int64_t timestampIntrinsicNs;
+    uint8_t dataBuf[0];
 };
 
 }  // namespace wayz
