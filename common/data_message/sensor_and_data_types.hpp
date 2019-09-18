@@ -8,6 +8,7 @@
 #include <common/third_party/enum.h>
 
 #include "data_dummy.hpp"
+#include "data_lidar.hpp"
 #include "data_imu.hpp"
 #include "sensor_data.hpp"
 

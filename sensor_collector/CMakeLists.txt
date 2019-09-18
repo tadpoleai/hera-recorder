@@ -14,6 +14,12 @@ project(${PROJECT_NAME})
 
 find_package(Threads REQUIRED)
 
+set( Boost_USE_STATIC_LIBS ON ) # Static Link Libraries ( libboost_* )
+set( Boost_USE_MULTITHREADED ON ) # Multi Thread Libraries ( *-mt-* )
+set( Boost_USE_STATIC_RUNTIME OFF ) # Static Runtime Libraries ( *-s* )
+set( Boost_INCLUDE_DIR /usr/include)    
+set( Boost_LIBRARY_DIR /usr/lib/x86_64-linux-gnu)
+
 file(GLOB_RECURSE
     ALL_SRC
     "src/**/*.cpp"
@@ -21,6 +27,7 @@ file(GLOB_RECURSE
 )
 include_directories(
     "../"
+    ${Boost_INCLUDE_DIR} 
 )
 
 add_executable(sensor_test
@@ -29,6 +36,7 @@ add_executable(sensor_test
 )
 target_link_libraries(sensor_test
     Threads::Threads
+    boost_system
 )
 
 #add_executable(sensor_list_factory_test
