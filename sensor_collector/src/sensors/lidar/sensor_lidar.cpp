@@ -77,7 +77,22 @@ TronErrno SensorLidar::doConnectSensor()
     return TronErrno::Success;
 }
 
-void SensorLidar::doDisconnectSensor() {}
+void SensorLidar::doDisconnectSensor() {
+    if(data_socket_ && data_socket_->is_open()){
+        data_socket_->close();
+        delete data_socket_;
+        data_socket_ = nullptr;
+    }
+    if(telemetry_socket_ && telemetry_socket_->is_open()){
+        telemetry_socket_->close();
+        delete telemetry_socket_;
+        telemetry_socket_ = nullptr;
+    }
+    if(io_service_.stopped()){
+        io_service_.stop();
+        io_service_.reset();
+    }
+}
 
 std::shared_ptr<SensorRawData> SensorLidar::doFetchRawData()
 {
@@ -87,6 +102,10 @@ std::shared_ptr<SensorRawData> SensorLidar::doFetchRawData()
 
     // Get Rawdata from a Real Sensor
     // Get Length of Rawdata First
+    if(receive_data_endpoint_.address() != address_ || receive_data_endpoint_.port() != data_port_){
+        std::cout << "Error: Lidar receive_data_endpoint error!" << std::endl;
+        return NULL;
+    }
     int32_t receivedRawdataLength = sizeof(receive_buffer_);
 
     // Create a Buff to Store Rawdata
@@ -112,6 +131,7 @@ std::shared_ptr<SensorRawData> SensorLidar::doFetchRawData()
         io_service_.run();
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
+        return NULL;
     }
     // Use Memcpy to fill Buff
     memcpy(reinterpret_cast<char*>(data->rawdataBuf), receive_buffer_, sizeof(receive_buffer_));
