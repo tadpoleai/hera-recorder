@@ -34,7 +34,18 @@ add_executable(sensor_test
     test/sensor_test.cpp
     ${ALL_SRC}
 )
+
+add_executable(sensor_lidar_test
+    test/sensor_lidar_test.cpp
+    ${ALL_SRC}
+)
+
 target_link_libraries(sensor_test
+    Threads::Threads
+    boost_system
+)
+
+target_link_libraries(sensor_lidar_test
     Threads::Threads
     boost_system
 )

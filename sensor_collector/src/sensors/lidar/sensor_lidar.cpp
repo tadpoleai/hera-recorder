@@ -52,6 +52,7 @@ TronErrno SensorLidar::doConnectSensor()
                                                data_port_));
     } catch (const std::exception& e) {
         data_socket_ = nullptr;
+        return setError(TronErrno::CanNotOpenEthernetSensor);
     }
 
     try {
@@ -67,6 +68,7 @@ TronErrno SensorLidar::doConnectSensor()
             delete data_socket_;
             data_socket_ = nullptr;
         }
+        return setError(TronErrno::CanNotOpenEthernetSensor);
     }
 
     if (data_socket_ == nullptr || telemetry_socket_ == nullptr) {
