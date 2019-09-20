@@ -2,13 +2,13 @@
 // Copyright 2018 Wayz.ai. All Rights Reserved.
 //
 
+#include "../src/sensors/lidar/sensor_lidar.hpp"
+
 #include <chrono>
 #include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "../src/sensors/lidar/sensor_lidar.hpp"
 #define LOG_LINE std::cout << "FILE: " << __FILE__ << " LINE: " << __LINE__ << std::endl
 
 int main(int argc, char** argv)
@@ -19,17 +19,17 @@ int main(int argc, char** argv)
     char* folder = argv[1];
     wayz::SensorBase* lidar0 = new wayz::SensorLidar(0, "lidar0");
     lidar0->setParameter("IpAddress", "10.0.10.100");
-    lidar0->setParameter("DataPort", "2368");  
+    lidar0->setParameter("DataPort", "2368");
     lidar0->setParameter("TelemetryPort", "8308");
     lidar0->connect();
     lidar0->setStorageFolder(folder);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
     lidar0->startRecord();
     std::this_thread::sleep_for(std::chrono::seconds(10));
-   
-   // lidar0->pauseRecord();
-  //  lidar0->adjustParameter("DummyValue", "1234");
-    
+
+    // lidar0->pauseRecord();
+    //  lidar0->adjustParameter("DummyValue", "1234");
+
     std::cout << "Dummy0 has type: " << lidar0->getType() << std::endl;
     std::cout << "Dummy0 has id: " << lidar0->getId() << std::endl;
     std::cout << "Dummy0 has name: " << lidar0->getName() << std::endl;
@@ -38,11 +38,11 @@ int main(int argc, char** argv)
     std::cout << "Dummy0 is in status: " << lidar0->getStatus() << std::endl;
     lidar0->terminate();
 
-/*
-    lidar0->startRecord();
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    lidar0->pauseRecord();
-    lidar0->terminate();*/
+    /*
+        lidar0->startRecord();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        lidar0->pauseRecord();
+        lidar0->terminate();*/
 
     delete lidar0;
     return 0;

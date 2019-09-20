@@ -44,6 +44,17 @@ TronErrno SensorLidar::doConnectSensor()
     } else {
         return setError(TronErrno::InsufficientParameters);
     }
+
+    int ret = system(("curl --data \"laser=on\" http://" +
+                      parameters_[SensorParameterType::IpAddress] + "/cgi/setting")
+                             .c_str());
+    if (ret == 0) {
+        std::cout << "success to power on " << getName() << std::endl;
+    } else {
+        std::cout << "fail to power on " <<  getName() << std::endl;
+    }
+
+
     try {
         data_socket_ = new boost::asio::ip::udp::socket(
                 io_service_,
@@ -80,6 +91,16 @@ TronErrno SensorLidar::doConnectSensor()
 
 void SensorLidar::doDisconnectSensor()
 {
+
+    int ret = system(("curl --data \"laser=off\" http://" +
+                      parameters_[SensorParameterType::IpAddress] + "/cgi/setting")
+                             .c_str());
+    if (ret == 0) {
+        std::cout << "success to power off " <<  getName() << std::endl;
+    } else {
+        std::cout << "fail to power off " << getName() <<std::endl;
+    }
+
     if (data_socket_ && data_socket_->is_open()) {
         data_socket_->close();
         delete data_socket_;
@@ -99,8 +120,10 @@ void SensorLidar::doDisconnectSensor()
 std::shared_ptr<SensorRawData> SensorLidar::doFetchRawData()
 {
     memset(receive_buffer_, 0, kDataBufferSize);
-    int32_t receivedRawdataLength = data_socket_->receive_from(boost::asio::buffer(receive_buffer_, sizeof(receive_buffer_)),
-                               receive_data_endpoint_);
+    int32_t receivedRawdataLength =
+            data_socket_->receive_from(boost::asio::buffer(receive_buffer_,
+                                                           sizeof(receive_buffer_)),
+                                       receive_data_endpoint_);
     // Create a Buff to Store Rawdata
     int32_t totalLength = sizeof(SensorRawData) + receivedRawdataLength;
     SensorRawData* data = reinterpret_cast<SensorRawData*>(new uint8_t[totalLength]);
@@ -112,9 +135,9 @@ std::shared_ptr<SensorRawData> SensorLidar::doFetchRawData()
     data->sequence = sequence_++;
     data->timestampReceiveNs = getSystemTimestamp();
 
-    telemetry_socket_->receive_from(boost::asio::buffer(receive_postion_buffer_,
-                                                         sizeof(receive_postion_buffer_)),
-                                     receive_position_endpoint_);
+    // telemetry_socket_->receive_from(boost::asio::buffer(receive_postion_buffer_,
+    //                                                     sizeof(receive_postion_buffer_)),
+    //                                 receive_position_endpoint_);
     try {
         io_service_.run();
     } catch (const std::exception& e) {
@@ -122,7 +145,7 @@ std::shared_ptr<SensorRawData> SensorLidar::doFetchRawData()
         return nullptr;
     }
     // Use Memcpy to fill Buff
-    memcpy(reinterpret_cast<char*>(data->rawdataBuf), receive_buffer_,receivedRawdataLength);
+    memcpy(reinterpret_cast<char*>(data->rawdataBuf), receive_buffer_, receivedRawdataLength);
     // Return a Shared Ptr
     return std::shared_ptr<SensorRawData>(data);
 }
