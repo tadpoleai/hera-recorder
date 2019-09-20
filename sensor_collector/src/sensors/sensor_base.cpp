@@ -79,6 +79,7 @@ TronErrno SensorBase::connect()
     if (status == SensorStatus::Uninited) {
         TronErrno e = doConnectSensor();
         if (e == TronErrno::Success) {
+            std::cout << getName() << " connect success" << std::endl;
             status_ = SensorStatus::Inited;
             return TronErrno::Success;
         } else {
@@ -269,13 +270,14 @@ void SensorBase::fetchThreadFunc()
             break;
         }
         if (status == SensorStatus::Inited) {
-            auto rawdata = doFetchRawData();
-            latestDataTimestampNs_ = rawdata->timestampReceiveNs;
-            if (isRecordEnabled_) {
-                queueStorage_.push(rawdata);
-            }
-            if (isForwardEnabled_) {
-                queueForward_.push(rawdata);
+            if (auto rawdata = doFetchRawData()) {
+                latestDataTimestampNs_ = rawdata->timestampReceiveNs;
+                if (isRecordEnabled_) {
+                    queueStorage_.push(rawdata);
+                }
+                if (isForwardEnabled_) {
+                    queueForward_.push(rawdata);
+                }
             }
         }
     }

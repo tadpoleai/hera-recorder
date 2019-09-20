@@ -7,6 +7,8 @@
 #include <cstdint>
 namespace wayz {
 
+#define LOG_LINE std::cout << "FILE: " << __FILE__ << " LINE: " << __LINE__ << std::endl
+
 enum TronErrno {
     Success = 0,
     InStatusError = 10,

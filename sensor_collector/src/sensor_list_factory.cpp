@@ -28,8 +28,7 @@ void SensorListFactory::create_sensors(const std::vector<SensorConstructor>& sen
         case SensorType::dummy:
             sensor_ptr = new SensorDummy(sensor_name);
             break;
-        /*
-        case SensorType::imu:
+        /*case SensorType::imu:
             sensor_ptr = new SensorImu(sensor_name);
             break;
         case SensorType::gps:
@@ -37,11 +36,10 @@ void SensorListFactory::create_sensors(const std::vector<SensorConstructor>& sen
             break;
         case SensorType::camera:
             sensor_ptr = new SensorCamera(sensor_name);
-            break;
+            break;*/
         case SensorType::lidar:
             sensor_ptr = new SensorLidar(sensor_name);
             break;
-        */
         default:
             sensor_ptr = new SensorDummy(sensor_name);
             break;

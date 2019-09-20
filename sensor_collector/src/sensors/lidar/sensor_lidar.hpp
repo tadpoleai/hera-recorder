@@ -10,8 +10,6 @@
 
 namespace wayz {
 
-BETTER_ENUM(SensorLidarParameter, int32_t, rate = 0, value)
-
 class SensorLidar final : public SensorBase {
 public:
     SensorLidar(int32_t id, const std::string& name);
