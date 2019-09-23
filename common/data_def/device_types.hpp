@@ -1,23 +1,24 @@
 //
 // Copyright 2018 Wayz.ai. All Rights Reserved.
 //
-#ifndef __data_message_sensor_and_data_types_hpp__
-#define __data_message_sensor_and_data_types_hpp__
+#pragma once
+
 #include <cstdint>
 
 #include <common/third_party/enum.h>
 
 #include "data_dummy.hpp"
 #include "data_imu.hpp"
-#include "sensor_data.hpp"
+#include "device_data.hpp"
 
 namespace wayz {
+namespace tron {
 
-enum class SensorStatus : int32_t { Error = 0, Uninited = 1, Inited = 2, Terminated = 3 };
+enum class DeviceStatus : int32_t { Error = 0, Uninited = 1, Inited = 2, Terminated = 3 };
 
-BETTER_ENUM(SensorType, int32_t, Dummy = 1, Imu = 2, Gps = 3, Camera = 4, Lidar = 5)
+BETTER_ENUM(DeviceType, int32_t, Dummy = 1, Imu = 2, Gps = 3, Camera = 4, Lidar = 5)
 
-BETTER_ENUM(SensorDataType,
+BETTER_ENUM(DeviceDataType,
             int32_t,
             Dummy = 0x100,
 
@@ -35,7 +36,7 @@ BETTER_ENUM(SensorDataType,
             LidarVelodyneScan = 0x500)
 
 
-BETTER_ENUM(SensorParameterType,
+BETTER_ENUM(DeviceParameterType,
             int32_t,
             DummyRate = 0,
             DummyValue = 1,
@@ -49,6 +50,6 @@ BETTER_ENUM(SensorParameterType,
             WhiteBalanceRed = 201,
             WhiteBalanceBlue = 202,
             FrameRate = 203)
-
+            
+}  // namespace tron
 }  // namespace wayz
-#endif

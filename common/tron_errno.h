@@ -2,23 +2,25 @@
 // Copyright 2018 Wayz.ai. All Rights Reserved.
 //
 
-#ifndef __tron_error_hpp__
-#define __tron_error_hpp__
+#pragma once
+
 #include <cstdint>
 namespace wayz {
+namespace tron {
 
 enum TronErrno {
     Success = 0,
     InStatusError = 10,
 
-    InvalidSensorType = 100,
-    InvalidSensorName = 101,
-    InvalidSensorId = 102,
+    InvalidDeviceType = 100,
+    InvalidDeviceName = 101,
+    InvalidDeviceId = 102,
+    InvalidControlCommand = 103,
 
-    CanNotOpenEthernetSensor = 203,
-    CanNotOpenUsbSensor = 204,
-    CanNotOpenTtySensor = 205,
-    CanNotOpenSmbusSensor = 206,
+    CanNotOpenEthernetDevice = 203,
+    CanNotOpenUsbDevice = 204,
+    CanNotOpenTtyDevice = 205,
+    CanNotOpenSmbusDevice = 206,
 
     InvalidParameterType = 300,
     InsufficientParameters = 301,
@@ -35,14 +37,14 @@ enum TronErrno {
     CanNotOpenFile = 502,
     WriteError = 503,
 
-    SensorNotReady = 600,
-    SensorAlreadyConnected = 601,
-    SensorAlreadyClosed = 602,
+    DeviceNotReady = 600,
+    DeviceAlreadyConnected = 601,
+    DeviceAlreadyClosed = 602,
 
     NoNewData = 700,
 
     Reserved = 9999,
 };
 
+}  // namespace tron
 }  // namespace wayz
-#endif

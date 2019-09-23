@@ -2,13 +2,14 @@
 // Copyright 2018 Wayz.ai. All Rights Reserved.
 //
 
-#ifndef __utils_threadsafe_queue_hpp__
-#define __utils_threadsafe_queue_hpp__
+#pragma once
+
 #include <condition_variable>
 #include <mutex>
 #include <queue>
 
 namespace wayz {
+namespace tron {
 
 template<typename T>
 class ThreadsafeQueue {
@@ -43,6 +44,5 @@ private:
     std::condition_variable cond_;
 };
 
+}  // namespace tron
 }  // namespace wayz
-
-#endif
