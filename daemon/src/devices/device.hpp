@@ -59,10 +59,10 @@ protected:
     int32_t sequence_;
 
     // Device Dependent Functions
-    virtual TronErrno do_connect() = 0;
-    virtual void do_disconnect() = 0;
-    virtual std::shared_ptr<DeviceRawData> do_fetch() = 0;
-    virtual std::shared_ptr<SensorData> do_convert(
+    virtual TronErrno connect() = 0;
+    virtual void disconnect() = 0;
+    virtual std::shared_ptr<DeviceRawData> fetch() = 0;
+    virtual std::shared_ptr<SensorData> convert(
             const std::shared_ptr<DeviceRawData>& rawdata) = 0;
     virtual TronErrno do_adjust_parameter(DeviceParameterType type, const std::string& value) = 0;
 
@@ -78,21 +78,21 @@ private:
     int32_t id_;
     std::string name_;
     std::string storage_path_;
-    mutable bool is_storage_path_set_;
-    mutable int64_t file_number_counter_;
-    mutable int64_t file_size_counter_;
-    mutable int64_t total_file_size_counter_;
+    volatile bool is_storage_path_set_;
+    volatile int64_t file_number_counter_;
+    volatile int64_t file_size_counter_;
+    volatile int64_t total_file_size_counter_;
     static const int64_t FileMaxSize_ = 0x7FFFFFFFL;
     static const int64_t FileNameWidth = 4;
     std::ofstream file_;
 
     volatile DeviceStatus status_;
-    mutable TronErrno last_errno_;
+    volatile TronErrno last_errno_;
     mutable std::string last_errno_reason_;
-    mutable TimestampNs last_data_timestamp_ns_;
+    volatile TimestampNs last_data_timestamp_ns_;
     static const DurationNs MaxDataDurationNs_ = 3 * OneSecondToNs;
-    mutable bool is_record_;
-    mutable bool is_forward_;
+    volatile bool is_record_;
+    volatile bool is_forward_;
 
     std::thread* thread_fetch_;
     std::thread* thread_storage_;

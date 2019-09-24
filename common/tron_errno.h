@@ -38,10 +38,11 @@ enum TronErrno {
     CameraTimeShiftOutOfRange = 402,
     LidarTimeShiftOutOfRange = 403,
 
-    StorageFolderAlreadySet = 500,
-    CanNotCreateFolder = 501,
-    CanNotOpenFile = 502,
-    WriteError = 503,
+    StorageFolderNoSet = 500,
+    StorageFolderAlreadySet = 501,
+    CanNotCreateFolder = 502,
+    CanNotOpenFile = 503,
+    WriteError = 504,
 
     DeviceNotReady = 600,
     DeviceAlreadyConnected = 601,

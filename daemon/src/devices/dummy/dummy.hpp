@@ -17,14 +17,17 @@ public:
 
     DeviceType get_type() const final;
 
-    TronErrno do_connect() final;
-    void do_disconnect() final;
-    std::shared_ptr<DeviceRawData> do_fetch() final;
-    std::shared_ptr<SensorData> do_convert(const std::shared_ptr<DeviceRawData>& rawdata) final;
+    TronErrno connect() final;
+    void disconnect() final;
+    std::shared_ptr<DeviceRawData> fetch() final;
+    std::shared_ptr<SensorData> convert(const std::shared_ptr<DeviceRawData>& rawdata) final;
     TronErrno do_adjust_parameter(DeviceParameterType type, const std::string& value) final;
 
     // Convert should be implemented as static function
-    static std::shared_ptr<SensorData> dummy_do_convert(const std::shared_ptr<DeviceRawData>& rawdata);
+    static std::shared_ptr<SensorData> do_convert(const std::shared_ptr<DeviceRawData>& rawdata);
+
+    // Disconnect should be implemented as non-virtual function
+    void do_disconnect();
 
 private:
     int64_t period_ms_;

@@ -36,8 +36,9 @@ Device::Device(int32_t id, const std::string& name) :
     thread_storage_ = new std::thread(&Device::storage_thread_function, this);
     thread_forward_ = new std::thread(&Device::forward_thread_function, this);
 }
-Device::~Device() {
-    LOG_LINE
+Device::~Device()
+{
+    stop();
 }
 
 // Control
@@ -48,36 +49,31 @@ TronErrno Device::start()
         return TronErrno::InStatusError;
     }
     if (status == DeviceStatus::Uninited) {
-        TronErrno e = do_connect();
+        TronErrno e = connect();
         if (e == TronErrno::Success) {
             status_ = DeviceStatus::Inited;
             return TronErrno::Success;
         } else {
-            set_error_and_die(e);
+            return set_error_and_die(e);
         }
     }
     return TronErrno::DeviceAlreadyConnected;
 }
 TronErrno Device::stop()
 {
-    LOG_LINE
     auto status = status_;
     if (status != DeviceStatus::Terminated) {
         status_ = DeviceStatus::Terminated;
         is_record_ = false;
         is_forward_ = false;
-        LOG_LINE
         thread_fetch_->join();
-        LOG_LINE
         thread_storage_->join();
-        LOG_LINE
         thread_forward_->join();
-        LOG_LINE
         delete thread_fetch_;
         delete thread_storage_;
         delete thread_forward_;
+        file_.flush();
         file_.close();
-        LOG_LINE
         return TronErrno::Success;
     }
     return TronErrno::DeviceAlreadyClosed;
@@ -90,10 +86,11 @@ TronErrno Device::start_record()
     }
     if (status == DeviceStatus::Inited) {
         if (!is_storage_path_set_) {
-            create_storage_folder();
+            return TronErrno::StorageFolderNoSet;
+        } else {
+            is_record_ = true;
+            return TronErrno::Success;
         }
-        is_record_ = true;
-        return TronErrno::Success;
     }
     return TronErrno::DeviceNotReady;
 }
@@ -153,6 +150,7 @@ TronErrno Device::set_storage(const std::string& folder)
 }
 TronErrno Device::set_parameter(const std::string& type, const std::string& value)
 {
+    printf("Set Parameter\n");
     auto status = status_;
     if (status == DeviceStatus::Error) {
         return TronErrno::InStatusError;
@@ -244,7 +242,9 @@ TronErrno Device::set_error_and_die(TronErrno e, const std::string& reason)
 {
     status_ = DeviceStatus::Error;
     last_errno_ = e;
-    last_errno_reason_ = reason;
+    if (!reason.empty()) {
+        last_errno_reason_ = reason;
+    }
     return e;
 }
 
@@ -257,7 +257,7 @@ TronErrno Device::create_storage_folder()
     }
     int ret = system(("mkdir -p '" + storage_path_ + "'").c_str());
     if (ret == 0) {
-        return open_new_storage_file();
+        return TronErrno::Success;
     }
     return set_error_and_die(TronErrno::CanNotCreateFolder);
 }
@@ -267,7 +267,10 @@ TronErrno Device::open_new_storage_file()
     if (status == DeviceStatus::Error) {
         return TronErrno::InStatusError;
     }
-    file_.close();
+    if (file_.is_open()) {
+        file_.flush();
+        file_.close();
+    }
 
     std::ostringstream filename;
     filename << storage_path_;
@@ -275,6 +278,7 @@ TronErrno Device::open_new_storage_file()
     filename.width(FileNameWidth);
     filename << file_number_counter_++;
     filename << ".bin";
+
     file_.open(filename.str(), std::ios::out | std::ios::binary);
 
     if (file_.is_open()) {
@@ -296,8 +300,7 @@ void Device::fetch_thread_function()
             break;
         }
         if (status == DeviceStatus::Inited) {
-            LOG_LINE
-            auto rawdata = do_fetch();
+            auto rawdata = fetch();
             last_data_timestamp_ns_ = rawdata->timestamp_receive_ns;
             if (is_record_) {
                 queue_storage_.push(rawdata);
@@ -318,11 +321,14 @@ void Device::storage_thread_function()
         if (status == DeviceStatus::Inited && is_storage_path_set_) {
             if (!queue_storage_.empty()) {
                 auto rawdata = queue_storage_.wait_and_pop();
-                if ((file_size_counter_ != 0) &&
-                    (file_size_counter_ + rawdata->length > FileMaxSize_)) {
+                if (file_number_counter_ == 0 && file_size_counter_ == 0) {
+                    open_new_storage_file();
+                } else if ((file_size_counter_ != 0) &&
+                           (file_size_counter_ + rawdata->length > FileMaxSize_)) {
                     open_new_storage_file();
                 }
-                file_.write(reinterpret_cast<const char*>(rawdata.get()), rawdata->length);
+                file_.write(reinterpret_cast<char*>(rawdata.get()), rawdata->length);
+                //file_.flush();
                 file_size_counter_ += rawdata->length;
                 total_file_size_counter_ += rawdata->length;
             }
@@ -339,7 +345,7 @@ void Device::forward_thread_function()
         if (status == DeviceStatus::Inited) {
             if (!queue_forward_.empty()) {
                 auto rawdata = queue_forward_.wait_and_pop();
-                auto data = do_convert(rawdata);
+                auto data = convert(rawdata);
                 // TODO
                 // Send Data via Socket
             }

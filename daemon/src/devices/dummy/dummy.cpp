@@ -15,9 +15,7 @@ namespace tron {
 Dummy::Dummy(int32_t id, const std::string& name) : Device(id, name) {}
 Dummy::~Dummy()
 {
-    LOG_LINE
-    stop();
-    LOG_LINE
+    do_disconnect();
 }
 
 DeviceType Dummy::get_type() const
@@ -25,7 +23,7 @@ DeviceType Dummy::get_type() const
     return DeviceType::Dummy;
 }
 
-TronErrno Dummy::do_connect()
+TronErrno Dummy::connect()
 {
     if (parameters_.count(DeviceParameterType::DummyValue)) {
         value_ = std::stoi(parameters_[DeviceParameterType::DummyValue]);
@@ -38,16 +36,21 @@ TronErrno Dummy::do_connect()
     } else {
         return set_error_and_die(TronErrno::InsufficientParameters, "Paramater DummyRate absent");
     }
+    
+    printf("PR_MS: %ld\n", period_ms_);
     return TronErrno::Success;
+}
+void Dummy::disconnect()
+{
+    do_disconnect();
 }
 void Dummy::do_disconnect()
 {
-    LOG_LINE
+    // Write Real Disconnection code here
     return;
-    LOG_LINE
 }
 
-std::shared_ptr<DeviceRawData> Dummy::do_fetch()
+std::shared_ptr<DeviceRawData> Dummy::fetch()
 {
     // Some Sensors Blocks, Simulate that
     std::this_thread::sleep_for(std::chrono::milliseconds(period_ms_));
@@ -79,11 +82,11 @@ std::shared_ptr<DeviceRawData> Dummy::do_fetch()
     // Return a Shared Ptr
     return std::shared_ptr<DeviceRawData>(data);
 }
-std::shared_ptr<SensorData> Dummy::do_convert(const std::shared_ptr<DeviceRawData>& rawdata)
+std::shared_ptr<SensorData> Dummy::convert(const std::shared_ptr<DeviceRawData>& rawdata)
 {
-    return dummy_do_convert(rawdata);
+    return do_convert(rawdata);
 }
-std::shared_ptr<SensorData> Dummy::dummy_do_convert(const std::shared_ptr<DeviceRawData>& rawdata)
+std::shared_ptr<SensorData> Dummy::do_convert(const std::shared_ptr<DeviceRawData>& rawdata)
 {
     // Create a Buff to Store Data
     int32_t total_length = sizeof(SensorData) + sizeof(DataDummy);

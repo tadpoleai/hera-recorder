@@ -12,6 +12,10 @@ namespace wayz {
 namespace tron {
 
 TronServiceHandler::TronServiceHandler() {}
+TronServiceHandler::~TronServiceHandler() {
+    LOG_LINE
+    reset();
+}
 void TronServiceHandler::create_devices(Result& _return,
                                         const std::vector<DeviceInitializer>& device_initializers)
 {
@@ -44,24 +48,24 @@ void TronServiceHandler::create_devices(Result& _return,
         auto type = DeviceType::_from_string_nocase_nothrow(type_str.c_str());
         if (!type) {
             _return.error = TronErrno::InvalidDeviceType;
-            _return.reason = "Device Type " + type_str + " is Invalid";
+            _return.reason = "Device Type \"" + type_str + "\" is Invalid";
             reset();
             return;
         }
-LOG_LINE
+        LOG_LINE
         auto name = device_initializer.name;
         if (!std::regex_match(name, name_regex)) {
             _return.error = TronErrno::InvalidDeviceName;
-            _return.reason = "Device Name " + name + " is Invalid";
+            _return.reason = "Device Name \"" + name + "\" is Invalid";
             reset();
             return;
         }
-LOG_LINE
+        LOG_LINE
         Device* device;
 
         switch (type.value()) {
         case DeviceType::Dummy:
-        LOG_LINE
+            LOG_LINE
             device = new Dummy(id++, name);
             LOG_LINE
             devices_.emplace_back(device);
@@ -74,7 +78,7 @@ LOG_LINE
             LOG_LINE
             return;
         }
-LOG_LINE
+        LOG_LINE
         for (const auto& parameter : device_initializer.parameters) {
             TronErrno e = devices_.back()->set_parameter(parameter.first, parameter.second);
             if (e != TronErrno::Success) {
@@ -112,6 +116,12 @@ void TronServiceHandler::set_storage(Result& _return, const std::string& folder)
     _return.error = TronErrno::Success;
     _return.reason = "OK";
 
+    if (devices_.size() == 0) {
+        _return.error = TronErrno::EmptyDeviceList;
+        _return.reason = "Device List is Empty";
+        return;
+    }
+
     for (const auto& device : devices_) {
         TronErrno e = device->set_storage(folder);
         if (e != TronErrno::Success) {
@@ -129,6 +139,12 @@ void TronServiceHandler::adjust_device_parameters(
     printf("adjust_device_parameters\n");
     _return.error = TronErrno::Success;
     _return.reason = "OK";
+
+    if (devices_.size() == 0) {
+        _return.error = TronErrno::EmptyDeviceList;
+        _return.reason = "Device List is Empty";
+        return;
+    }
 
     try {
         const auto& device = devices_.at(device_id);
@@ -156,15 +172,23 @@ void TronServiceHandler::control(Result& _return,
     _return.error = TronErrno::Success;
     _return.reason = "OK";
 
+    if (devices_.size() == 0) {
+        _return.error = TronErrno::EmptyDeviceList;
+        _return.reason = "Device List is Empty";
+        return;
+    }
+
     // Single Device
     if (!to_all) {
         try {
             const auto& device = devices_.at(device_id);
             TronErrno e;
+            LOG_LINE
 
             switch (command) {
             case ControlCommand::Start:
                 e = device->start();
+                LOG_LINE
                 break;
             case ControlCommand::Stop:
                 e = device->stop();
@@ -186,8 +210,11 @@ void TronServiceHandler::control(Result& _return,
                 break;
             }
             if (e != TronErrno::Success) {
+                LOG_LINE
                 _return.error = e;
+                LOG_LINE
                 if (e != TronErrno::InvalidControlCommand) {
+                    LOG_LINE
                     _return.reason = device->get_reason();
                 }
             }
@@ -197,6 +224,7 @@ void TronServiceHandler::control(Result& _return,
         }
     } else {
         // All Devices
+        LOG_LINE
         for (const auto& device : devices_) {
             TronErrno e;
             switch (command) {
@@ -233,7 +261,7 @@ void TronServiceHandler::control(Result& _return,
                 }
             }
         }
-    }
+    }  // else of if(!to_all)
 }
 
 void TronServiceHandler::reset()
