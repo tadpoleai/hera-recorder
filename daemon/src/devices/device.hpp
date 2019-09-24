@@ -45,6 +45,7 @@ public:
     virtual DeviceType get_type() const = 0;
     int32_t get_id() const;
     std::string get_name() const;
+    std::map<std::string, std::string> get_parameters() const;
     int64_t get_volume() const;
     std::string get_status() const;
     TronErrno get_errno() const;
@@ -77,7 +78,7 @@ private:
     int32_t id_;
     std::string name_;
     std::string storage_path_;
-    bool is_storage_path_set_;
+    mutable bool is_storage_path_set_;
     mutable int64_t file_number_counter_;
     mutable int64_t file_size_counter_;
     mutable int64_t total_file_size_counter_;
@@ -85,7 +86,7 @@ private:
     static const int64_t FileNameWidth = 4;
     std::ofstream file_;
 
-    mutable DeviceStatus status_;
+    volatile DeviceStatus status_;
     mutable TronErrno last_errno_;
     mutable std::string last_errno_reason_;
     mutable TimestampNs last_data_timestamp_ns_;

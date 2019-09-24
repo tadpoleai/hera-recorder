@@ -12,16 +12,20 @@ project(${PROJECT_NAME})
 
 find_package(Threads REQUIRED)
 
+set(RPC_GEN_CPP "rpc/gen-cpp")
+set(RPC_GEN_JS "rpc/gen-js")
 add_custom_command(
-    OUTPUT rpc/tron_constants.cpp
-    OUTPUT rpc/tron_constants.h
-    OUTPUT rpc/tron_types.cpp
-    OUTPUT rpc/tron_type.h
-    OUTPUT rpc/TronService.cpp
-    OUTPUT rpc/TronService.h
+    OUTPUT ${RPC_GEN_CPP}/tron_constants.cpp
+    OUTPUT ${RPC_GEN_CPP}/tron_constants.h
+    OUTPUT ${RPC_GEN_CPP}/tron_types.cpp
+    OUTPUT ${RPC_GEN_CPP}/tron_type.h
+    OUTPUT ${RPC_GEN_CPP}/TronService.cpp
+    OUTPUT ${RPC_GEN_CPP}/TronService.h
     DEPENDS rpc/tron.thrift
-    COMMAND "mkdir" "-p" "rpc"
-    COMMAND "thrift" "-r" "--strict" "-out" "rpc" "--gen" "cpp" "${CMAKE_CURRENT_SOURCE_DIR}/rpc/tron.thrift"
+    COMMAND "mkdir" "-p" "${RPC_GEN_CPP}"
+    COMMAND "thrift" "-r" "--strict" "-out" "${RPC_GEN_CPP}" "--gen" "cpp" "${CMAKE_CURRENT_SOURCE_DIR}/rpc/tron.thrift"
+    COMMAND "mkdir" "-p" "${RPC_GEN_JS}"
+    COMMAND "thrift" "-r" "--strict" "-out" "${RPC_GEN_JS}" "--gen" "js" "${CMAKE_CURRENT_SOURCE_DIR}/rpc/tron.thrift"
 )
 
 file(GLOB_RECURSE
@@ -33,9 +37,9 @@ include_directories(
 )
 add_library(common
     ${ALL_SRC}
-    rpc/tron_constants.cpp
-    rpc/tron_types.cpp
-    rpc/TronService.cpp
+    ${RPC_GEN_CPP}/tron_constants.cpp
+    ${RPC_GEN_CPP}/tron_types.cpp
+    ${RPC_GEN_CPP}/TronService.cpp
 )
 target_link_libraries(common
     Threads::Threads

@@ -13,7 +13,12 @@ namespace wayz {
 namespace tron {
 
 Dummy::Dummy(int32_t id, const std::string& name) : Device(id, name) {}
-Dummy::~Dummy() {}
+Dummy::~Dummy()
+{
+    LOG_LINE
+    stop();
+    LOG_LINE
+}
 
 DeviceType Dummy::get_type() const
 {
@@ -37,7 +42,9 @@ TronErrno Dummy::do_connect()
 }
 void Dummy::do_disconnect()
 {
+    LOG_LINE
     return;
+    LOG_LINE
 }
 
 std::shared_ptr<DeviceRawData> Dummy::do_fetch()
@@ -65,7 +72,9 @@ std::shared_ptr<DeviceRawData> Dummy::do_fetch()
     uint8_t* sensor_rawata_src = reinterpret_cast<uint8_t*>(&value_to_get_from_device);
 
     // Use Memcpy to fill Buff
-    memcpy(reinterpret_cast<uint8_t*>(data->rawdata_buf), sensor_rawata_src, received_rawdata_length);
+    memcpy(reinterpret_cast<uint8_t*>(data->rawdata_buf),
+           sensor_rawata_src,
+           received_rawdata_length);
 
     // Return a Shared Ptr
     return std::shared_ptr<DeviceRawData>(data);

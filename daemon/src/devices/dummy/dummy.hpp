@@ -13,7 +13,7 @@ public:
     Dummy(int32_t id, const std::string& name);
     Dummy(const Dummy&) = delete;
     Dummy& operator=(const Dummy&) = delete;
-    ~Dummy();
+    virtual ~Dummy();
 
     DeviceType get_type() const final;
 

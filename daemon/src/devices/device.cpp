@@ -36,9 +36,8 @@ Device::Device(int32_t id, const std::string& name) :
     thread_storage_ = new std::thread(&Device::storage_thread_function, this);
     thread_forward_ = new std::thread(&Device::forward_thread_function, this);
 }
-Device::~Device()
-{
-    stop();
+Device::~Device() {
+    LOG_LINE
 }
 
 // Control
@@ -61,19 +60,24 @@ TronErrno Device::start()
 }
 TronErrno Device::stop()
 {
+    LOG_LINE
     auto status = status_;
     if (status != DeviceStatus::Terminated) {
         status_ = DeviceStatus::Terminated;
         is_record_ = false;
         is_forward_ = false;
-        do_disconnect();
+        LOG_LINE
         thread_fetch_->join();
+        LOG_LINE
         thread_storage_->join();
+        LOG_LINE
         thread_forward_->join();
+        LOG_LINE
         delete thread_fetch_;
         delete thread_storage_;
         delete thread_forward_;
         file_.close();
+        LOG_LINE
         return TronErrno::Success;
     }
     return TronErrno::DeviceAlreadyClosed;
@@ -139,8 +143,11 @@ TronErrno Device::set_storage(const std::string& folder)
     }
     if (!is_storage_path_set_) {
         storage_path_ = folder + "/" + name_ + "/";
-        is_storage_path_set_ = true;
-        return create_storage_folder();
+        TronErrno e = create_storage_folder();
+        if (e == TronErrno::Success) {
+            is_storage_path_set_ = true;
+        }
+        return e;
     }
     return TronErrno::StorageFolderAlreadySet;
 }
@@ -181,6 +188,14 @@ int32_t Device::get_id() const
 std::string Device::get_name() const
 {
     return name_;
+}
+std::map<std::string, std::string> Device::get_parameters() const
+{
+    std::map<std::string, std::string> parameters;
+    for (const auto& parameter : parameters_) {
+        parameters[parameter.first._to_string()] = parameter.second;
+    }
+    return std::move(parameters);
 }
 int64_t Device::get_volume() const
 {
@@ -281,6 +296,7 @@ void Device::fetch_thread_function()
             break;
         }
         if (status == DeviceStatus::Inited) {
+            LOG_LINE
             auto rawdata = do_fetch();
             last_data_timestamp_ns_ = rawdata->timestamp_receive_ns;
             if (is_record_) {
@@ -299,15 +315,17 @@ void Device::storage_thread_function()
         if (status == DeviceStatus::Error || status == DeviceStatus::Terminated) {
             break;
         }
-        if (!queue_storage_.empty()) {
-            auto rawdata = queue_storage_.wait_and_pop();
-            if ((file_size_counter_ != 0) &&
-                (file_size_counter_ + rawdata->length > FileMaxSize_)) {
-                open_new_storage_file();
+        if (status == DeviceStatus::Inited && is_storage_path_set_) {
+            if (!queue_storage_.empty()) {
+                auto rawdata = queue_storage_.wait_and_pop();
+                if ((file_size_counter_ != 0) &&
+                    (file_size_counter_ + rawdata->length > FileMaxSize_)) {
+                    open_new_storage_file();
+                }
+                file_.write(reinterpret_cast<const char*>(rawdata.get()), rawdata->length);
+                file_size_counter_ += rawdata->length;
+                total_file_size_counter_ += rawdata->length;
             }
-            file_.write(reinterpret_cast<const char*>(rawdata.get()), rawdata->length);
-            file_size_counter_ += rawdata->length;
-            total_file_size_counter_ += rawdata->length;
         }
     }
 }
@@ -318,11 +336,13 @@ void Device::forward_thread_function()
         if (status == DeviceStatus::Error || status == DeviceStatus::Terminated) {
             break;
         }
-        if (!queue_forward_.empty()) {
-            auto rawdata = queue_forward_.wait_and_pop();
-            auto data = do_convert(rawdata);
-            // TODO
-            // Send Data via Socket
+        if (status == DeviceStatus::Inited) {
+            if (!queue_forward_.empty()) {
+                auto rawdata = queue_forward_.wait_and_pop();
+                auto data = do_convert(rawdata);
+                // TODO
+                // Send Data via Socket
+            }
         }
     }
 }

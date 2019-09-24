@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include <iostream>
+#define LOG_LINE std::cout<< "file: " << __FILE__ << " , line: " << __LINE__ <<std::endl;
+//#define LOG_LINE  
+
 #include <cstdint>
 namespace wayz {
 namespace tron {
@@ -16,6 +20,8 @@ enum TronErrno {
     InvalidDeviceName = 101,
     InvalidDeviceId = 102,
     InvalidControlCommand = 103,
+    EmptyDeviceList = 104,
+    DevicesAlreadyCreated = 105,
 
     CanNotOpenEthernetDevice = 203,
     CanNotOpenUsbDevice = 204,

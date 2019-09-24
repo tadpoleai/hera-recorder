@@ -2,8 +2,11 @@
 // You should copy it to another filename to avoid overwriting it.
 
 #include <thrift/protocol/TBinaryProtocol.h>
+#include <thrift/protocol/TJSONProtocol.h>
 #include <thrift/server/TSimpleServer.h>
 #include <thrift/transport/TBufferTransports.h>
+#include <thrift/transport/THttpServer.h>
+#include <thrift/transport/THttpTransport.h>
 #include <thrift/transport/TServerSocket.h>
 
 #include "tron_service_handler.hpp"
@@ -17,13 +20,11 @@ using namespace ::wayz::tron;
 int main(int argc, char** argv)
 {
     int port = 9090;
-    ::apache::thrift::stdcxx::shared_ptr<TronServiceHandler> handler(new TronServiceHandler());
-    ::apache::thrift::stdcxx::shared_ptr<TProcessor> processor(new TronServiceProcessor(handler));
-    ::apache::thrift::stdcxx::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
-    ::apache::thrift::stdcxx::shared_ptr<TTransportFactory> transportFactory(
-            new TBufferedTransportFactory());
-    ::apache::thrift::stdcxx::shared_ptr<TProtocolFactory> protocolFactory(
-            new TBinaryProtocolFactory());
+    std::shared_ptr<TronServiceHandler> handler(new TronServiceHandler());
+    std::shared_ptr<TProcessor> processor(new TronServiceProcessor(handler));
+    std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
+    std::shared_ptr<TTransportFactory> transportFactory(new THttpServerTransportFactory());
+    std::shared_ptr<TProtocolFactory> protocolFactory(new TJSONProtocolFactory());
 
     TSimpleServer server(processor, serverTransport, transportFactory, protocolFactory);
     server.serve();

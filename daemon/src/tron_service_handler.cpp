@@ -15,12 +15,30 @@ TronServiceHandler::TronServiceHandler() {}
 void TronServiceHandler::create_devices(Result& _return,
                                         const std::vector<DeviceInitializer>& device_initializers)
 {
+    printf("create_devices\n");
     _return.error = TronErrno::Success;
     _return.reason = "OK";
     int32_t id = 0;
+    LOG_LINE
+
+    if (devices_.size() != 0) {
+        _return.error = TronErrno::DevicesAlreadyCreated;
+        _return.reason = "Devices already Created";
+        return;
+    }
+    LOG_LINE
+
+    if (device_initializers.size() == 0) {
+        _return.error = TronErrno::EmptyDeviceList;
+        _return.reason = "Devices is Empty";
+        return;
+    }
+    LOG_LINE
 
     std::regex name_regex("[a-zA-Z0-9_]{1,31}");
+    LOG_LINE
     for (const auto& device_initializer : device_initializers) {
+        LOG_LINE
         auto type_str = device_initializer.type;
 
         auto type = DeviceType::_from_string_nocase_nothrow(type_str.c_str());
@@ -30,7 +48,7 @@ void TronServiceHandler::create_devices(Result& _return,
             reset();
             return;
         }
-
+LOG_LINE
         auto name = device_initializer.name;
         if (!std::regex_match(name, name_regex)) {
             _return.error = TronErrno::InvalidDeviceName;
@@ -38,21 +56,26 @@ void TronServiceHandler::create_devices(Result& _return,
             reset();
             return;
         }
-
+LOG_LINE
         Device* device;
 
         switch (type.value()) {
         case DeviceType::Dummy:
+        LOG_LINE
             device = new Dummy(id++, name);
+            LOG_LINE
             devices_.emplace_back(device);
+            LOG_LINE
+            break;
         default:
             _return.error = TronErrno::InvalidDeviceType;
             _return.reason = "Device Type " + type_str + " is Invalid";
             reset();
+            LOG_LINE
             return;
         }
-
-        for (const auto& parameter : device_initializer.parameter) {
+LOG_LINE
+        for (const auto& parameter : device_initializer.parameters) {
             TronErrno e = devices_.back()->set_parameter(parameter.first, parameter.second);
             if (e != TronErrno::Success) {
                 _return.error = devices_.back()->get_errno();
@@ -66,6 +89,7 @@ void TronServiceHandler::create_devices(Result& _return,
 
 void TronServiceHandler::get_informations(std::vector<DeviceInformation>& _return)
 {
+    printf("get_informations\n");
     for (const auto& device : devices_) {
         DeviceInformation device_information;
         device_information.id = device->get_id();
@@ -75,6 +99,7 @@ void TronServiceHandler::get_informations(std::vector<DeviceInformation>& _retur
         device_information.is_record = device->get_is_record();
         device_information.is_forward = device->get_is_forward();
         device_information.volume = device->get_volume();
+        device_information.parameters = device->get_parameters();
         device_information.error = device->get_errno();
         device_information.reason = device->get_reason();
         _return.emplace_back(device_information);
@@ -83,6 +108,7 @@ void TronServiceHandler::get_informations(std::vector<DeviceInformation>& _retur
 
 void TronServiceHandler::set_storage(Result& _return, const std::string& folder)
 {
+    printf("set_storage\n");
     _return.error = TronErrno::Success;
     _return.reason = "OK";
 
@@ -100,6 +126,7 @@ void TronServiceHandler::adjust_device_parameters(
         const int32_t device_id,
         const std::map<std::string, std::string>& parameters)
 {
+    printf("adjust_device_parameters\n");
     _return.error = TronErrno::Success;
     _return.reason = "OK";
 
@@ -125,6 +152,7 @@ void TronServiceHandler::control(Result& _return,
                                  const bool to_all,
                                  const int32_t device_id)
 {
+    printf("control\n");
     _return.error = TronErrno::Success;
     _return.reason = "OK";
 
@@ -208,8 +236,11 @@ void TronServiceHandler::control(Result& _return,
     }
 }
 
-void TronServiceHandler::reset() {
+void TronServiceHandler::reset()
+{
+    LOG_LINE
     devices_.clear();
+    LOG_LINE
 }
 
 }  // namespace tron

@@ -5,7 +5,7 @@
 struct DeviceInitializer {
     1:required string type;
     2:required string name;
-    3:required map<string, string> parameter;
+    3:required map<string, string> parameters;
 }
 
 struct DeviceInformation {
@@ -16,13 +16,14 @@ struct DeviceInformation {
     5:required bool is_record;
     6:required bool is_forward;
     7:required i32 volume;
+    8:required map<string, string> parameters;
     20:required i32 error;
-    21:optional string reason;
+    21:required string reason;
 }
 
 struct Result {
     1:required i32 error;
-    2:optional string reason;
+    2:required string reason;
 }
 
 enum ControlCommand {
