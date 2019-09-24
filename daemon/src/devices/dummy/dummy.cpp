@@ -91,7 +91,8 @@ std::shared_ptr<SensorData> Dummy::dummy_do_convert(const std::shared_ptr<Device
     DataDummy* data_dummy_buf = reinterpret_cast<DataDummy*>(data->data_buf);
 
     // Parse Rawdata
-    int32_t value_of_dummy = *(reinterpret_cast<int32_t*>(rawdata->rawdata_buf));
+    const auto* rawdata_buf = rawdata->rawdata_buf;
+    int32_t value_of_dummy = *(reinterpret_cast<const int32_t*>(rawdata_buf));
 
     // Fullfil Real Data
     data_dummy_buf->dummy_int = value_of_dummy;
