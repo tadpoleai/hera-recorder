@@ -13,7 +13,6 @@ project(${PROJECT_NAME})
 find_package(Threads REQUIRED)
 
 set(RPC_GEN_CPP "rpc/gen-cpp")
-set(RPC_GEN_JS "rpc/gen-js")
 add_custom_command(
     OUTPUT ${RPC_GEN_CPP}/tron_constants.cpp
     OUTPUT ${RPC_GEN_CPP}/tron_constants.h
@@ -24,9 +23,7 @@ add_custom_command(
     DEPENDS rpc/tron.thrift
     COMMAND "mkdir" "-p" "${RPC_GEN_CPP}"
     COMMAND "thrift" "-r" "--strict" "-out" "${RPC_GEN_CPP}" "--gen" "cpp" "${CMAKE_CURRENT_SOURCE_DIR}/rpc/tron.thrift"
-    COMMAND "mkdir" "-p" "${RPC_GEN_JS}"
-    COMMAND "thrift" "-r" "--strict" "-out" "${RPC_GEN_JS}" "--gen" "js" "${CMAKE_CURRENT_SOURCE_DIR}/rpc/tron.thrift"
-)
+ )
 
 file(GLOB_RECURSE
     ALL_SRC
