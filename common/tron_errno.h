@@ -15,6 +15,7 @@ namespace tron {
 enum TronErrno {
     Success = 0,
     InStatusError = 10,
+    ConnectionFailed = 20,
 
     InvalidDeviceType = 100,
     InvalidDeviceName = 101,
