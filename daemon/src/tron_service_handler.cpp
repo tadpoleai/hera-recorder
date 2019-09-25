@@ -12,8 +12,8 @@ namespace wayz {
 namespace tron {
 
 TronServiceHandler::TronServiceHandler() {}
-TronServiceHandler::~TronServiceHandler() {
-    LOG_LINE
+TronServiceHandler::~TronServiceHandler()
+{
     reset();
 }
 void TronServiceHandler::create_devices(Result& _return,
@@ -23,26 +23,21 @@ void TronServiceHandler::create_devices(Result& _return,
     _return.error = TronErrno::Success;
     _return.reason = "OK";
     int32_t id = 0;
-    LOG_LINE
 
     if (devices_.size() != 0) {
         _return.error = TronErrno::DevicesAlreadyCreated;
         _return.reason = "Devices already Created";
         return;
     }
-    LOG_LINE
 
     if (device_initializers.size() == 0) {
         _return.error = TronErrno::EmptyDeviceList;
         _return.reason = "Devices is Empty";
         return;
     }
-    LOG_LINE
 
     std::regex name_regex("[a-zA-Z0-9_]{1,31}");
-    LOG_LINE
     for (const auto& device_initializer : device_initializers) {
-        LOG_LINE
         auto type_str = device_initializer.type;
 
         auto type = DeviceType::_from_string_nocase_nothrow(type_str.c_str());
@@ -52,7 +47,6 @@ void TronServiceHandler::create_devices(Result& _return,
             reset();
             return;
         }
-        LOG_LINE
         auto name = device_initializer.name;
         if (!std::regex_match(name, name_regex)) {
             _return.error = TronErrno::InvalidDeviceName;
@@ -60,25 +54,20 @@ void TronServiceHandler::create_devices(Result& _return,
             reset();
             return;
         }
-        LOG_LINE
         Device* device;
 
         switch (type.value()) {
         case DeviceType::Dummy:
-            LOG_LINE
             device = new Dummy(id++, name);
-            LOG_LINE
             devices_.emplace_back(device);
-            LOG_LINE
             break;
         default:
             _return.error = TronErrno::InvalidDeviceType;
             _return.reason = "Device Type " + type_str + " is Invalid";
             reset();
-            LOG_LINE
             return;
         }
-        LOG_LINE
+
         for (const auto& parameter : device_initializer.parameters) {
             TronErrno e = devices_.back()->set_parameter(parameter.first, parameter.second);
             if (e != TronErrno::Success) {
@@ -183,12 +172,10 @@ void TronServiceHandler::control(Result& _return,
         try {
             const auto& device = devices_.at(device_id);
             TronErrno e;
-            LOG_LINE
 
             switch (command) {
             case ControlCommand::Start:
                 e = device->start();
-                LOG_LINE
                 break;
             case ControlCommand::Stop:
                 e = device->stop();
@@ -210,11 +197,8 @@ void TronServiceHandler::control(Result& _return,
                 break;
             }
             if (e != TronErrno::Success) {
-                LOG_LINE
                 _return.error = e;
-                LOG_LINE
                 if (e != TronErrno::InvalidControlCommand) {
-                    LOG_LINE
                     _return.reason = device->get_reason();
                 }
             }
@@ -224,7 +208,6 @@ void TronServiceHandler::control(Result& _return,
         }
     } else {
         // All Devices
-        LOG_LINE
         for (const auto& device : devices_) {
             TronErrno e;
             switch (command) {
@@ -266,9 +249,7 @@ void TronServiceHandler::control(Result& _return,
 
 void TronServiceHandler::reset()
 {
-    LOG_LINE
     devices_.clear();
-    LOG_LINE
 }
 
 }  // namespace tron
