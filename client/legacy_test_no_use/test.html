@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Thrift Javascript Bindings - Tutorial Example</title>
+    <script src="/Users/rize/Documents/Wayz/tron-data-recorder/client/lib/thrift.js"></script>
+    <script src="/Users/rize/Documents/Wayz/tron-data-recorder/build/common/rpc/gen-js/tron_types.js"></script>
+    <script src="/Users/rize/Documents/Wayz/tron-data-recorder/build/common/rpc/gen-js/TronService.js"></script>
+</head>
+
+<body>
+    <h2>Thrift Javascript Bindings</h2>
+    <button id="btn_get_informations">get_informations</button>
+    <button id="btn_create_devices">create_devices</button>
+    <button id="btn_start">start</button>
+    <button id="btn_record">record</button>
+    <button id="btn_set_storage">set_storage</button>
+
+    <button id="btn_all">DO_ALL</button>
+    <button id="btn_reset">reset</button>
+</body>
+
+<script type="text/javascript">
+    function get_informations() {
+        var transport = new Thrift.TXHRTransport("http://10.211.55.6:9090/tron");
+        var protocol = new Thrift.TJSONProtocol(transport);
+        var client = new TronServiceClient(protocol);
+        var msg = client.get_informations();
+        console.log(msg);
+    }
+    function create_devices() {
+        var transport = new Thrift.TXHRTransport("http://10.211.55.6:9090/tron");
+        var protocol = new Thrift.TJSONProtocol(transport);
+        var client = new TronServiceClient(protocol);
+        
+        var devices = [
+            { type: "dummy", name: "dum0", parameters: {dummyRate:"1", dummyValue:"0xCC"}}
+        ];
+        var msg = client.create_devices(devices);
+        console.log(msg);
+    }
+    function start() {
+        var transport = new Thrift.TXHRTransport("http://10.211.55.6:9090/tron");
+        var protocol = new Thrift.TJSONProtocol(transport);
+        var client = new TronServiceClient(protocol);
+        var msg = client.control(ControlCommand.Start);
+        console.log(msg);
+    }
+    function record() {
+        var transport = new Thrift.TXHRTransport("http://10.211.55.6:9090/tron");
+        var protocol = new Thrift.TJSONProtocol(transport);
+        var client = new TronServiceClient(protocol);
+        var msg = client.control(ControlCommand.StartRecord);
+        console.log(msg);
+    }
+    function reset() {
+        var transport = new Thrift.TXHRTransport("http://10.211.55.6:9090/tron");
+        var protocol = new Thrift.TJSONProtocol(transport);
+        var client = new TronServiceClient(protocol);
+        var msg = client.control(ControlCommand.Reset, true);
+        console.log(msg);
+    }
+    function set_storage() {
+        var transport = new Thrift.TXHRTransport("http://10.211.55.6:9090/tron");
+        var protocol = new Thrift.TJSONProtocol(transport);
+        var client = new TronServiceClient(protocol);
+        var msg = client.set_storage("/home/rize/tron_record_test/0");
+        console.log(msg);
+    }
+    function all() {
+        create_devices()
+        set_storage()
+        start()
+        record()
+        get_informations()
+    }
+    document.getElementById("btn_get_informations").addEventListener("click", get_informations, false);
+    document.getElementById("btn_create_devices").addEventListener("click", create_devices, false);
+    document.getElementById("btn_start").addEventListener("click", start, false);
+    document.getElementById("btn_record").addEventListener("click", record, false);
+    document.getElementById("btn_set_storage").addEventListener("click", set_storage, false);
+    document.getElementById("btn_all").addEventListener("click", all, false);
+    document.getElementById("btn_reset").addEventListener("click", reset, false);
+</script>
+
+</html>

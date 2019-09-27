@@ -6,8 +6,9 @@
 #include <ctime>
 
 namespace wayz {
+namespace tron {
 
-TimestampNs getSystemTimestamp()
+TimestampNs get_system_timestamp()
 {
     timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
@@ -15,4 +16,5 @@ TimestampNs getSystemTimestamp()
     return time;
 }
 
+}  // namespace tron
 }  // namespace wayz

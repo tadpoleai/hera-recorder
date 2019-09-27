@@ -5,15 +5,14 @@
 #pragma once
 
 #include <cstdint>
-
 namespace wayz {
 namespace tron {
 
-using TimestampNs = int64_t;
-using DurationNs = int64_t;
-constexpr int64_t OneSecondToNs = (int64_t)(1000000000L);
-
-TimestampNs get_system_timestamp();
+struct DataDummy {
+    int32_t dummy_int;
+    float dummy_float;
+    char dummy_char_array[4];
+};
 
 }  // namespace tron
 }  // namespace wayz
