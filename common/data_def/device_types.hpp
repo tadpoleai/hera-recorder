@@ -11,7 +11,6 @@
 #include "data_imu.hpp"
 #include "device_data.hpp"
 #include "data_lidar.hpp"
-#include "sensor_data.hpp"
 
 namespace wayz {
 namespace tron {
