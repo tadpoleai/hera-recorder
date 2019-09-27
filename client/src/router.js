@@ -5,7 +5,7 @@ Vue.use(Router);
 
 export default new Router({
   // eslint-disable-next-line
-    scrollBehavior(to, from, savedPosition) {
+  scrollBehavior(to, from, savedPosition) {
     if (to.hash) {
       return {
         selector: to.hash,
@@ -32,14 +32,19 @@ export default new Router({
       component: () => import('./views/Home.vue'),
     },
     {
-      path: '/device',
-      name: 'Device',
-      component: () => import('./views/Device.vue'),
+      path: '/acquisition',
+      name: 'Acquisition',
+      component: () => import('./views/Acquisition.vue'),
     },
     {
-      path: '/config',
-      name: 'Config',
-      component: () => import('./views/Config.vue'),
+      path: '/monitor',
+      name: 'Monitor',
+      component: () => import('./views/Monitor.vue'),
+    },
+    {
+      path: '/storage',
+      name: 'Storage',
+      component: () => import('./views/Storage.vue'),
     },
   ],
 });

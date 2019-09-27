@@ -4,22 +4,24 @@
       <template v-for="entry in entries">
         <!-- single entry -->
         <md-list-item v-if="!entry.children" :key="entry.to" :to="entry.to">
-          <md-icon>{{entry.icon}}</md-icon>
+          <md-icon :md-src='require("@/assets/icons/" + entry.icon + ".svg")'></md-icon>
           <span class="md-list-item-text">{{$t(entry.name)}}</span>
         </md-list-item>
 
         <!-- entry with children -->
         <md-list-item v-else :key="entry.to" md-expand :md-expanded="true">
-          <md-icon>{{entry.icon}}</md-icon>
+          <md-icon :md-src='require("@/assets/icons/" + entry.icon + ".svg")'></md-icon>
           <span class="md-list-item-text">{{$t(entry.name)}}</span>
 
           <md-list slot="md-expand">
             <md-list-item
               v-for="child in entry.children"
               :key="child.to"
-              :to="entry.to+'#'+child.to"
+              :to="entry.to + '#' + child.to"
               class="md-inset"
-            >{{$t(child.name)}}</md-list-item>
+            ><md-icon :md-src='require("@/assets/icons/" + child.icon + ".svg")'></md-icon>
+            <span class="md-list-item-text">{{$t(child.name)}}</span>
+            </md-list-item>
           </md-list>
         </md-list-item>
       </template>
@@ -29,7 +31,7 @@
 
 <script>
 export default {
-  name: 'NaviDesktop',
+  name: 'navi-desktop',
   props: { entries: Array },
 };
 </script>

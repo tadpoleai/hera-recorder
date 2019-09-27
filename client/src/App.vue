@@ -1,35 +1,47 @@
 <template>
   <div id="app" :style="{'font-family': fontFamily}">
-    <TopBarDesktop :title="title"/>
-    <NaviDesktop :entries="entries" />
+    <toolbar-desktop :title="title" />
+    <navi-desktop :entries="entries" />
+    <div id="view">
+      <toolbar-mobile :title="title" />
+      <keep-alive>
+        <router-view id="router-view" />
+      </keep-alive>
+    </div>
+    <navi-mobile :entries="entries" />
   </div>
 </template>
 
 <script>
-import TopBarDesktop from './components/TopBarDesktop.vue';
+import ToolbarDesktop from './components/ToolbarDesktop.vue';
+import ToolbarMobile from './components/ToolbarMobile.vue';
 import NaviDesktop from './components/NaviDesktop.vue';
+import NaviMobile from './components/NaviMobile.vue';
 
 export default {
   name: 'app',
   components: {
-    TopBarDesktop,
+    ToolbarDesktop,
+    ToolbarMobile,
     NaviDesktop,
+    NaviMobile,
   },
   data() {
     return {
-      title: 'Tron V5',
+      title: 'Tron Platform',
       entries: [
         { to: 'home', name: 'Home', icon: 'home' },
         {
           to: 'acquisition',
           name: 'Acquisition',
-          icon: 'acquisition',
+          icon: 'device',
           children: [
-            { to: 'control', name: 'Acquisition Control' },
-            { to: 'profile', name: 'Acquisition Profile' },
+            { to: 'control', name: 'Control', icon: 'power-setting' },
+            { to: 'profile', name: 'Profile', icon: 'description' },
           ],
         },
-        { to: 'devices', name: 'Devices', icon: 'devices' },
+        { to: 'monitor', name: 'Devices Monitoring', icon: 'pageview' },
+        { to: 'storage', name: 'Storage', icon: 'storage' },
       ],
     };
   },
@@ -51,16 +63,22 @@ export default {
   "default",
   (
     primary: md-get-palette-color(indigo, 700),
-    accent: md-get-palette-color(indigo, A200),
+    accent: md-get-palette-color(purple, A200)
   )
 );
 @import "~vue-material/dist/theme/all"; // Apply the theme
+
+.md-card {
+  margin: 4px;
+  display: inline-block;
+  vertical-align: top;
+};
 </style>
 
-<style lang="scss">
+<style lang="scss" scoped>
 @import "~vue-material/src/components/MdLayout/mixins";
 
-.view {
+#view {
   padding: 64px 0 0 256px;
   @include md-layout-small {
     padding: 48px 0 0 256px;

@@ -1,6 +1,6 @@
 import TronErrno from './tron_errno';
 
-const tronApiUri = 'http://10.211.55.6:9090/tron';
+const TronApiUri = 'http://10.211.55.6:9090/tron';
 
 const ConnectionFailedMsg = {
   error: TronErrno.ConnectionFailed,
@@ -9,7 +9,7 @@ const ConnectionFailedMsg = {
 
 async function createDevices(deviceInitializers) {
   try {
-    const transport = new Thrift.TFramedTransport(tronApiUri);
+    const transport = new Thrift.TFramedTransport(TronApiUri);
     const protocol = new Thrift.TJSONProtocol(transport);
     const client = new TronServiceClient(protocol);
     return client.create_devices(deviceInitializers);
@@ -20,7 +20,7 @@ async function createDevices(deviceInitializers) {
 
 async function getInformations() {
   try {
-    const transport = new Thrift.TXHRTransport(tronApiUri);
+    const transport = new Thrift.TXHRTransport(TronApiUri);
     const protocol = new Thrift.TJSONProtocol(transport);
     const client = new TronServiceClient(protocol);
     const result = {
@@ -36,7 +36,7 @@ async function getInformations() {
 
 async function setStorage(folder) {
   try {
-    const transport = new Thrift.TXHRTransport(tronApiUri);
+    const transport = new Thrift.TXHRTransport(TronApiUri);
     const protocol = new Thrift.TJSONProtocol(transport);
     const client = new TronServiceClient(protocol);
     return client.set_storage(folder);
@@ -47,7 +47,7 @@ async function setStorage(folder) {
 
 async function adjustDeviceParameters(deviceId, parameters) {
   try {
-    const transport = new Thrift.TXHRTransport(tronApiUri);
+    const transport = new Thrift.TXHRTransport(TronApiUri);
     const protocol = new Thrift.TJSONProtocol(transport);
     const client = new TronServiceClient(protocol);
     return client.adjust_device_parameters(deviceId, parameters);
@@ -58,7 +58,7 @@ async function adjustDeviceParameters(deviceId, parameters) {
 
 async function control(command) {
   try {
-    const transport = new Thrift.TXHRTransport(tronApiUri);
+    const transport = new Thrift.TXHRTransport(TronApiUri);
     const protocol = new Thrift.TJSONProtocol(transport);
     const client = new TronServiceClient(protocol);
     return client.control(command, true, 0);
