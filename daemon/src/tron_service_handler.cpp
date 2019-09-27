@@ -152,10 +152,7 @@ void TronServiceHandler::adjust_device_parameters(
     return;
 }
 
-void TronServiceHandler::control(Result& _return,
-                                 const ControlCommand::type command,
-                                 const bool to_all,
-                                 const int32_t device_id)
+void TronServiceHandler::control(Result& _return, const ControlCommand::type command)
 {
     printf("control\n");
     _return.error = TronErrno::Success;
@@ -167,84 +164,43 @@ void TronServiceHandler::control(Result& _return,
         return;
     }
 
-    // Single Device
-    if (!to_all) {
-        try {
-            const auto& device = devices_.at(device_id);
-            TronErrno e;
-
-            switch (command) {
-            case ControlCommand::Start:
-                e = device->start();
-                break;
-            case ControlCommand::Stop:
-                e = device->stop();
-                break;
-            case ControlCommand::StartRecord:
-                e = device->start_record();
-                break;
-            case ControlCommand::PauseRecord:
-                e = device->pause_record();
-                break;
-            case ControlCommand::EnableForward:
-                e = device->enable_forward();
-                break;
-            case ControlCommand::DisableForward:
-                e = device->disable_forward();
-                break;
-            default:
-                e = TronErrno::InvalidControlCommand;
-                break;
-            }
-            if (e != TronErrno::Success) {
-                _return.error = e;
-                if (e != TronErrno::InvalidControlCommand) {
-                    _return.reason = device->get_reason();
-                }
-            }
-        } catch (std::out_of_range& oor) {
-            _return.error = TronErrno::InvalidDeviceId;
-            _return.reason = "Device Id " + std::to_string(device_id) + " Out of Range";
+    // All Devices
+    for (const auto& device : devices_) {
+        TronErrno e;
+        switch (command) {
+        case ControlCommand::Start:
+            e = device->start();
+            break;
+        case ControlCommand::Stop:
+            e = device->stop();
+            break;
+        case ControlCommand::StartRecord:
+            e = device->start_record();
+            break;
+        case ControlCommand::PauseRecord:
+            e = device->pause_record();
+            break;
+        case ControlCommand::EnableForward:
+            e = device->enable_forward();
+            break;
+        case ControlCommand::DisableForward:
+            e = device->disable_forward();
+            break;
+        case ControlCommand::Reset:
+            e = TronErrno::Success;
+            reset();
+            break;
+        default:
+            e = TronErrno::InvalidControlCommand;
+            break;
         }
-    } else {
-        // All Devices
-        for (const auto& device : devices_) {
-            TronErrno e;
-            switch (command) {
-            case ControlCommand::Start:
-                e = device->start();
-                break;
-            case ControlCommand::Stop:
-                e = device->stop();
-                break;
-            case ControlCommand::StartRecord:
-                e = device->start_record();
-                break;
-            case ControlCommand::PauseRecord:
-                e = device->pause_record();
-                break;
-            case ControlCommand::EnableForward:
-                e = device->enable_forward();
-                break;
-            case ControlCommand::DisableForward:
-                e = device->disable_forward();
-                break;
-            case ControlCommand::Reset:
-                e = TronErrno::Success;
-                reset();
-                break;
-            default:
-                e = TronErrno::InvalidControlCommand;
-                break;
-            }
-            if (e != TronErrno::Success) {
-                _return.error = e;
-                if (e != TronErrno::InvalidControlCommand) {
-                    _return.reason = device->get_reason();
-                }
+        if (e != TronErrno::Success) {
+            _return.error = e;
+            if (e != TronErrno::InvalidControlCommand) {
+                _return.reason = device->get_reason();
             }
         }
-    }  // else of if(!to_all)
+    }
 }
 
 void TronServiceHandler::reset()

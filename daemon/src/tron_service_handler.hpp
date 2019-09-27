@@ -24,10 +24,7 @@ public:
     void adjust_device_parameters(Result& _return,
                                   const int32_t device_id,
                                   const std::map<std::string, std::string>& parameters) final;
-    void control(Result& _return,
-                 const ControlCommand::type command,
-                 const bool to_all,
-                 const int32_t device_id) final;
+    void control(Result& _return, const ControlCommand::type command) final;
     void reset();
 
 private:
