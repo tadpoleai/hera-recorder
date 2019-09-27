@@ -14,22 +14,9 @@ static const int kFiringPerPKT = 12;
 
 static const int kDataBufferSize = 1500;
 static const int kPositionBufferSize = 800;
-const std::vector<double> kLut16 = {-15.0,
-                                    1.0,
-                                    -13.0,
-                                    3.0,
-                                    -11.0,
-                                    5.0,
-                                    -9.0,
-                                    7.0,
-                                    -7.0,
-                                    9.0,
-                                    -5.0,
-                                    11.0,
-                                    -3.0,
-                                    13.0,
-                                    -1.0,
-                                    15.0};
+const std::vector<double> kLut16 = {-15.0, 1.0, -13.0, 3.0, -11.0, 5.0,
+                                    -9.0,  7.0, -7.0,  9.0, -5.0,  11.0,
+                                    -3.0,  13.0,-1.0,  15.0};
 const std::vector<double> kLut32 = {-30.67, -9.3299999, -29.33, -8.0, -28,   -6.6700001,
                                     -26.67, -5.3299999, -25.33, -4.0, -24.0, -2.6700001,
                                     -22.67, -1.33,      -21.33, 0.0,  -20.0, 1.33,
