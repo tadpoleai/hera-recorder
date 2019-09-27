@@ -42,5 +42,5 @@ service TronService
     list<DeviceInformation> get_informations();
     Result set_storage(1:string folder);
     Result adjust_device_parameters(1:i32 device_id, 2:map<string, string> parameters);
-    Result control(1:ControlCommand command, 2:bool to_all, 3: i32 device_id);
+    Result control(1:ControlCommand command);
 }
