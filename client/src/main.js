@@ -5,6 +5,7 @@ import 'vue-material/dist/vue-material.min.css';
 import router from './router';
 import App from './App.vue';
 import './registerServiceWorker';
+import './functions/client_api';
 
 const profileZh = require('./i18n/zh');
 

@@ -68,11 +68,6 @@ export default {
 );
 @import "~vue-material/dist/theme/all"; // Apply the theme
 
-.md-card {
-  margin: 4px;
-  display: inline-block;
-  vertical-align: top;
-};
 </style>
 
 <style lang="scss" scoped>

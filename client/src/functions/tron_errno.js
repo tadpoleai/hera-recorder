@@ -40,4 +40,12 @@ const TronErrno = {
   Reserved: 9999,
 };
 
-export default TronErrno;
+const TronErrnoString = {};
+Object.keys(TronErrno).forEach((key) => {
+  TronErrnoString[TronErrno[key]] = key;
+});
+
+export default {
+  TronErrno,
+  TronErrnoString,
+};

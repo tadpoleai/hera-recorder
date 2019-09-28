@@ -7,31 +7,34 @@ const ConnectionFailedMsg = {
   reason: 'Connection to Tron Daemon Failed',
 };
 
-async function createDevices(deviceInitializers) {
-  try {
-    const transport = new Thrift.TFramedTransport(TronApiUri);
-    const protocol = new Thrift.TJSONProtocol(transport);
-    const client = new TronServiceClient(protocol);
-    return client.create_devices(deviceInitializers);
-  } catch (error) {
-    return ConnectionFailedMsg;
-  }
+const transport = new Thrift.TXHRTransport(TronApiUri);
+const protocol = new Thrift.TJSONProtocol(transport);
+const client = new TronServiceClient(protocol);
+
+function createDevices(deviceInitializers) {
+  return new Promise((resolve) => {
+    client.create_devices(deviceInitializers, (result) => {
+      if (result instanceof Error) {
+        resolve(ConnectionFailedMsg);
+      } else {
+        resolve(result);
+      }
+    });
+  });
 }
 
-async function getInformations() {
-  try {
-    const transport = new Thrift.TXHRTransport(TronApiUri);
-    const protocol = new Thrift.TJSONProtocol(transport);
-    const client = new TronServiceClient(protocol);
-    const result = {
-      error: 0,
-      reason: 'OK',
-      data: client.get_informations(),
-    };
-    return result;
-  } catch (error) {
-    return ConnectionFailedMsg;
-  }
+function getInformations() {
+  return new Promise((resolve) => {
+    client.create_devices([], (result) => {
+      console.log(result.error);
+      console.log(typeof result);
+      resolve({
+        error: 0,
+        reason: 'OK',
+        devices: result,
+      });
+    });
+  });
 }
 
 async function setStorage(folder) {
@@ -57,14 +60,15 @@ async function adjustDeviceParameters(deviceId, parameters) {
 }
 
 async function control(command) {
-  try {
-    const transport = new Thrift.TXHRTransport(TronApiUri);
-    const protocol = new Thrift.TJSONProtocol(transport);
-    const client = new TronServiceClient(protocol);
-    return client.control(command, true, 0);
-  } catch (error) {
-    return ConnectionFailedMsg;
-  }
+  return new Promise((resolve) => {
+    client.control(command, (result) => {
+      if (result instanceof Error) {
+        resolve(ConnectionFailedMsg);
+      } else {
+        resolve(result);
+      }
+    });
+  });
 }
 
 export default {
