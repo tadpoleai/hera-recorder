@@ -19,7 +19,7 @@ public:
     virtual ~TronServiceHandler();
     void create_devices(Result& _return,
                         const std::vector<DeviceInitializer>& device_initializers) final;
-    void get_informations(std::vector<DeviceInformation>& _return) final;
+    void get_information(ResultInformation& _return) final;
     void set_storage(Result& _return, const std::string& folder) final;
     void adjust_device_parameters(Result& _return,
                                   const int32_t device_id,

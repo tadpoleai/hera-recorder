@@ -80,22 +80,53 @@ void TronServiceHandler::create_devices(Result& _return,
     }
 }
 
-void TronServiceHandler::get_informations(std::vector<DeviceInformation>& _return)
+void TronServiceHandler::get_information(ResultInformation& _return)
 {
     printf("get_informations\n");
+    _return.error = TronErrno::Success;
+    _return.reason = "OK";
+    _return.can_create = true;
+
+    if (devices_.size()) {
+        _return.can_create = false;
+        _return.is_error = false;
+        _return.is_storage_set = false;
+
+        _return.can_start = true;
+        _return.can_stop = true;
+        _return.can_record = true;
+        _return.can_pause = true;
+        _return.is_record = true;
+        _return.can_set_storage = true;
+    }
+
     for (const auto& device : devices_) {
-        DeviceInformation device_information;
-        device_information.id = device->get_id();
-        device_information.type = device->get_type()._to_string();
-        device_information.name = device->get_name();
-        device_information.status = device->get_status();
-        device_information.is_record = device->get_is_record();
-        device_information.is_forward = device->get_is_forward();
-        device_information.volume = device->get_volume();
-        device_information.parameters = device->get_parameters();
-        device_information.error = device->get_errno();
-        device_information.reason = device->get_reason();
-        _return.emplace_back(device_information);
+        DeviceInformation info;
+        info.id = device->get_id();
+        info.type = device->get_type()._to_string();
+        info.name = device->get_name();
+        info.status = device->get_status();
+        bool is_record = device->get_is_record();
+        info.is_forward = device->get_is_forward();
+        info.volume = device->get_volume();
+        info.parameters = device->get_parameters();
+        bool is_storage_set = device->get_is_storage_set();
+        std::string storage_folder = device->get_storage_folder();
+        info.error = device->get_errno();
+        info.reason = device->get_reason();
+
+        _return.is_error = _return.is_error || info.status == "Error";
+        _return.is_storage_set = _return.is_storage_set || _return.is_storage_set;
+
+        _return.can_start = _return.can_start && info.status == "Uninited";
+        _return.can_stop = true;
+        _return.can_record = _return.can_record && info.status == "Inited" && !is_record;
+        _return.can_pause = _return.can_pause && info.status == "Inited" && is_record;
+        _return.is_record = _return.is_record && is_record;
+        _return.can_set_storage = _return.can_set_storage && !is_storage_set;
+        _return.storage_folder = std::move(storage_folder);
+        
+        _return.devices.emplace_back(info);
     }
 }
 

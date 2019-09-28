@@ -52,6 +52,8 @@ public:
     std::string get_reason() const;
     bool get_is_record() const;
     bool get_is_forward() const;
+    bool get_is_storage_set() const;
+    std::string get_storage_folder() const;
 
 protected:
     TronErrno set_error_and_die(TronErrno e, const std::string& reason = "");
@@ -77,6 +79,7 @@ private:
 
     int32_t id_;
     std::string name_;
+    std::string storage_root_;
     std::string storage_path_;
     volatile bool is_storage_path_set_;
     volatile int64_t file_number_counter_;

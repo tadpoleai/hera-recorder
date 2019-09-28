@@ -139,6 +139,7 @@ TronErrno Device::set_storage(const std::string& folder)
         return TronErrno::InStatusError;
     }
     if (!is_storage_path_set_) {
+        storage_root_ = folder;
         storage_path_ = folder + "/" + name_ + "/";
         TronErrno e = create_storage_folder();
         if (e == TronErrno::Success) {
@@ -236,6 +237,14 @@ bool Device::get_is_forward() const
 {
     return is_forward_;
 }
+bool Device::get_is_storage_set() const
+{
+    return is_storage_path_set_;
+}
+std::string Device::get_storage_folder() const
+{
+    return storage_root_;
+}
 
 // Protected
 TronErrno Device::set_error_and_die(TronErrno e, const std::string& reason)
@@ -328,7 +337,7 @@ void Device::storage_thread_function()
                     open_new_storage_file();
                 }
                 file_.write(reinterpret_cast<char*>(rawdata.get()), rawdata->length);
-                //file_.flush();
+                // file_.flush();
                 file_size_counter_ += rawdata->length;
                 total_file_size_counter_ += rawdata->length;
             }
