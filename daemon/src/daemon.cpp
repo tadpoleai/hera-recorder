@@ -26,7 +26,7 @@ void sig_int_handler_func(int s)
 {
     if (g_server_ptr) {
         g_server_ptr->stop();
-        g_handler_ptr->reset();
+        g_handler_ptr->clear();
     }
     printf("\n--SIGINT Received--\n");
 }

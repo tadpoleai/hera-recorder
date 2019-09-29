@@ -2,32 +2,49 @@ import TronErrno from './tron_errno';
 
 const TronApiUri = 'http://10.211.55.6:9090/tron';
 
-const ConnectionFailedMsg = {
-  error: TronErrno.TronErrno.ConnectionFailed,
-  reason: 'Connection to Tron Daemon Failed',
+const serverInfo = {
+  connected: false,
+  status: {
+    devices: [],
+  },
+  pending: {
+    syncLocal: false,
+    command: false,
+  },
 };
 
 function formatError(ret) {
-  let msg;
-  if (ret.error === TronErrno.TronErrno.Success) {
-    msg = 'OK';
+  let message;
+  if (ret.error === TronErrno.TronErrnoMap.Success) {
+    message = 'OK';
   } else {
-    msg = 'Error';
-    msg += ' :';
-    msg += TronErrno.TronErrnoString[ret.error];
-    msg += ', ';
-    msg += ret.reason;
+    message = 'Error';
+    message += ': ';
+    message += TronErrno.TronErrnoList[ret.error];
+    if (ret.reason) {
+      message += ', ';
+      message += ret.reason;
+    }
   }
-  return msg;
+  return message;
 }
 
-const transport = new Thrift.TXHRTransport(TronApiUri);
-const protocol = new Thrift.TJSONProtocol(transport);
-const client = new TronServiceClient(protocol);
+const ConnectionFailedMsg = {
+  error: TronErrno.TronErrnoMap.ConnectionFailed,
+  reason: 'Connection to daemon failed',
+};
 
-function createDevices(deviceInitializers) {
+const RequestPendingMsg = {
+  error: TronErrno.TronErrnoMap.RequestPending,
+  reason: 'Other request is under processing',
+};
+
+function getStatus() {
   return new Promise((resolve) => {
-    client.create_devices(deviceInitializers, (result) => {
+    const transport = new Thrift.TXHRTransport(TronApiUri);
+    const protocol = new Thrift.TJSONProtocol(transport);
+    const client = new TronServiceClient(protocol);
+    client.get_status((result) => {
       if (result.error === undefined) {
         resolve(ConnectionFailedMsg);
       } else {
@@ -37,61 +54,98 @@ function createDevices(deviceInitializers) {
   });
 }
 
-function getInformations() {
+async function syncLocal() {
+  if (serverInfo.pending.syncLocal === false && serverInfo.pending.command === false) {
+    serverInfo.pending.syncLocal = true;
+    const result = await getStatus();
+    if (result.error === 0) {
+      serverInfo.connected = true;
+      serverInfo.status = result.status;
+    } else {
+      serverInfo.connected = false;
+    }
+    serverInfo.pending.syncLocal = false;
+  }
+}
+
+function start(deviceInitializers, storageFolder) {
   return new Promise((resolve) => {
-    client.get_information((result) => {
-      if (result.error === undefined) {
-        resolve(ConnectionFailedMsg);
-      } else {
-        resolve(result);
-      }
-    });
+    if (serverInfo.pending.command === true) {
+      resolve(RequestPendingMsg);
+    } else {
+      serverInfo.pending.command = true;
+      const transport = new Thrift.TXHRTransport(TronApiUri);
+      const protocol = new Thrift.TJSONProtocol(transport);
+      const client = new TronServiceClient(protocol);
+      client.start(deviceInitializers, storageFolder, (result) => {
+        serverInfo.pending.command = false;
+        if (result.error === undefined) {
+          resolve(ConnectionFailedMsg);
+        } else {
+          serverInfo.status = result.status;
+          resolve(result);
+        }
+      });
+    }
   });
 }
 
-function setStorage(folder) {
+function stop() {
   return new Promise((resolve) => {
-    client.set_storage(folder, (result) => {
-      if (result.error === undefined) {
-        resolve(ConnectionFailedMsg);
-      } else {
-        resolve(result);
-      }
-    });
+    if (serverInfo.pending.command === true) {
+      resolve(RequestPendingMsg);
+    } else {
+      serverInfo.pending.command = true;
+      const transport = new Thrift.TXHRTransport(TronApiUri);
+      const protocol = new Thrift.TJSONProtocol(transport);
+      const client = new TronServiceClient(protocol);
+      client.stop((result) => {
+        serverInfo.pending.command = false;
+        if (result.error === undefined) {
+          resolve(ConnectionFailedMsg);
+        } else {
+          serverInfo.status = result.status;
+          resolve(result);
+        }
+      });
+    }
   });
 }
 
-function adjustDeviceParameters(deviceId, parameters) {
+function recordOrPause(isRecord) {
   return new Promise((resolve) => {
-    client.adjust_device_parameters(deviceId, parameters, (result) => {
-      if (result.error === undefined) {
-        resolve(ConnectionFailedMsg);
-      } else {
-        resolve(result);
-      }
-    });
+    if (serverInfo.pending.command === true) {
+      resolve(RequestPendingMsg);
+    } else {
+      serverInfo.pending.command = true;
+      const transport = new Thrift.TXHRTransport(TronApiUri);
+      const protocol = new Thrift.TJSONProtocol(transport);
+      const client = new TronServiceClient(protocol);
+      client.record_or_pause(isRecord, (result) => {
+        serverInfo.pending.command = false;
+        if (result.error === undefined) {
+          resolve(ConnectionFailedMsg);
+        } else {
+          serverInfo.status = result.status;
+          resolve(result);
+        }
+      });
+    }
   });
 }
 
-function control(command) {
-  return new Promise((resolve) => {
-    client.control(command, (result) => {
-      if (result.error === undefined) {
-        resolve(ConnectionFailedMsg);
-      } else {
-        resolve(result);
-      }
-    });
-  });
+async function periodSyncLocal() {
+  await syncLocal();
+  console.log('Period');
+  console.log(serverInfo.status);
+  setTimeout(periodSyncLocal, 15000);
 }
+periodSyncLocal();
 
 export default {
-  TronErrno,
-  ControlCommand,
+  serverInfo,
   formatError,
-  createDevices,
-  getInformations,
-  setStorage,
-  adjustDeviceParameters,
-  control,
+  start,
+  stop,
+  recordOrPause,
 };

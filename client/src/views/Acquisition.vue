@@ -14,7 +14,7 @@
             class="md-layout md-layout-item md-alignment-center-center"
           >
             <md-button
-              class="md-raised control-button md-layout-item"
+              class="md-raised control-button md-layout-item md-accent"
               @click="action.func()"
               :disabled="action.disabled()"
               ><md-icon
@@ -29,16 +29,10 @@
         <md-divider />
         <md-subheader>{{$t('Workspace')}}</md-subheader>
         <div class="md-layout md-gutter md-alignment-center-center">
-          <div class="md-layout md-layout-item md-alignment-center-center">
-            <md-button
-              class="md-raised control-button md-layout-item"
-              @click="setStorage(folder)"
-              :disabled="canNotSetFolder"
-              ><md-icon class="md-size-2x" :md-src="require('@/assets/icons/folder.svg')"></md-icon>
-              <span class="md-list-item-text">{{$t("Set Workspace")}}</span>
-            </md-button>
+          <div class="md-layout md-layout-item md-alignment-center-center md-size-25">
+            <md-icon class="md-layout-item md-size-2x" :md-src="require('@/assets/icons/folder.svg')"></md-icon>
           </div>
-          <div class="md-layout md-layout-item md-alignment-center-center">
+          <div class="md-layout md-layout-item md-alignment-center-center md-size-75">
             <md-field class="md-layout-item md-size-90">
               <label>{{$t("Workspace")}}</label>
               <md-input v-model="folder" type="string"></md-input>
@@ -59,7 +53,7 @@
           <div class="md-layout md-layout-item md-alignment-center-center">
             <md-button
               class="md-raised control-button md-layout-item"
-              @click="createDevices()"
+              @click=""
               ><md-icon class="md-size-2x" :md-src="require('@/assets/icons/folder.svg')"></md-icon>
               <span class="md-list-item-text">{{$t("Apply Profile")}}</span>
             </md-button>
@@ -70,104 +64,117 @@
 
     <md-snackbar
       md-position="center"
-      :md-duration="progress.snackDuration"
-      :md-active.sync="progress.snack"
+      :md-duration="30000"
+      :md-active.sync="pending.showSnacker"
       md-persistent
     >
-      <span>{{progress.message}}</span>
-      <md-button class="md-primary" @click="progress.snack = false">CLOSE</md-button>
+      <span>{{pending.message}}</span>
+      <md-button class="md-primary" @click="closeSnackbar()">CLOSE</md-button>
     </md-snackbar>
   </div>
 </template>
 
 <script>
 import TronApi from '@/functions/tron_api';
-import ServerInfo from '@/functions/server_info';
-
-const progress = {
-  show: true,
-  snack: false,
-  snackDuration: 15000,
-  message: 'OK',
-};
-
-const clickFunc = async (command) => {
-  progress.show = true;
-  const ret = await TronApi.control(command);
-  progress.show = false;
-  progress.message = TronApi.formatError(ret);
-  progress.snack = true;
-};
-
-const setStorage = async (folder) => {
-  progress.show = true;
-  console.log(folder);
-  const ret = await TronApi.setStorage(folder);
-  progress.show = false;
-  progress.message = TronApi.formatError(ret);
-  progress.snack = true;
-};
 
 export default {
   name: 'acquisition',
   computed: {
-    progressMode() {
-      return this.progress.show ? 'indeterminate' : 'determinate';
+    showSnacker() {
+      return true;
     },
-    canNotSetFolder() {
-      !this.ServerInfo.information.can_set_storage || this.ServerInfo.isConnectionLost;
+    progressMode() {
+      return this.pending.pending ? 'indeterminate' : 'determinate';
+    },
+    canNotStart() {
+      return this.pending.pending || !this.serverInfo.connected || !this.serverInfo.status.can_start;
+    },
+    canNotStop() {
+      return this.pending.pending || !this.serverInfo.connected || !this.serverInfo.status.can_stop;
+    },
+    canNotRecord() {
+      return this.pending.pending || !this.serverInfo.connected || !this.serverInfo.status.can_record;
+    },
+    canNotPause() {
+      return this.pending.pending || !this.serverInfo.connected || !this.serverInfo.status.can_pause;
     },
   },
   methods: {
-    createDevices: async (devices) => {
-      progress.show = true;
-      devices = [
-        { type: 'dummy', name: 'dum0', parameters: { dummyRate: '1', dummyValue: '0xCC' } },
-      ];
-      const ret = await TronApi.createDevices(devices);
-      progress.show = false;
-      progress.message = TronApi.formatError(ret);
-      progress.snack = true;
+    closeSnackbar() {
+      this.pending.showSnacker = false;
+    },
+    setPending(onOff) {
+      this.pending.pending = onOff;
+    },
+    returnHandler(ret) {
+      this.pending.message = TronApi.formatError(ret);
+      this.pending.showSnacker = true;
+    },
+    async clickStart() {
+      this.setPending(true);
+      const ret = await TronApi.start(
+        [
+          { type: 'dummy', name: 'dummy0', parameters: { dummyValue: '1', dummyRate: '1' } },
+        ],
+        this.folder,
+      );
+      this.setPending(false);
+      this.returnHandler(ret);
+    },
+    async clickStop() {
+      this.setPending(true);
+      const ret = await TronApi.stop();
+      this.setPending(false);
+      this.returnHandler(ret);
+    },
+    async clickRecord() {
+      this.setPending(true);
+      const ret = await TronApi.recordOrPause(true);
+      this.setPending(false);
+      this.returnHandler(ret);
+    },
+    async clickPause() {
+      this.setPending(true);
+      const ret = await TronApi.recordOrPause(false);
+      this.setPending(false);
+      this.returnHandler(ret);
     },
   },
   data() {
     return {
-      ServerInfo,
-      progress,
-      setStorage,
+      pending: {
+        message: 'OK',
+        showSnacker: true,
+        pending: false,
+      },
+      serverInfo: TronApi.serverInfo,
+      folder: new Date().toString(),
       controlActions: [
         {
           icon: 'on',
           name: 'Start',
-          func: () => clickFunc(TronApi.ControlCommand.Start),
-          disabled: () => !this.ServerInfo.information.can_start || this.ServerInfo.isConnectionLost,
+          func: this.clickStart,
+          disabled: () => this.canNotStart,
         },
         {
           icon: 'stop',
           name: 'Stop',
-          func: () => clickFunc(TronApi.ControlCommand.Stop),
-          disabled: () => !this.ServerInfo.information.can_stop || this.ServerInfo.isConnectionLost,
+          func: this.clickStop,
+          disabled: () => this.canNotStop,
         },
         {
           icon: 'play',
           name: 'Record',
-          func: () => clickFunc(TronApi.ControlCommand.StartRecord),
-          disabled: () => !this.ServerInfo.information.can_record || this.ServerInfo.isConnectionLost,
+          func: this.clickRecord,
+          disabled: () => this.canNotRecord,
         },
         {
           icon: 'pause',
           name: 'Pause',
-          func: () => clickFunc(TronApi.ControlCommand.PauseRecord),
-          disabled: () => !this.ServerInfo.information.can_pause || this.ServerInfo.isConnectionLost,
-        },
-        {
-          icon: 'stop',
-          name: 'Reset',
-          func: () => clickFunc(TronApi.ControlCommand.Reset),
-          disabled: () => this.ServerInfo.isConnectionLost,
+          func: this.clickPause,
+          disabled: () => this.canNotPause,
         },
       ],
-      folder: new Date().toString(),
     };
   },
 };

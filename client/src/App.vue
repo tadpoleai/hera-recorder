@@ -5,6 +5,10 @@
     <div id="view">
       <toolbar-mobile :title="title" />
       <keep-alive>
+        asdadasdasdasdsada
+        sdfasdf
+        adsf
+        adsfas
         <router-view id="router-view" />
       </keep-alive>
     </div>
@@ -63,7 +67,7 @@ export default {
   "default",
   (
     primary: md-get-palette-color(indigo, 700),
-    accent: md-get-palette-color(purple, A200)
+    accent: md-get-palette-color(pink, 300)
   )
 );
 @import "~vue-material/dist/theme/all"; // Apply the theme

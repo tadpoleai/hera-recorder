@@ -1,7 +1,8 @@
-const TronErrno = {
+const TronErrnoMap = {
   Success: 0,
   InStatusError: 10,
   ConnectionFailed: 20,
+  RequestPending: 30,
 
   InvalidDeviceType: 100,
   InvalidDeviceName: 101,
@@ -30,6 +31,7 @@ const TronErrno = {
   CanNotCreateFolder: 502,
   CanNotOpenFile: 503,
   WriteError: 504,
+  InvalidStorageFolderName: 505,
 
   DeviceNotReady: 600,
   DeviceAlreadyConnected: 601,
@@ -40,12 +42,12 @@ const TronErrno = {
   Reserved: 9999,
 };
 
-const TronErrnoString = {};
-Object.keys(TronErrno).forEach((key) => {
-  TronErrnoString[TronErrno[key]] = key;
+const TronErrnoList = [];
+Object.keys(TronErrnoMap).forEach((key) => {
+  TronErrnoList[TronErrnoMap[key]] = key;
 });
 
 export default {
-  TronErrno,
-  TronErrnoString,
+  TronErrnoMap,
+  TronErrnoList,
 };

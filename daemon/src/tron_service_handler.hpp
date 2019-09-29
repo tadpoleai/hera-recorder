@@ -17,17 +17,22 @@ class TronServiceHandler final : public TronServiceIf {
 public:
     TronServiceHandler();
     virtual ~TronServiceHandler();
-    void create_devices(Result& _return,
-                        const std::vector<DeviceInitializer>& device_initializers) final;
-    void get_information(ResultInformation& _return) final;
-    void set_storage(Result& _return, const std::string& folder) final;
+    void get_status(Result& _return) final;
+    void start(Result& _return,
+               const std::vector<DeviceInitializer>& device_initializers,
+               const std::string& storage_folder) final;
+    void stop(Result& _return) final;
+    void record_or_pause(Result& _return, const bool is_record) final;
     void adjust_device_parameters(Result& _return,
                                   const int32_t device_id,
                                   const std::map<std::string, std::string>& parameters) final;
-    void control(Result& _return, const ControlCommand::type command) final;
-    void reset();
+    void clear();
 
 private:
+    void set_error(Result& _return, TronErrno tron_errno, const std::string&& reason);
+    void set_error_and_stop(Result& _return, TronErrno tron_errno, const std::string&& reason);
+    void generate_status(Result& _return);
+
     std::vector<std::unique_ptr<Device>> devices_;
 };
 

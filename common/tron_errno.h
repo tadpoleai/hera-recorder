@@ -44,6 +44,7 @@ enum TronErrno {
     CanNotCreateFolder = 502,
     CanNotOpenFile = 503,
     WriteError = 504,
+    InvalidStorageFolderName = 505,
 
     DeviceNotReady = 600,
     DeviceAlreadyConnected = 601,
