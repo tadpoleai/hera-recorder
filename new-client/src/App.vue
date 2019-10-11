@@ -23,7 +23,7 @@
     </v-navigation-drawer>
 
     <v-app-bar color="primary" app>
-      <v-toolbar-title>{{$t('title')}}</v-toolbar-title>
+      <v-toolbar-title class="white--text">{{$t('title')}}</v-toolbar-title>
       <v-spacer />
       <v-menu>
         <template v-slot:activator="{ on }">
@@ -34,7 +34,6 @@
         <v-list>
           <v-list-item @click="setLocale('en')">English</v-list-item>
           <v-list-item @click="setLocale('zh')">中文</v-list-item>
-          <v-list-item @click="setLocale('jp')">日本語</v-list-item>
         </v-list>
       </v-menu>
     </v-app-bar>
@@ -49,13 +48,8 @@
       </v-container>
     </v-content>
 
-    <v-overlay :value="showOverlay">
-      <p class="text-center">{{$t('noconnection')}}</p>
-      <p class="text-center">
-        <v-btn icon @click="reload">
-          <v-icon>mdi-reload</v-icon>
-        </v-btn>
-      </p>
+    <v-overlay :value="showOverlay" opacity="0.75">
+      <connection-failed />
     </v-overlay>
 
     <v-bottom-navigation v-if="showBottomNav" dark shift>
@@ -68,14 +62,18 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
-import router from "@/router/router";
-import vuetify from "@/plugins/vuetify";
-import { daemonStatus } from "@/core/daemonStatus";
+import { Component, Vue } from 'vue-property-decorator';
+import router from '@/router/router';
+import { daemonStatus } from '@/core/tronApi';
+import ConnectionFailed from '@/views/App/ConnectionFailed.vue';
 
-@Component
+@Component({
+  components: {
+    ConnectionFailed,
+  },
+})
 export default class App extends Vue {
-  name = "app";
+  name = 'app';
 
   routeList = router.routeList;
 
@@ -95,10 +93,6 @@ export default class App extends Vue {
 
   setLocale(l: string): void {
     this.$i18n.locale = l;
-  }
-
-  reload(): void {
-    window.location.reload(false);
   }
 }
 </script>

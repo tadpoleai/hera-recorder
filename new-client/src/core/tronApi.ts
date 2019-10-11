@@ -34,7 +34,7 @@ const thriftClient = createHttpClient(
   connection,
 );
 
-export interface DaemonStatus {
+export interface IDaemonStatus {
   connected: boolean;
   status: IStatusArgs;
   pending: {
@@ -43,12 +43,23 @@ export interface DaemonStatus {
   }
 }
 
-export interface SimpleResult {
+export interface ISimpleResult {
   error: number,
   reason: string,
 }
 
-const daemonStatus: DaemonStatus = {
+export interface IParameter {
+  name: string,
+  value: string,
+}
+
+export interface IDevice {
+  type: 'string'
+  name: 'string',
+  parameters: Array<IParameter>
+}
+
+const daemonStatus: IDaemonStatus = {
   connected: true,
   status: {
     can_start: false,
@@ -68,19 +79,19 @@ const daemonStatus: DaemonStatus = {
 
 export { daemonStatus };
 
-const connectionFailedResult: SimpleResult = {
+const connectionFailedResult: ISimpleResult = {
   error: 20,
   reason: 'Connection to daemon timed out',
 };
 
-const pendingResult: SimpleResult = {
+const pendingResult: ISimpleResult = {
   error: 30,
   reason: 'Other command is pending',
 };
 
 let timedOutCounter = config.timedOutMs;
 
-export async function getStatus(): Promise<SimpleResult> {
+export async function getStatus(): Promise<ISimpleResult> {
   if (daemonStatus.pending.command || daemonStatus.pending.sync) {
     return pendingResult;
   }
@@ -100,7 +111,7 @@ export async function getStatus(): Promise<SimpleResult> {
   }
 }
 
-export async function start(devices: Array<IDeviceInitializerArgs>, storageFolder: string): Promise<SimpleResult> {
+export async function start(devices: Array<IDevice>, storageFolder: string): Promise<ISimpleResult> {
   if (daemonStatus.pending.command) {
     return pendingResult;
   }
@@ -108,8 +119,16 @@ export async function start(devices: Array<IDeviceInitializerArgs>, storageFolde
 
   try {
     const deviceInitializers: Array<DeviceInitializer> = [];
-    devices.forEach((device: IDeviceInitializerArgs) => {
-      deviceInitializers.push(new DeviceInitializer(device));
+    devices.forEach((device: IDevice) => {
+      const deviceInitializer = new DeviceInitializer({
+        name: device.name,
+        type: device.type,
+        parameters: new Map<string, string>(),
+      });
+      device.parameters.forEach((parameter: IParameter) => {
+        deviceInitializer.parameters.set(parameter.name, parameter.value);
+      });
+      deviceInitializers.push(deviceInitializer);
     });
     const result = await thriftClient.start(deviceInitializers, storageFolder);
     daemonStatus.connected = true;
@@ -117,6 +136,7 @@ export async function start(devices: Array<IDeviceInitializerArgs>, storageFolde
     timedOutCounter = config.syncPeriodMs + config.timedOutMs;
     return { error: result.error, reason: result.reason };
   } catch (e) {
+    console.log(e);
     daemonStatus.connected = false;
     return connectionFailedResult;
   } finally {
@@ -124,7 +144,7 @@ export async function start(devices: Array<IDeviceInitializerArgs>, storageFolde
   }
 }
 
-export async function stop(): Promise<SimpleResult> {
+export async function stop(): Promise<ISimpleResult> {
   if (daemonStatus.pending.command) {
     return pendingResult;
   }
@@ -156,5 +176,4 @@ setInterval(() => {
   } else {
     daemonStatus.connected = false;
   }
-  console.log(timedOutCounter);
-}, 1000)
+}, 1000);
