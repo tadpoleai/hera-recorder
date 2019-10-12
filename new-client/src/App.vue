@@ -38,7 +38,7 @@
       </v-menu>
     </v-app-bar>
 
-    <v-content>
+    <v-content app>
       <v-container fluid>
         <v-layout justify-center>
           <keep-alive>
@@ -52,7 +52,7 @@
       <connection-failed />
     </v-overlay>
 
-    <v-bottom-navigation v-if="showBottomNav" dark shift>
+    <v-bottom-navigation v-if="showBottomNav" dark shift app>
       <v-btn v-for="route in routeList" :key="route.name" :to="route.path">
         <span>{{$t(route.name)}}</span>
         <v-icon>{{ route.icon }}</v-icon>

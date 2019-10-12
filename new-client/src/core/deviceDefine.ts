@@ -1,39 +1,42 @@
 import rules from '@/core/inputRules';
 
 const deviceTypes = [
-  'dummy',
-  'imu',
-  'gps',
-  'lidar',
-  'camera',
+  'Dummy',
+  'Imu',
+  'Gps',
+  'Lidar',
+  'Camera',
 ];
 
 const parameterTypes = {
-  dummy: [
-    'dummyRate',
-    'dummyValue',
+  Dummy: [
+    'DummyRate',
+    'DummyValue',
   ],
-  imu: [
-    'kernel',
-    'baudRate',
+  Imu: [
+    'Kernel',
+    'BaudRate',
   ],
-  lidar: [
-    'ipAddress',
-    'port',
+  Lidar: [
+    'IpAddress',
+    'Port',
   ],
 };
 
 const parameterRules = {
-  dummyRate: [rules.required, rules.number, rules.ltzero],
-  dummyValue: [rules.required, rules.number],
-  kernel: [rules.required, rules.isKernel],
-  baudRate: [rules.required, rules.number, rules.ltzero],
-  ipAddress: [rules.required, rules.ipAddress],
-  port: [rules.required, rules.number, rules.port],
+  DummyRate: [rules.required, rules.number, rules.interger, rules.ltzero],
+  DummyValue: [rules.required, rules.number, rules.interger],
+  Kernel: [rules.required, rules.isKernel],
+  BaudRate: [rules.required, rules.number, rules.ltzero],
+  IpAddress: [rules.required, rules.ipAddress],
+  Port: [rules.required, rules.number, rules.port],
 };
+
+const maxDeviceNameLength = 32;
 
 export default {
   deviceTypes,
   parameterTypes,
   parameterRules,
+  maxDeviceNameLength,
 };

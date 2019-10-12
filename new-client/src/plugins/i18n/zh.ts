@@ -14,12 +14,6 @@ export default {
 
   Acquisition: {
     control: '采集控制',
-    Control: {
-      start: '开始采集',
-      stop: '中止采集',
-      record: '开始保存',
-      pause: '暂停保存',
-    },
     profile: '采集配置',
     Profile: {
       storagePath: '储存路径',
@@ -31,6 +25,8 @@ export default {
       Actions: {
         start: '开始',
         stop: '终止',
+        record: '录制',
+        pause: '暂停',
       },
     },
   },
@@ -48,15 +44,25 @@ export default {
 
   Devices: {
     Type: {
-      label: '设备类型',
+      label: '类型',
     },
     Name: {
-      label: '设备名称',
+      label: '名称',
       hint: '设备储存时候的文件夹名',
     },
     Parameter: {
       Name: { label: '参数名' },
       Value: { label: '参数值' },
     },
+    deviceTypeAndName: '类型与名称',
+    parameters: '参数',
+  },
+
+  Button: {
+    ok: '好的',
+  },
+
+  Result: {
+    success: '操作成功',
   },
 };

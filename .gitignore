@@ -67,6 +67,7 @@ temp/
 
 # Thrift Generated
 gen-js/
+gen-ts/
 
 # MacOS
 .DS_Store

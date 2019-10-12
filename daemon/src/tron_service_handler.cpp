@@ -22,6 +22,7 @@ void TronServiceHandler::set_error(Result& _return,
 {
     _return.error = tron_errno;
     _return.reason = reason;
+    generate_status(_return);
 }
 void TronServiceHandler::set_error_and_stop(Result& _return,
                                             TronErrno tron_errno,
@@ -30,6 +31,7 @@ void TronServiceHandler::set_error_and_stop(Result& _return,
     _return.error = tron_errno;
     _return.reason = reason;
     clear();
+    generate_status(_return);
 }
 void TronServiceHandler::clear()
 {
@@ -84,6 +86,7 @@ void TronServiceHandler::start(Result& _return,
                                const std::string& storage_folder)
 {
     std::cout << "start" << std::endl;
+    usleep(1000000);
     _return.error = TronErrno::Success;
     _return.reason = "OK";
     int32_t id = 0;
@@ -167,6 +170,7 @@ void TronServiceHandler::start(Result& _return,
 void TronServiceHandler::stop(Result& _return)
 {
     std::cout << "stop" << std::endl;
+    usleep(1000000);
     if (devices_.size() != 0) {
         return set_error_and_stop(_return, TronErrno::Success, "OK");
     } else {
@@ -178,6 +182,7 @@ void TronServiceHandler::stop(Result& _return)
 void TronServiceHandler::record_or_pause(Result& _return, const bool is_record)
 {
     std::cout << "record_or_pause" << std::endl;
+    usleep(1000000);
     _return.error = TronErrno::Success;
     _return.reason = "OK";
 
