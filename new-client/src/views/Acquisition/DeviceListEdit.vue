@@ -145,7 +145,7 @@ import inputRules from '@/core/inputRules';
 @Component
 export default class DeviceListEdit extends Vue {
   @Prop()
-  devices!: Array<IDevice> | Array<IDeviceInfo>;
+  devices!: Array<IDevice>;
 
   @Prop()
   editable!: boolean;
