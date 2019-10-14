@@ -16,7 +16,8 @@ export { IDeviceInitializerArgs } from './gen-ts';
 const options = {
   transport: TBufferedTransport,
   protocol: TJSONProtocol,
-  https: false,
+  https: true,
+  path: '/tron',
   headers: {
     Host: config.hostName,
     'Content-Type': 'text/plain',

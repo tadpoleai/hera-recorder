@@ -119,13 +119,17 @@ export default class Acquisition extends Vue {
   // Storage path
   storagePath = '';
 
-  mounted() {
+  updateStoragePath() {
     let date = new Date();
     date = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
     this.storagePath = `${date
       .toISOString()
       .replace(/[\D]/g, '')
       .slice(0, 14)}_`;
+  }
+
+  mounted() {
+    this.updateStoragePath();
   }
 
   maxStoragePathLength = '64';
@@ -213,6 +217,7 @@ export default class Acquisition extends Vue {
     stop().then((result: ISimpleResult) => {
       this.resultHandler(result);
       this.btnStopPending = false;
+      this.updateStoragePath();
     });
   }
 

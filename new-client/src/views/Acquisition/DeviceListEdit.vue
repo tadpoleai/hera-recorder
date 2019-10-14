@@ -74,20 +74,12 @@
                         <v-icon dark>mdi-minus</v-icon>
                       </v-btn>
                     </v-col>
-                    <v-col cols="5" class="pa-1">
-                      <v-select
-                        v-model="param.type"
-                        :disabled="!editable"
-                        :items="deviceDefine.parameterTypes[device.type]"
-                        :label="$t('Devices.Parameter.Name.label')"
-                      ></v-select>
-                    </v-col>
-                    <v-col cols="5" class="pa-1">
+                    <v-col cols="10" class="pa-1">
                       <v-text-field
                         v-model="param.value"
                         :disabled="!editable"
                         :rules="deviceDefine.parameterRules[param.type]"
-                        :label="$t('Devices.Parameter.Value.label')"
+                        :label="$t(param.type)"
                       ></v-text-field>
                     </v-col>
                   </v-row>
