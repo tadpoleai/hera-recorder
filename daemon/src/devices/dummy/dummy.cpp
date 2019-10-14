@@ -15,7 +15,7 @@ namespace tron {
 Dummy::Dummy(int32_t id, const std::string& name) : Device(id, name) {}
 Dummy::~Dummy()
 {
-    do_disconnect();
+    disconnect();
 }
 
 DeviceType Dummy::get_type() const
@@ -42,6 +42,7 @@ TronErrno Dummy::connect()
 }
 void Dummy::disconnect()
 {
+    stop();
     do_disconnect();
 }
 void Dummy::do_disconnect()

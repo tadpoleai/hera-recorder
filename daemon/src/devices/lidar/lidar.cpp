@@ -18,7 +18,7 @@ namespace tron {
 Lidar::Lidar(int32_t id, const std::string& name) : Device(id, name) {}
 Lidar::~Lidar()
 {
-    do_disconnect();
+    disconnect();
 }
 
 DeviceType Lidar::get_type() const
@@ -32,20 +32,22 @@ TronErrno Lidar::connect()
         address_ = boost::asio::ip::address_v4::from_string(
                 parameters_[DeviceParameterType::IpAddress]);
     } else {
-        return set_error_and_die(TronErrno::InsufficientParameters);
+        return set_error_and_die(TronErrno::InsufficientParameters, "Parameter IpAddress absent");
     }
 
     if (parameters_.count(DeviceParameterType::DataPort)) {
         data_port_ = std::stoi(parameters_[DeviceParameterType::DataPort]);
     } else {
-        return set_error_and_die(TronErrno::InsufficientParameters);
+        return set_error_and_die(TronErrno::InsufficientParameters, "Parameter DataPort absent");
     }
 
+    /*
     if (parameters_.count(DeviceParameterType::TelemetryPort)) {
         telemetry_port_ = std::stoi(parameters_[DeviceParameterType::TelemetryPort]);
     } else {
         return set_error_and_die(TronErrno::InsufficientParameters);
     }
+    */
 
     int ret = system(("curl --data \"laser=on\" http://" +
                       parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
@@ -53,7 +55,7 @@ TronErrno Lidar::connect()
     if (ret == 0) {
         std::cout << "success to power on " << get_name() << std::endl;
     } else {
-        std::cout << "fail to power on " <<  get_name() << std::endl;
+        std::cout << "fail to power on " << get_name() << std::endl;
     }
 
 
@@ -67,24 +69,24 @@ TronErrno Lidar::connect()
         data_socket_ = nullptr;
         return set_error_and_die(TronErrno::CanNotOpenEthernetDevice);
     }
-/*
-    try {
-        telemetry_socket_ = new boost::asio::ip::udp::socket(
-                io_service_,
-                boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::from_string(
-                                                       "255.255.255.255"),
-                                               telemetry_port_));
-    } catch (const std::exception& e) {
-        telemetry_socket_ = nullptr;
-        if (data_socket_ && data_socket_->is_open()) {
-            data_socket_->close();
-            delete data_socket_;
-            data_socket_ = nullptr;
+    /*
+        try {
+            telemetry_socket_ = new boost::asio::ip::udp::socket(
+                    io_service_,
+                    boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::from_string(
+                                                           "255.255.255.255"),
+                                                   telemetry_port_));
+        } catch (const std::exception& e) {
+            telemetry_socket_ = nullptr;
+            if (data_socket_ && data_socket_->is_open()) {
+                data_socket_->close();
+                delete data_socket_;
+                data_socket_ = nullptr;
+            }
+            return set_error_and_die(TronErrno::CanNotOpenEthernetSensor);
         }
-        return set_error_and_die(TronErrno::CanNotOpenEthernetSensor);
-    }
-*/
-    if (data_socket_ == nullptr){// || telemetry_socket_ == nullptr) {
+    */
+    if (data_socket_ == nullptr) {  // || telemetry_socket_ == nullptr) {
         std::cout << "create socket failed!" << std::endl;
         return set_error_and_die(TronErrno::InsufficientParameters);
     }
@@ -92,6 +94,7 @@ TronErrno Lidar::connect()
 }
 void Lidar::disconnect()
 {
+    stop();
     do_disconnect();
 }
 void Lidar::do_disconnect()
@@ -100,11 +103,10 @@ void Lidar::do_disconnect()
                       parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
                              .c_str());
     if (ret == 0) {
-        std::cout << "success to power off " <<  get_name() << std::endl;
+        std::cout << "success to power off " << get_name() << std::endl;
     } else {
-        std::cout << "fail to power off " << get_name() <<std::endl;
+        std::cout << "fail to power off " << get_name() << std::endl;
     }
-
     if (data_socket_ && data_socket_->is_open()) {
         data_socket_->close();
         delete data_socket_;
@@ -183,13 +185,13 @@ std::shared_ptr<SensorData> Lidar::do_convert(const std::shared_ptr<DeviceRawDat
         if (delay < 0 || delay > 5000000) {
             time_synced = false;
             lidartime = msec - 2000;
-            
-        } else{
+
+        } else {
             time_synced = true;
         }
 
-        if(!time_synced)
-            std::cout << "lidar time synced failure" << std::endl; 
+        if (!time_synced)
+            std::cout << "lidar time synced failure" << std::endl;
         double interpolated = 0.0;
         double const PI = acos(double(-1));
 

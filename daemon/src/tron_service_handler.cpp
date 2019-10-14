@@ -135,6 +135,9 @@ void TronServiceHandler::start(Result& _return,
         case DeviceType::Dummy:
             device = new Dummy(id++, name);
             break;
+        case DeviceType::Lidar:
+            device = new Lidar(id++, name);
+            break;
         default:
             return set_error_and_stop(_return,
                                       TronErrno::InvalidDeviceType,

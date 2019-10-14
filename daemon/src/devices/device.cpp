@@ -36,10 +36,7 @@ Device::Device(int32_t id, const std::string& name) :
     thread_storage_ = new std::thread(&Device::storage_thread_function, this);
     thread_forward_ = new std::thread(&Device::forward_thread_function, this);
 }
-Device::~Device()
-{
-    stop();
-}
+Device::~Device() {}
 
 // Control
 TronErrno Device::start()

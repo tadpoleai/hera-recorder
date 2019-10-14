@@ -9,6 +9,7 @@
 
 #include "devices/device.hpp"
 #include "devices/dummy/dummy.hpp"
+#include "devices/lidar/lidar.hpp"
 
 namespace wayz {
 namespace tron {
