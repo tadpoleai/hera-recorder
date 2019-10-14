@@ -58,7 +58,7 @@ public:
 protected:
     TronErrno set_error_and_die(TronErrno e, const std::string& reason = "");
     std::map<DeviceParameterType, std::string> parameters_;
-    int32_t sequence_;
+    int64_t sequence_;
 
     // Device Dependent Functions
     virtual TronErrno connect() = 0;
