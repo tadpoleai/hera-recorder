@@ -64,7 +64,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import router from '@/router/router';
 import { daemonStatus } from '@/core/tronApi';
 
-@Component()
+@Component
 export default class App extends Vue {
   name = 'app';
 
@@ -80,7 +80,7 @@ export default class App extends Vue {
     return this.$vuetify.breakpoint.mdAndDown;
   }
 
-  get appBarColor(): boolean {
+  get appBarColor(): string {
     return this.daemonStatus.connected ? 'primary' : 'error';
   }
 

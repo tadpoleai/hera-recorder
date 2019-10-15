@@ -67,9 +67,9 @@ export default class DeviceListEdit extends Vue {
   }
 
   getCardColor(device: IDeviceInfo): string {
-    if (device.error == 0) {
+    if (device.error === 0) {
       return 'light-green';
-    } if (device.error == 700) {
+    } if (device.error === 700) {
       return 'warn';
     }
     return 'error';

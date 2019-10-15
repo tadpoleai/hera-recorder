@@ -6,7 +6,12 @@
 
 #include <regex>
 
+#include <common/data_def/device_types.hpp>
 #include <common/tron_errno.h>
+
+#include "devices/dummy/dummy.hpp"
+#include "devices/imu/imu.hpp"
+#include "devices/lidar/lidar.hpp"
 
 namespace wayz {
 namespace tron {
@@ -66,7 +71,8 @@ void TronServiceHandler::generate_status(Result& _return)
         bool is_record = device->get_is_record();
 
         _return.status.is_error = _return.status.is_error || info.status == "Error";
-        _return.status.can_record = _return.status.can_record && info.status == "Inited" && !is_record;
+        _return.status.can_record =
+                _return.status.can_record && info.status == "Inited" && !is_record;
         _return.status.can_pause = _return.status.can_pause && info.status == "Inited" && is_record;
         _return.status.is_record = _return.status.is_record && is_record;
 
@@ -74,7 +80,8 @@ void TronServiceHandler::generate_status(Result& _return)
     }
 }
 
-void TronServiceHandler::get_status(Result& _return) {
+void TronServiceHandler::get_status(Result& _return)
+{
     std::cout << "get_status" << std::endl;
     _return.error = TronErrno::Success;
     _return.reason = "OK";
@@ -100,14 +107,14 @@ void TronServiceHandler::start(Result& _return,
         return set_error(_return, TronErrno::EmptyDeviceList, "Device list given is empty");
     }
     // Check if storage_folder is valid
-    std::regex folder_regex("[a-zA-Z0-9_]{1,63}");
+    std::regex folder_regex("[a-zA-Z0-9_]{1,64}");
     if (!std::regex_match(storage_folder, folder_regex)) {
         return set_error(_return,
                          TronErrno::InvalidStorageFolderName,
                          "Storage folder " + storage_folder + " is invalid");
     }
     // Precheck device list for type and name
-    std::regex name_regex("[a-zA-Z0-9_]{1,31}");
+    std::regex name_regex("[a-zA-Z0-9_]{1,32}");
     for (const auto& device_initializer : device_initializers) {
         const auto& type_str = device_initializer.type;
         auto type = DeviceType::_from_string_nocase_nothrow(type_str.c_str());
@@ -120,7 +127,7 @@ void TronServiceHandler::start(Result& _return,
         if (!std::regex_match(name, name_regex)) {
             return set_error(_return,
                              TronErrno::InvalidDeviceName,
-                             "Device type \"" + name + "\" is invalid");
+                             "Device name \"" + name + "\" is invalid");
         }
     }
 
@@ -138,11 +145,17 @@ void TronServiceHandler::start(Result& _return,
         case DeviceType::Lidar:
             device = new Lidar(id++, name);
             break;
+        case DeviceType::Imu:
+            device = new Imu(id++, name);
+            break;
         default:
             return set_error_and_stop(_return,
                                       TronErrno::InvalidDeviceType,
                                       "Device type \"" + type_str + "\" is invalid");
         }
+
+        devices_.emplace_back(device);
+        device = devices_.back().get();
 
         // Set parameters
         for (const auto& parameter : device_initializer.parameters) {
@@ -165,7 +178,7 @@ void TronServiceHandler::start(Result& _return,
                                       e,
                                       "Device \"" + name + "\" occured " + device->get_reason());
         }
-        devices_.emplace_back(device);
+
     }
     generate_status(_return);
 }
@@ -234,7 +247,8 @@ void TronServiceHandler::adjust_device_parameters(
             }
         }
     } catch (std::out_of_range& oor) {
-        return set_error(_return, TronErrno::InvalidDeviceId,
+        return set_error(_return,
+                         TronErrno::InvalidDeviceId,
                          "Device id given " + std::to_string(device_id) + " out of range");
     }
     generate_status(_return);

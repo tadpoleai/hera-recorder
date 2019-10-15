@@ -137,6 +137,15 @@ export default class Acquisition extends Vue {
   // Devices
   devices: Array<IDevice> = [
     {
+      type: 'Imu',
+      name: 'imu0',
+      parameters: [
+        { type: 'Kernel', value: '/dev/ttyUSB0' },
+        { type: 'BaudRate', value: '230400' },
+        { type: 'SerialMsgType', value: '0' },
+      ],
+    },
+    {
       type: 'Dummy',
       name: 'dummy0',
       parameters: [

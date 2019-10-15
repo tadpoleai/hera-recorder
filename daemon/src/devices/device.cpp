@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -307,12 +308,16 @@ void Device::fetch_thread_function()
         }
         if (status == DeviceStatus::Inited) {
             auto rawdata = fetch();
-            last_data_timestamp_ns_ = rawdata->timestamp_receive_ns;
-            if (is_record_) {
-                queue_storage_.push(rawdata);
-            }
-            if (is_forward_) {
-                queue_forward_.push(rawdata);
+            if (rawdata != nullptr) {
+                last_data_timestamp_ns_ = rawdata->timestamp_receive_ns;
+                if (is_record_) {
+                    queue_storage_.push(rawdata);
+                }
+                if (is_forward_) {
+                    queue_forward_.push(rawdata);
+                }
+            } else {
+                usleep(TimeSleepNotDataUs_);
             }
         }
     }
@@ -337,6 +342,8 @@ void Device::storage_thread_function()
                 // file_.flush();
                 file_size_counter_ += rawdata->length;
                 total_file_size_counter_ += rawdata->length;
+            } else {
+                usleep(TimeSleepNotDataUs_);
             }
         }
     }
@@ -354,6 +361,8 @@ void Device::forward_thread_function()
                 auto data = convert(rawdata);
                 // TODO
                 // Send Data via Socket
+            } else {
+                usleep(TimeSleepNotDataUs_);
             }
         }
     }

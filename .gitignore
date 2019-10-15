@@ -64,6 +64,7 @@ dist/
 runtime/
 tmp/
 temp/
+deploy/
 
 # Thrift Generated
 gen-js/
@@ -71,3 +72,6 @@ gen-ts/
 
 # MacOS
 .DS_Store
+
+# ! deploy script
+!deploy/*.sh

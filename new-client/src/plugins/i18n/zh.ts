@@ -40,6 +40,7 @@ export default {
     ltzero: '请输入大于0的数字',
     isKernel: '请输入有效的内核名',
     port: '请输入有效的端口号，在0-65535之间',
+    serialMsgType: '请输入有效的串口子类型号，在0-7之间',
   },
 
   Devices: {

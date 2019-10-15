@@ -45,12 +45,15 @@ BETTER_ENUM(DeviceParameterType,
             IpAddress = 100,
             DataPort = 101,
             TelemetryPort = 102,
-            BaudRate = 103,
 
-            Exposure = 200,
-            WhiteBalanceRed = 201,
-            WhiteBalanceBlue = 202,
-            FrameRate = 203)
+            Kernel = 200,
+            BaudRate = 201,
+            SerialMsgType = 202,
+
+            Exposure = 400,
+            WhiteBalanceRed = 401,
+            WhiteBalanceBlue = 402,
+            FrameRate = 403)
             
 }  // namespace tron
 }  // namespace wayz

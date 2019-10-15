@@ -4,12 +4,9 @@
 
 #pragma once
 
-#include <common/data_def/device_types.hpp>
 #include <common/rpc/gen-cpp/TronService.h>
 
 #include "devices/device.hpp"
-#include "devices/dummy/dummy.hpp"
-#include "devices/lidar/lidar.hpp"
 
 namespace wayz {
 namespace tron {

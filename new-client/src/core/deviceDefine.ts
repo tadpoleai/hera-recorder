@@ -16,10 +16,11 @@ const parameterTypes = {
   Imu: [
     'Kernel',
     'BaudRate',
+    'SerialMsgType',
   ],
   Lidar: [
     'IpAddress',
-    'Port',
+    'DataPort',
   ],
 };
 
@@ -28,8 +29,9 @@ const parameterRules = {
   DummyValue: [rules.required, rules.number, rules.interger],
   Kernel: [rules.required, rules.isKernel],
   BaudRate: [rules.required, rules.number, rules.ltzero],
+  SerialMsgType: [rules.required, rules.number, rules.serialMsgType],
   IpAddress: [rules.required, rules.ipAddress],
-  Port: [rules.required, rules.number, rules.port],
+  DataPort: [rules.required, rules.number, rules.port],
 };
 
 const maxDeviceNameLength = 32;

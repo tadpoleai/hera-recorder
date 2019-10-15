@@ -102,6 +102,7 @@ private:
     std::thread* thread_forward_;
     ThreadsafeQueue<std::shared_ptr<DeviceRawData>> queue_storage_;
     ThreadsafeQueue<std::shared_ptr<DeviceRawData>> queue_forward_;
+    int32_t TimeSleepNotDataUs_ = 500;
 };
 
 }  // namespace tron

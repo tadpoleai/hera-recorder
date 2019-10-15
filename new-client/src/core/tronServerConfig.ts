@@ -3,7 +3,7 @@ let port: number;
 let useHttps: boolean;
 
 if (process.env.NODE_ENV === 'production') {
-  hostName = 'tron.newayz.com';
+  hostName = '10.0.0.1';
   port = 80;
   useHttps = false;
 } else {
