@@ -38,9 +38,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from "vue-property-decorator";
-import { IParameter, IDevice, IDeviceInfo } from "@/core/tronApi";
-import deviceDefine from "@/core/deviceDefine";
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import { IParameter, IDevice, IDeviceInfo } from '@/core/tronApi';
+import deviceDefine from '@/core/deviceDefine';
 
 @Component
 export default class DeviceListEdit extends Vue {
@@ -68,12 +68,11 @@ export default class DeviceListEdit extends Vue {
 
   getCardColor(device: IDeviceInfo): string {
     if (device.error == 0) {
-      return "light-green";
-    } else if (device.error == 700) {
-      return "warn";
-    } else {
-      return "error";
+      return 'light-green';
+    } if (device.error == 700) {
+      return 'warn';
     }
+    return 'error';
   }
 }
 </script>
