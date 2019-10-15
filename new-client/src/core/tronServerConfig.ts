@@ -15,7 +15,6 @@ export default {
   hostName,
   port,
   useHttps,
-  syncPeriodMs: 12000,
-  timedOutMs: 5000,
+  syncPeriodMs: 6000,
   path: '/tron',
 };

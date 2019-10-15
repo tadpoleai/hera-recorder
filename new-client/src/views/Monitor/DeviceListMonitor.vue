@@ -9,22 +9,14 @@
       lg="3"
     >
       <!-- For Device List -->
-      <v-card class="pa-1">
-        <v-card-text>
-          <v-container class="ma-0 pa-0">
-            <v-row no-gutters>
-              <!-- Device Index -->
-              <v-col cols="1">{{indexDevice + 1}}</v-col>
-              <!-- Device Type -->
-              <v-col cols="5" class="pa-1">{{device.type}}</v-col>
-              <!-- Device Name -->
-              <v-col cols="6" class="pa-1">{{device.name}}</v-col>
-            </v-row>
-          </v-container>
+      <v-card :color="getCardColor(device)">
+        <v-card-title>{{device.type}}</v-card-title>
+        <v-card-text>{{device.name}}</v-card-text>
 
+        <v-card-text>
           <!-- Device Parameters -->
           {{$t('Devices.parameters')}}
-          <v-container class="ma-0 pa-0">
+          <v-container>
             <v-row
               v-for="(param, indexParam) in device.parameters"
               :key="indexDevice+'-'+indexParam"
@@ -32,6 +24,11 @@
             >
               <v-col cols="6" class="pa-1">{{param.type}}</v-col>
               <v-col cols="6" class="pa-1">{{param.value}}</v-col>
+            </v-row>
+
+            <v-row>
+              <v-col cols="6" class="pa-1">Volume</v-col>
+              <v-col cols="6" class="pa-1">{{device.volume}}</v-col>
             </v-row>
           </v-container>
         </v-card-text>
@@ -41,9 +38,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { IParameter, IDevice, IDeviceInfo } from '@/core/tronApi';
-import deviceDefine from '@/core/deviceDefine';
+import { Component, Vue, Prop } from "vue-property-decorator";
+import { IParameter, IDevice, IDeviceInfo } from "@/core/tronApi";
+import deviceDefine from "@/core/deviceDefine";
 
 @Component
 export default class DeviceListEdit extends Vue {
@@ -59,12 +56,24 @@ export default class DeviceListEdit extends Vue {
   get devicesPerPage(): number {
     if (this.$vuetify.breakpoint.xs) {
       return 1;
-    } if (this.$vuetify.breakpoint.smAndDown) {
+    }
+    if (this.$vuetify.breakpoint.smAndDown) {
       return 2;
-    } if (this.$vuetify.breakpoint.mdAndDown) {
+    }
+    if (this.$vuetify.breakpoint.mdAndDown) {
       return 3;
     }
     return 4;
+  }
+
+  getCardColor(device: IDeviceInfo): string {
+    if (device.error == 0) {
+      return "light-green";
+    } else if (device.error == 700) {
+      return "warn";
+    } else {
+      return "error";
+    }
   }
 }
 </script>
