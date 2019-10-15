@@ -6,34 +6,10 @@ import {
 } from 'thrift';
 
 import {
-  TronService, IStatusArgs, DeviceInitializer, DeviceInformation,
+  TronService, IStatusArgs, DeviceInitializer, DeviceInformation, Result,
 } from './gen-ts';
 
 import config from './tronServerConfig';
-
-export { IDeviceInitializerArgs } from './gen-ts';
-
-const options = {
-  transport: TBufferedTransport,
-  protocol: TJSONProtocol,
-  https: true,
-  path: '/tron',
-  headers: {
-    Host: config.hostName,
-    'Content-Type': 'text/plain',
-  },
-};
-
-const connection = createHttpConnection(
-  config.hostName,
-  config.port,
-  options,
-);
-
-const thriftClient = createHttpClient(
-  TronService.Client,
-  connection,
-);
 
 export interface IDaemonStatus {
   connected: boolean;
@@ -90,8 +66,6 @@ const daemonStatus: IDaemonStatus = {
   },
 };
 
-export { daemonStatus };
-
 const connectionFailedResult: ISimpleResult = {
   error: 20,
   reason: 'Connection to daemon timed out',
@@ -102,99 +76,110 @@ const pendingResult: ISimpleResult = {
   reason: 'Other command is pending',
 };
 
-let timedOutCounter = config.timedOutMs;
+const connectionOptions = {
+  transport: TBufferedTransport,
+  protocol: TJSONProtocol,
+  https: config.useHttps,
+  path: config.path,
+  headers: {
+    Host: config.hostName,
+    'Content-Type': 'text/plain',
+  },
+};
 
-export async function getStatus(): Promise<ISimpleResult> {
-  if (daemonStatus.pending.command || daemonStatus.pending.sync) {
-    return pendingResult;
-  }
-  daemonStatus.pending.sync = true;
-
-  try {
-    const result = await thriftClient.get_status();
-    daemonStatus.connected = true;
-    daemonStatus.status = result.status;
-    timedOutCounter = config.syncPeriodMs + config.timedOutMs;
-    return { error: result.error, reason: result.reason };
-  } catch (e) {
-    daemonStatus.connected = false;
-    return connectionFailedResult;
-  } finally {
-    daemonStatus.pending.sync = false;
-  }
+function newClient(callback: (e: Error) => void): TronService.Client {
+  const connection = createHttpConnection(
+    config.hostName,
+    config.port,
+    connectionOptions,
+  );
+  connection.on('error', callback);
+  return createHttpClient(
+    TronService.Client,
+    connection,
+  );
 }
 
-export async function start(devices: Array<IDevice>, storageFolder: string): Promise<ISimpleResult> {
-  if (daemonStatus.pending.command) {
-    return pendingResult;
-  }
-  daemonStatus.pending.command = true;
+function apiWrapper<T0, T1>(apiName: string) {
+  return (arg0: T0, arg1: T1) => new Promise<ISimpleResult>((async (resolve) => {
+    // Return Pending if other command is pending
+    if (apiName === 'getStatus') {
+      if (daemonStatus.pending.command || daemonStatus.pending.sync) {
+        resolve(pendingResult);
+      }
+      daemonStatus.pending.sync = true;
+    } else {
+      if (daemonStatus.pending.command) {
+        resolve(pendingResult);
+      }
+      daemonStatus.pending.command = true;
+    }
 
-  try {
-    const deviceInitializers: Array<DeviceInitializer> = [];
-    devices.forEach((device: IDevice) => {
-      const deviceInitializer = new DeviceInitializer({
-        name: device.name,
-        type: device.type,
-        parameters: new Map<string, string>(),
-      });
-      device.parameters.forEach((parameter: IParameter) => {
-        deviceInitializer.parameters.set(parameter.type, parameter.value);
-      });
-      deviceInitializers.push(deviceInitializer);
+    const client = newClient((err: Error) => {
+      console.log(`error${err}`);
+      if (apiName === 'getStatus') {
+        daemonStatus.pending.sync = false;
+      } else {
+        daemonStatus.pending.command = false;
+      }
+      daemonStatus.connected = false;
+      resolve(connectionFailedResult);
     });
-    const result = await thriftClient.start(deviceInitializers, storageFolder);
+
+    let result: Result | ISimpleResult;
+    switch (apiName) {
+      case 'getStatus':
+        result = await client.get_status();
+        daemonStatus.status = (result as Result).status;
+        break;
+      case 'start':
+        {
+          const devices = arg0 as unknown as Array<IDevice>;
+          const deviceInitializers: Array<DeviceInitializer> = [];
+          devices.forEach((device: IDevice) => {
+            const deviceInitializer = new DeviceInitializer({
+              name: device.name,
+              type: device.type,
+              parameters: new Map<string, string>(),
+            });
+            device.parameters.forEach((parameter: IParameter) => {
+              deviceInitializer.parameters.set(parameter.type, parameter.value);
+            });
+            deviceInitializers.push(deviceInitializer);
+          });
+          result = await client.start(deviceInitializers, arg1 as unknown as string);
+          daemonStatus.status = (result as Result).status;
+        }
+        break;
+      case 'stop':
+        result = await client.stop();
+        daemonStatus.status = (result as Result).status;
+        break;
+      case 'recordOrPause':
+        result = await client.record_or_pause(arg0 as unknown as boolean);
+        daemonStatus.status = (result as Result).status;
+        break;
+      case 'adjustDeviceParameters':
+        result = await client.adjust_device_parameters(
+            arg0 as unknown as number,
+            arg1 as unknown as Map<string, string>,
+        );
+        daemonStatus.status = (result as Result).status;
+        break;
+      default:
+        result = connectionFailedResult;
+        break;
+    }
+
+    if (apiName === 'getStatus') {
+      daemonStatus.pending.sync = false;
+    } else {
+      daemonStatus.pending.command = false;
+    }
     daemonStatus.connected = true;
-    daemonStatus.status = result.status;
-    timedOutCounter = config.syncPeriodMs + config.timedOutMs;
-    return { error: result.error, reason: result.reason };
-  } catch (e) {
-    console.log(e);
-    daemonStatus.connected = false;
-    return connectionFailedResult;
-  } finally {
-    daemonStatus.pending.command = false;
-  }
-}
 
-export async function stop(): Promise<ISimpleResult> {
-  if (daemonStatus.pending.command) {
-    return pendingResult;
-  }
-  daemonStatus.pending.command = true;
-
-  try {
-    const result = await thriftClient.stop();
-    daemonStatus.connected = true;
-    daemonStatus.status = result.status;
-    timedOutCounter = config.syncPeriodMs + config.timedOutMs;
-    return { error: result.error, reason: result.reason };
-  } catch (e) {
-    daemonStatus.connected = false;
-    return connectionFailedResult;
-  } finally {
-    daemonStatus.pending.command = false;
-  }
-}
-
-export async function record(to: boolean): Promise<ISimpleResult> {
-  if (daemonStatus.pending.command) {
-    return pendingResult;
-  }
-  daemonStatus.pending.command = true;
-
-  try {
-    const result = await thriftClient.record_or_pause(to);
-    daemonStatus.connected = true;
-    daemonStatus.status = result.status;
-    timedOutCounter = config.syncPeriodMs + config.timedOutMs;
-    return { error: result.error, reason: result.reason };
-  } catch (e) {
-    daemonStatus.connected = false;
-    return connectionFailedResult;
-  } finally {
-    daemonStatus.pending.command = false;
-  }
+    resolve({ error: result.error, reason: result.reason });
+  }));
 }
 
 export function toDeviceInfo(deviceInfos: Array<DeviceInformation>): Array<IDeviceInfo> {
@@ -224,16 +209,18 @@ export function formatResult(result: ISimpleResult) {
   return `Error: ${result.error.toString()}; Reason: ${result.reason}`;
 }
 
+const getStatus = apiWrapper<void, void>('getStatus');
+const start = apiWrapper<Array<IDevice>, string>('start');
+const stop = apiWrapper<void, void>('stop');
+const recordOrPause = apiWrapper<boolean, void>('recordOrPause');
+
+export {
+  getStatus, start, stop, recordOrPause, daemonStatus,
+};
+
 async function sync() {
   const status = await getStatus();
+  console.log(status);
   setTimeout(sync, config.syncPeriodMs);
 }
 sync();
-
-setInterval(() => {
-  if (timedOutCounter > 0) {
-    timedOutCounter -= 1000;
-  } else {
-    daemonStatus.connected = false;
-  }
-}, 1000);

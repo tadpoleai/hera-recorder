@@ -9,6 +9,6 @@ export default {
   interger: (v: string) => (Number.isInteger(Number(v))) || i18n.t('InputRules.interger'),
   number: (v: string) => (!Number.isNaN(Number(v))) || i18n.t('InputRules.number'),
   ltzero: (v: string) => (Number(v) > 0) || i18n.t('InputRules.ltzero'),
-  isKernel: (v: string) => (v.match(/^[0-9a-zA-Z_\-\/]*$/) !== null) || i18n.t('InputRules.isKernel'),
+  isKernel: (v: string) => (v.match(/^[0-9a-zA-Z_\-/]*$/) !== null) || i18n.t('InputRules.isKernel'),
   port: (v: string) => (Number(v) < 65536 && Number(v) >= 0) || i18n.t('InputRules.port'),
 };

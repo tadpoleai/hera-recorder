@@ -79,7 +79,7 @@
                         v-model="param.value"
                         :disabled="!editable"
                         :rules="deviceDefine.parameterRules[param.type]"
-                        :label="$t(param.type)"
+                        :label="param.type"
                       ></v-text-field>
                     </v-col>
                   </v-row>

@@ -92,7 +92,7 @@ import {
   daemonStatus,
   start,
   stop,
-  record,
+  recordOrPause,
   formatResult,
   toDeviceInfo,
   IParameter,
@@ -224,7 +224,7 @@ export default class Acquisition extends Vue {
   btnRecordHandler() {
     console.log('record');
     this.btnRecordPending = true;
-    record(!this.daemonStatus.status.is_record).then(
+    recordOrPause(!this.daemonStatus.status.is_record).then(
       (result: ISimpleResult) => {
         this.resultHandler(result);
         this.btnRecordPending = false;

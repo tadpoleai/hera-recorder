@@ -22,8 +22,10 @@
       </v-list>
     </v-navigation-drawer>
 
-    <v-app-bar color="primary" app>
+    <v-app-bar :color="appBarColor" app>
       <v-toolbar-title class="white--text">{{$t('title')}}</v-toolbar-title>
+      <v-spacer />
+      <span v-show="showAppBarMsg" class="white--text">{{$t('noconnection')}}</span>
       <v-spacer />
       <v-menu>
         <template v-slot:activator="{ on }">
@@ -48,10 +50,6 @@
       </v-container>
     </v-content>
 
-    <v-overlay :value="showOverlay" opacity="0.75">
-      <connection-failed />
-    </v-overlay>
-
     <v-bottom-navigation v-if="showBottomNav" dark shift app>
       <v-btn v-for="route in routeList" :key="route.name" :to="route.path">
         <span>{{$t(route.name)}}</span>
@@ -65,13 +63,8 @@
 import { Component, Vue } from 'vue-property-decorator';
 import router from '@/router/router';
 import { daemonStatus } from '@/core/tronApi';
-import ConnectionFailed from '@/views/App/ConnectionFailed.vue';
 
-@Component({
-  components: {
-    ConnectionFailed,
-  },
-})
+@Component()
 export default class App extends Vue {
   name = 'app';
 
@@ -87,7 +80,11 @@ export default class App extends Vue {
     return this.$vuetify.breakpoint.mdAndDown;
   }
 
-  get showOverlay(): boolean {
+  get appBarColor(): boolean {
+    return this.daemonStatus.connected ? 'primary' : 'error';
+  }
+
+  get showAppBarMsg(): boolean {
     return !this.daemonStatus.connected;
   }
 
