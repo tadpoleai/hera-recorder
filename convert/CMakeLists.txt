@@ -7,24 +7,25 @@ set(CMAKE_CXX_FLAGS "-Werror -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-set(PROJECT_NAME daemon)
+set(PROJECT_NAME convert)
 project(${PROJECT_NAME})
+
+find_package(Threads REQUIRED)
 
 file(GLOB_RECURSE
     ALL_SRC
-    "src/*.cpp"
-    "src/**/*.cpp"
+    "**/*.cpp"
 )
 include_directories(
-    "../"
     "/usr/local/include/"
-    ${CMAKE_BINARY_DIR}
 )
-add_executable(${PROJECT_NAME}
+add_library(common
     ${ALL_SRC}
+    ${RPC_GEN_CPP}/tron_constants.cpp
+    ${RPC_GEN_CPP}/tron_types.cpp
+    ${RPC_GEN_CPP}/TronService.cpp
 )
-target_link_libraries(${PROJECT_NAME}
-    common
-    devices
-    "/usr/local/lib/libthrift-0.12.0.so"
+target_link_libraries(common
+    Threads::Threads
+    "/usr/local/lib/libthrift.so"
 )

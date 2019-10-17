@@ -5,8 +5,7 @@
 #pragma once
 
 #include <common/rpc/gen-cpp/TronService.h>
-
-#include "devices/device.hpp"
+#include <devices/all_devices.hpp>
 
 namespace wayz {
 namespace tron {

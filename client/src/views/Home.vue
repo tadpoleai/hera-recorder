@@ -1,9 +1,0 @@
-<template>
-    <div>Home Page TODO</div>
-</template>
-
-<script>
-export default {
-  name: 'home',
-};
-</script>

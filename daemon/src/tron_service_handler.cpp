@@ -9,10 +9,6 @@
 #include <common/data_def/device_types.hpp>
 #include <common/tron_errno.h>
 
-#include "devices/dummy/dummy.hpp"
-#include "devices/imu/imu.hpp"
-#include "devices/lidar/lidar.hpp"
-
 namespace wayz {
 namespace tron {
 
@@ -178,7 +174,6 @@ void TronServiceHandler::start(Result& _return,
                                       e,
                                       "Device \"" + name + "\" occured " + device->get_reason());
         }
-
     }
     generate_status(_return);
 }

@@ -10,8 +10,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(PROJECT_NAME common)
 project(${PROJECT_NAME})
 
-find_package(Threads REQUIRED)
-
 set(RPC_GEN_CPP "rpc/gen-cpp")
 add_custom_command(
     OUTPUT ${RPC_GEN_CPP}/tron_constants.cpp
@@ -32,13 +30,12 @@ file(GLOB_RECURSE
 include_directories(
     "/usr/local/include/"
 )
-add_library(common
+add_library(${PROJECT_NAME}
     ${ALL_SRC}
     ${RPC_GEN_CPP}/tron_constants.cpp
     ${RPC_GEN_CPP}/tron_types.cpp
     ${RPC_GEN_CPP}/TronService.cpp
 )
-target_link_libraries(common
-    Threads::Threads
+target_link_libraries(${PROJECT_NAME}
     "/usr/local/lib/libthrift.so"
 )

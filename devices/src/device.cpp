@@ -192,7 +192,7 @@ std::map<std::string, std::string> Device::get_parameters() const
     for (const auto& parameter : parameters_) {
         parameters[parameter.first._to_string()] = parameter.second;
     }
-    return std::move(parameters);
+    return parameters;
 }
 int64_t Device::get_volume() const
 {

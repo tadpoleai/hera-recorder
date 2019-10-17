@@ -37,7 +37,6 @@ TronErrno Dummy::connect()
         return set_error_and_die(TronErrno::InsufficientParameters, "Paramater DummyRate absent");
     }
     
-    printf("PR_MS: %ld\n", period_ms_);
     return TronErrno::Success;
 }
 void Dummy::disconnect()

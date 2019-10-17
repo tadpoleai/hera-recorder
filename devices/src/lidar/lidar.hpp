@@ -98,12 +98,8 @@ private:
     boost::asio::ip::udp::endpoint receive_data_endpoint_;
     boost::asio::ip::udp::endpoint receive_position_endpoint_;
     unsigned short data_port_;
-    unsigned short telemetry_port_;
     
     char receive_buffer_[kDataBufferSize];
-    char receive_postion_buffer_[kPositionBufferSize];
-
-
 };
 
 }  // namespace tron
