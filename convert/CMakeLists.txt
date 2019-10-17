@@ -10,22 +10,25 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(PROJECT_NAME convert)
 project(${PROJECT_NAME})
 
+set(ROS_ROOT_DIR "/opt/ros/kinetic")
+set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${ROS_ROOT_DIR}")
+
 find_package(Threads REQUIRED)
+find_package(rosbag REQUIRED)
 
 file(GLOB_RECURSE
     ALL_SRC
-    "**/*.cpp"
+    "src/*.cpp"
+    "src/**/*.cpp"
 )
 include_directories(
+    "../"
     "/usr/local/include/"
+    ${rosbag_INCLUDE_DIRS}
 )
-add_library(common
+add_executable(${PROJECT_NAME}
     ${ALL_SRC}
-    ${RPC_GEN_CPP}/tron_constants.cpp
-    ${RPC_GEN_CPP}/tron_types.cpp
-    ${RPC_GEN_CPP}/TronService.cpp
 )
-target_link_libraries(common
-    Threads::Threads
-    "/usr/local/lib/libthrift.so"
+target_link_libraries(${PROJECT_NAME}
+    ${rosbag_LIBRARIES}
 )
