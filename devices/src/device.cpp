@@ -138,7 +138,7 @@ TronErrno Device::set_storage(const std::string& folder)
     }
     if (!is_storage_path_set_) {
         storage_root_ = folder;
-        storage_path_ = folder + "/" + name_ + "/";
+        storage_path_ = folder + "/" + get_type()._to_string() + "/" + name_ + "/";
         TronErrno e = create_storage_folder();
         if (e == TronErrno::Success) {
             is_storage_path_set_ = true;
