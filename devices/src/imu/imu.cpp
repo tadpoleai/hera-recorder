@@ -126,6 +126,9 @@ std::shared_ptr<SensorData> Imu::do_convert(const std::shared_ptr<DeviceRawData>
     // Parse Rawdata
     const auto* rawdata_buf = reinterpret_cast<DeviceRawDataImu*>(rawdata->rawdata_buf);
 
+    // Calculate Intrinsic Time
+    data->timestamp_intrinsic_ns = rawdata_buf->timestamp_ns;
+
     // Convert
     for (int32_t i = 0; i < 3; ++i) {
         data_imu_buf->angular_velocity[i] = rawdata_buf->gyro[i] * (M_PI / 200.0 / 180.0);

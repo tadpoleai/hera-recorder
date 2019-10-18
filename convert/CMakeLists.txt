@@ -30,5 +30,6 @@ add_executable(${PROJECT_NAME}
     ${ALL_SRC}
 )
 target_link_libraries(${PROJECT_NAME}
+    devices
     ${rosbag_LIBRARIES}
 )

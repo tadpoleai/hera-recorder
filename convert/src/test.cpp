@@ -1,19 +1,13 @@
-#include <ros/ros.h>
-#include <rosbag/bag.h>
-#include <std_msgs/String.h>
-
+#include "all_converters.hpp"
 #include "iostream"
+
+using namespace wayz::tron;
 
 int main(int args, char** argv)
 {
-    std_msgs::String a;
-    a.data = "a";
-
-    rosbag::Bag bag;
-    bag.open("a.bag", rosbag::bagmode::Write);
-    bag.write("test/string", ros::Time(1), a);
-    bag.close();
-
-    std::cout << a << std::endl;
-    return 0;
+    Converter::open_bag("test.bag");
+    Converter* imu_converter =
+            new ImuConverter("imu", "internal", "../20191018103800_record_test_1min/Imu/internal/");
+    delete imu_converter;
+    Converter::close_bag();
 }

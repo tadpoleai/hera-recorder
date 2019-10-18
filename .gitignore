@@ -69,9 +69,13 @@ deploy/
 # Thrift Generated
 gen-js/
 gen-ts/
+gen-cpp/
 
 # MacOS
 .DS_Store
+
+# Recorded Data
+20????????????_*/
 
 # ! deploy script
 !deploy/*.sh

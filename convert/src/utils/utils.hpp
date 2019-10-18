@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <cstdint>
+#include <string>
+
 #include <ros/ros.h>
 
 using TimestampNs = int64_t;
