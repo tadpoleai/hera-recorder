@@ -93,10 +93,8 @@ public:
 private:
     boost::asio::io_service io_service_;
     boost::asio::ip::udp::socket* data_socket_;
-   // boost::asio::ip::udp::socket* telemetry_socket_;
     boost::asio::ip::address address_;
     boost::asio::ip::udp::endpoint receive_data_endpoint_;
-    boost::asio::ip::udp::endpoint receive_position_endpoint_;
     unsigned short data_port_;
     
     char receive_buffer_[kDataBufferSize];

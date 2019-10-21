@@ -41,14 +41,6 @@ TronErrno Lidar::connect()
         return set_error_and_die(TronErrno::InsufficientParameters, "Parameter DataPort absent");
     }
 
-    /*
-    if (parameters_.count(DeviceParameterType::TelemetryPort)) {
-        telemetry_port_ = std::stoi(parameters_[DeviceParameterType::TelemetryPort]);
-    } else {
-        return set_error_and_die(TronErrno::InsufficientParameters);
-    }
-    */
-
     int ret = system(("curl --data \"laser=on\" http://" +
                       parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
                              .c_str());
@@ -69,23 +61,7 @@ TronErrno Lidar::connect()
         data_socket_ = nullptr;
         return set_error_and_die(TronErrno::CanNotOpenEthernetDevice);
     }
-    /*
-        try {
-            telemetry_socket_ = new boost::asio::ip::udp::socket(
-                    io_service_,
-                    boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::from_string(
-                                                           "255.255.255.255"),
-                                                   telemetry_port_));
-        } catch (const std::exception& e) {
-            telemetry_socket_ = nullptr;
-            if (data_socket_ && data_socket_->is_open()) {
-                data_socket_->close();
-                delete data_socket_;
-                data_socket_ = nullptr;
-            }
-            return set_error_and_die(TronErrno::CanNotOpenEthernetSensor);
-        }
-    */
+
     if (data_socket_ == nullptr) {  // || telemetry_socket_ == nullptr) {
         std::cout << "create socket failed!" << std::endl;
         return set_error_and_die(TronErrno::InsufficientParameters);
@@ -112,11 +88,6 @@ void Lidar::do_disconnect()
         delete data_socket_;
         data_socket_ = nullptr;
     }
-    // if (telemetry_socket_ && telemetry_socket_->is_open()) {
-    //     telemetry_socket_->close();
-    //     delete telemetry_socket_;
-    //     telemetry_socket_ = nullptr;
-    // }
     if (io_service_.stopped()) {
         io_service_.stop();
         io_service_.reset();
@@ -141,9 +112,6 @@ std::shared_ptr<DeviceRawData> Lidar::fetch()
     data->sequence = sequence_++;
     data->timestamp_receive_ns = get_system_timestamp();
 
-    // telemetry_socket_->receive_from(boost::asio::buffer(receive_postion_buffer_,
-    //                                                     sizeof(receive_postion_buffer_)),
-    //                                 receive_position_endpoint_);
     try {
         io_service_.run();
     } catch (const std::exception& e) {
