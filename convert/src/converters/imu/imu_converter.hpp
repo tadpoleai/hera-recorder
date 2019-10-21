@@ -11,7 +11,7 @@ namespace tron {
 class ImuConverter final : public Converter {
 public:
     ImuConverter(const std::string& frame_id,
-                 const ::std::string device_name,
+                 const std::string& device_name,
                  const std::string& device_data_folder);
     ImuConverter(const ImuConverter&) = delete;
     ImuConverter& operator=(const ImuConverter&) = delete;

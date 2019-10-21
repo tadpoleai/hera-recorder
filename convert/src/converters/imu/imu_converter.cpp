@@ -8,17 +8,16 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/MagneticField.h>
 
-
 namespace wayz {
 namespace tron {
 
 ImuConverter::ImuConverter(const std::string& frame_id,
-                           const std::string device_name,
+                           const std::string& device_name,
                            const std::string& device_data_folder) :
     Converter(frame_id, device_name, device_data_folder)
 {
     imu_topic_name_ = topic_name_prefix_ + "imu";
-    magnetic_topic_name_ = topic_name_prefix_ + "magnetic";
+    magnetic_topic_name_ = topic_name_prefix_ + "magnetic_field";
 }
 
 ImuConverter::~ImuConverter()
