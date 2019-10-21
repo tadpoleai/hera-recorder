@@ -10,20 +10,24 @@
 namespace wayz {
 namespace tron {
 
-struct LaserPoint
-{
+enum class LidarType : int8_t {
+    VelodyneHDL32E = 0x21,
+    VelodyneVLP16C = 0x22,
+    VelodyneVLP32C = 0x28
+};
+
+struct LidarPoint {
     float x;
     float y;
     float z;
-    int8_t ring;
-    int8_t intensity;
+    float channel;
+    float intensity;
 };
 
-struct DataLidar
-{
-    int8_t sensor_type;
+struct DataLidar {
+    LidarType lidar_type;
     int32_t point_number;
-    LaserPoint points[0];
+    LidarPoint lidar_points[0];
 };
 
 

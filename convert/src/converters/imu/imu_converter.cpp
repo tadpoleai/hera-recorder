@@ -39,6 +39,8 @@ bool ImuConverter::convert_and_write_one_data(const std::shared_ptr<DeviceRawDat
     imu_msg.header.stamp = ros_time_intrinsic;
     imu_msg.header.seq = sensor_data->sequence;
     imu_msg.header.frame_id = frame_id_;
+    // Mark orientation as n/a, refer to sensor_msgs::Imu definition
+    imu_msg.orientation_covariance[0] = -1;
     imu_msg.linear_acceleration.x = data_imu_buf->linear_acceleration[0];
     imu_msg.linear_acceleration.y = data_imu_buf->linear_acceleration[1];
     imu_msg.linear_acceleration.z = data_imu_buf->linear_acceleration[2];

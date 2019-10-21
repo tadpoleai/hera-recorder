@@ -12,9 +12,6 @@
 namespace wayz {
 namespace tron {
 
-#define HOUR_TO_US ((uint64_t)(3600000000))
-#define HALF_HOUR_TO_US ((uint64_t)(1800000000))
-
 Lidar::Lidar(int32_t id, const std::string& name) : Device(id, name) {}
 Lidar::~Lidar()
 {
@@ -49,7 +46,6 @@ TronErrno Lidar::connect()
     } else {
         std::cout << "fail to power on " << get_name() << std::endl;
     }
-
 
     try {
         data_socket_ = new boost::asio::ip::udp::socket(
@@ -129,130 +125,136 @@ std::shared_ptr<SensorData> Lidar::convert(const std::shared_ptr<DeviceRawData>&
 }
 std::shared_ptr<SensorData> Lidar::do_convert(const std::shared_ptr<DeviceRawData>& rawdata)
 {
-    DataLidar lidar_data;
+    // Create a Buff to Store Data
+    int32_t total_length =
+            sizeof(SensorData) + sizeof(DataLidar) + sizeof(LidarPoint) * NumLidarPoints_;
+    auto data =
+            std::shared_ptr<SensorData>(reinterpret_cast<SensorData*>(new uint8_t[total_length]));
 
-    LidarRawData* packet = reinterpret_cast<LidarRawData*>(rawdata->rawdata_buf);
+    // Fullfil Metadata (Header) of Data;
+    data->length = total_length;
+    data->device_type = rawdata->device_type;
+    data->device_data_type = rawdata->device_data_type;
+    data->sequence = rawdata->sequence;
+    data->timestamp_receive_ns = rawdata->timestamp_receive_ns;
 
-    int max_laser_number = 0;
-    if (packet->sensor_type == 0x28 || packet->sensor_type == 0x21) {
-        max_laser_number = 32;
-    } else if (packet->sensor_type == 0x22) {
-        max_laser_number = 16;
+    // A Pointer to Real Data
+    DataLidar* data_lidar = reinterpret_cast<DataLidar*>(data->data_buf);
+    LidarPoint* lidar_point = data_lidar->lidar_points;
+    data_lidar->point_number = 0;
+
+    // Parse rawdata;
+    const auto* rawdata_buf = reinterpret_cast<DeviceRawDataLidar*>(rawdata->rawdata_buf);
+
+    // Check LidarType and ReturnMode
+    // For more details, refer to the following document
+    // pdf: VLP-16 User Manual Note, section: 9.3.1.7, Factory Bytes, page: 56
+    if (rawdata_buf->lidar_type == LidarType::VelodyneVLP16C ||
+        rawdata_buf->lidar_type == LidarType::VelodyneVLP32C ||
+        rawdata_buf->lidar_type == LidarType::VelodyneHDL32E) {
     } else {
-        std::cout << "sensor type :" << packet->sensor_type << " not support!" << std::endl;
+        // Unsupported lidar type;
+        return nullptr;
+    }
+    if (rawdata_buf->return_mode == ReturnMode::DualReturn) {
+        // Unsupported return mode
+        return nullptr;
     }
 
-    bool time_synced;
-    if (max_laser_number > 0) {
-        uint64_t msec = get_system_timestamp();
-        uint64_t lidartime =
-                HOUR_TO_US * (uint64_t)((uint64_t)(msec - packet->timestamp + HALF_HOUR_TO_US) /
-                                        HOUR_TO_US) +
-                packet->timestamp;
-        int64_t delay = msec - lidartime;
-        if (delay < 0 || delay > 5000000) {
-            time_synced = false;
-            lidartime = msec - 2000;
+    // Get azimuth gap between data blocks
+    // For more details, refer to the following document
+    // pdf: VLP-16 User Manual Note, section: 9.5, Precision Azimuth Calculation, page: 65
+    double azimuth_gap = ((int32_t)(rawdata_buf->data_blocks[1].azimuth) -
+                          (int32_t)(rawdata_buf->data_blocks[0].azimuth)) *
+                         AzimuthGranularity_;
+    if (azimuth_gap < 0) {
+        azimuth_gap += 2 * M_PI;
+    }
 
-        } else {
-            time_synced = true;
-        }
+    // Calculate laser firing timestamp of the first laser beam
+    int64_t t_recv_us = (rawdata->timestamp_receive_ns) / UsToNs_;
+    int64_t t_packet_us = (int64_t)(rawdata_buf->timestamp);
+    int64_t t_fire_us =
+            HourToUs_ * ((t_recv_us - t_packet_us + HalfHourToUs_) / HourToUs_) + t_packet_us;
+    if (t_fire_us - t_recv_us > MaxDelayToleranceUs_) {
+        // Synchronization lost
+        return nullptr;
+    }
+    data->timestamp_intrinsic_ns = t_fire_us * UsToNs_;
 
-        if (!time_synced)
-            std::cout << "lidar time synced failure" << std::endl;
-        double interpolated = 0.0;
-        double const PI = acos(double(-1));
+    // Fulfill Lidar Points
+    for (size_t data_block_index = 0; data_block_index < NumDataBlockPerPacket_;
+         ++data_block_index) {
+        const auto* data_block = &rawdata_buf->data_blocks[data_block_index];
 
-        if (packet->firingData[1].rotational_position < packet->firingData[0].rotational_position) {
-            interpolated = ((packet->firingData[1].rotational_position + 36000) -
-                            packet->firingData[0].rotational_position) /
-                           2.0;
-        } else {
-            interpolated = (packet->firingData[1].rotational_position -
-                            packet->firingData[0].rotational_position) /
-                           2.0;
-        }
+        // ROS axes definitions is used for Lidar's xyz
+        // in which X = forward, Y = left, Z = up, right-handed
+        // regardless of velodyne's original axes definitions
+        // refer to web: https://www.ros.org/reps/rep-0103.html#axis-orientation
+        // also, web: https://blog.csdn.net/chengde6896383/article/details/86682882
+        // consequently, a +90deg (M_PI/2) shiftation is added to azimuth
+        double azimuth_base = AzimuthGranularity_ * (data_block->azimuth) + M_PI / 2;
 
-        lidar_data.point_number = 0;
-        for (int firing_index = 0; firing_index < kFiringPerPKT; firing_index++) {
-            const FiringData firing_data = packet->firingData[firing_index];
+        for (size_t channel_index = 0; channel_index < NumChannelPerDataBlock_; ++channel_index) {
+            const auto* channel = &data_block->channels[channel_index];
 
-            for (int laser_index = 0; laser_index < kLaserPerFiring; laser_index++) {
-                double azimuth = static_cast<double>(firing_data.rotational_position);
-                if (packet->sensor_type == 0x21) {
-                    double laser_relative_time = kLaserPerFiring * kTimeBetweenFirings +
-                                                 kTimeHalfIdle * (laser_index / max_laser_number);
-                    azimuth += interpolated * laser_relative_time / kTimeTotalCycle;
-                }
-                if (laser_index >= max_laser_number) {
-                    azimuth += interpolated;
-                }
-                if (azimuth >= 36000) {
-                    azimuth -= 36000;
-                }
-                azimuth = azimuth / 100.0;
-                if (packet->sensor_type == 0x21) {
-                    if (firing_data.laser_returns[laser_index].distance < 0.001) {
-                        continue;
-                    }
-                }
-                double distance =
-                        static_cast<double>(firing_data.laser_returns[laser_index].distance) * 4.0 /
-                        1000.0;
-                double vertical = 0.0;
-                if (max_laser_number == 32) {
-                    if (packet->sensor_type == 0x21) {
-                        vertical = kLut32[laser_index];
-                    } else if (packet->sensor_type == 0x28) {
-                        vertical = kLut32Alpha[laser_index];
-                        azimuth += kLut32Rita[laser_index];
-                    }
-                } else {
-                    vertical = kLut16[laser_index % max_laser_number];
-                }
-                int32_t intensity =
-                        static_cast<int32_t>(firing_data.laser_returns[laser_index].intensity);
-                azimuth = azimuth * PI / 180.0;
-                vertical = vertical * PI / 180.0;
-
-                double x = distance * cos(vertical) * sin(azimuth);
-                double y = distance * cos(vertical) * cos(azimuth);
-                double z = distance * sin(vertical);
-
-                LaserPoint laser_point;
-                laser_point.x = x;
-                laser_point.y = y;
-                laser_point.z = z;
-                laser_point.ring = laser_index;
-                laser_point.intensity = intensity;
-                if (laser_point.x == 0.0f && laser_point.y == 0.0f && laser_point.z == 0.0f) {
-                    continue;
-                }
-                lidar_data.sensor_type = packet->sensor_type;
-                lidar_data.points[lidar_data.point_number] = laser_point;
-                lidar_data.point_number++;
+            // No reflective if distance is zero
+            if (channel->distance == 0) {
+                continue;
             }
-        }
+            lidar_point->intensity = channel->reflectivity;
 
-        // Create a Buff to Store Data
-        int32_t totalLength = sizeof(SensorData) + sizeof(lidar_data);
-        SensorData* data = reinterpret_cast<SensorData*>(new uint8_t[totalLength]);
-        DataLidar* dataLidarBuf = reinterpret_cast<DataLidar*>(data->data_buf);
+            switch (rawdata_buf->lidar_type) {
+            case LidarType::VelodyneVLP16C: {
+                double azimuth =
+                        azimuth_base + azimuth_gap * GetRelativeAzimuthChange16C(channel_index);
+                double distance = channel->distance * DistanceGranularity16C_;
 
-        // Fullfil Metadata (Header) of Data;
-        data->length = totalLength;
-        data->device_type = rawdata->device_type;
-        data->device_data_type = rawdata->device_data_type;
-        data->sequence = rawdata->sequence;
-        data->timestamp_receive_ns = rawdata->timestamp_receive_ns;
-        dataLidarBuf->point_number = lidar_data.point_number;
-        dataLidarBuf->sensor_type = lidar_data.sensor_type;
-        memcpy(dataLidarBuf->points,
-               lidar_data.points,
-               lidar_data.point_number * sizeof(LaserPoint));
-        return std::shared_ptr<SensorData>(data);
-    }
-    return nullptr;
+                double pitch = VerticalAngles16C_[channel_index % 16];
+                double distance_horizontal = distance * cos(pitch);
+                lidar_point->x = distance_horizontal * sin(azimuth);
+                lidar_point->y = distance_horizontal * cos(azimuth);
+                lidar_point->z = distance * sin(pitch) + VerticalCorrection16C_[channel_index];
+                lidar_point->channel = channel_index % 16;
+            } break;
+
+            case LidarType::VelodyneVLP32C: {
+                double azimuth = azimuth_base + AzimuthOffset32C_[channel_index] +
+                                 azimuth_gap * GetRelativeAzimuthChange32C(channel_index);
+                double distance = channel->distance * DistanceGranularity32C_;
+
+                double pitch = VerticalAngles32C_[channel_index];
+                double distance_horizontal = distance * cos(pitch);
+                lidar_point->x = distance_horizontal * sin(azimuth);
+                lidar_point->y = distance_horizontal * cos(azimuth);
+                lidar_point->z = distance * sin(pitch);
+                lidar_point->channel = channel_index;
+            } break;
+
+            case LidarType::VelodyneHDL32E: {
+                double azimuth =
+                        azimuth_base + azimuth_gap * GetRelativeAzimuthChange32E(channel_index);
+                double distance = channel->distance * DistanceGranularity32E_;
+
+                double pitch = VerticalAngles32E_[channel_index];
+                double distance_horizontal = distance * cos(pitch);
+                lidar_point->x = distance_horizontal * sin(azimuth);
+                lidar_point->y = distance_horizontal * cos(azimuth);
+                lidar_point->z = distance * sin(pitch);
+                lidar_point->channel = channel_index;
+            } break;
+
+            default:
+                return nullptr;
+                break;
+            }  // switch lidar type
+
+            data_lidar->point_number++;
+            lidar_point++;
+        }  // for channel
+    }      // for data_block
+
+    return std::move(data);
 }
 TronErrno Lidar::do_adjust_parameter(DeviceParameterType type, const std::string& value)
 {

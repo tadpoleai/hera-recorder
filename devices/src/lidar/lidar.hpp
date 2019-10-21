@@ -3,71 +3,14 @@
 //
 
 #pragma once
-#include "../device.hpp"
+#include <cmath>
+
 #include <boost/asio.hpp>
+
+#include "../device.hpp"
 
 namespace wayz {
 namespace tron {
-
-static const int kDataBufferSize = 1500;
-static const int kPositionBufferSize = 800;
-const std::vector<double> kLut16 = {-15.0, 1.0, -13.0, 3.0, -11.0, 5.0,
-                                    -9.0,  7.0, -7.0,  9.0, -5.0,  11.0,
-                                    -3.0,  13.0,-1.0,  15.0};
-const std::vector<double> kLut32 = {-30.67, -9.3299999, -29.33, -8.0, -28,   -6.6700001,
-                                    -26.67, -5.3299999, -25.33, -4.0, -24.0, -2.6700001,
-                                    -22.67, -1.33,      -21.33, 0.0,  -20.0, 1.33,
-                                    -18.67, 2.6700001,  -17.33, 4.0,  -16,   5.3299999,
-                                    -14.67, 6.6700001,  -13.33, 8.0,  -12.0, 9.3299999,
-                                    -10.67, 10.67};
-const double kTimeBetweenFirings = 1.152;
-const double kTimeHalfIdle = 0.0;
-const double kTimeTotalCycle = 46.080;
-const std::vector<double> kLut32Alpha = {-25,    -1,     -1.667, -15.639, -11.31, 0,       -0.667,
-                                         -8.843, -7.254, 0.333,  -0.333,  -6.148, -5.333,  1.333,
-                                         0.667,  -4,     -4.667, 1.667,   1,      -3.3667, -3.333,
-                                         3.333,  2.333,  -2.667, -3,      7,      4.667,   -2.333,
-                                         -2,     15,     10.333, -1.333};
-const std::vector<double> kLut32Rita = {1.4, -4.2, 1.4, -1.4, 1.4, -1.4, 4.2, -1.4,
-                                        1.4, -4.2, 1.4, -1.4, 4.2, -1.4, 4.2, -1.4,
-                                        1.4, -4.2, 1.4, -4.2, 4.2, -1.4, 1.4, -1.4,
-                                        1.4, -1.4, 1.4, -4.2, 4.2, -1.4, 1.4, -1.4};
-
-static const int kUnusedBytes1 = 198;
-static const int kUnusedBytes2 = 3;
-static const int kNmeaBytes = 306;
-static const int kLaserPerFiring = 32;
-static const int kFiringPerPKT = 12;
-
-#pragma pack(push, 1)
-struct LaserReturn {
-    uint16_t distance;
-    uint8_t intensity;
-};
-
-struct FiringData {
-    uint16_t block_identifier;
-    uint16_t rotational_position;
-    LaserReturn laser_returns[kLaserPerFiring];
-};
-
-struct LidarRawData {
-    FiringData firingData[kFiringPerPKT];
-    uint32_t timestamp;
-    uint8_t mode;
-    uint8_t sensor_type;
-};
-
-struct PositionLidar {
-    uint8_t unused_bytes_1[kUnusedBytes1];
-    uint32_t timestamp;
-    uint8_t pps_status;
-    uint8_t unused_bytes_2[kUnusedBytes2];
-    uint8_t nmea_gprmc[kNmeaBytes];
-};
-#pragma pack(pop)
-
-
 
 class Lidar final : public Device {
 public:
@@ -89,14 +32,89 @@ public:
 
     // Disconnect should be implemented as non-virtual function
     void do_disconnect();
-    
+
+private:
+    // For more details, refer to the following document
+    // pdf: VLP-16 User Manual Note, section: 9.3, Packet Types and Definitions, page: 54 - 60
+    static constexpr size_t NumChannelPerDataBlock_ = 32;
+    static constexpr size_t NumDataBlockPerPacket_ = 12;
+    static constexpr size_t NumLidarPoints_ = NumChannelPerDataBlock_ * NumDataBlockPerPacket_;
+
+    enum class ReturnMode : uint8_t { Strongest = 0x37, LastReturn = 0x38, DualReturn = 0x39 };
+
+    struct VelodyneChannelData {
+        uint16_t distance;
+        uint8_t reflectivity;
+    } __attribute__((packed, aligned(1)));
+
+    struct VelodyneDataBlock {
+        uint16_t flag;
+        uint16_t azimuth;
+        VelodyneChannelData channels[NumChannelPerDataBlock_];
+    } __attribute__((packed, aligned(1)));
+
+    struct DeviceRawDataLidar {
+        VelodyneDataBlock data_blocks[NumDataBlockPerPacket_];
+        uint32_t timestamp;
+        ReturnMode return_mode;
+        LidarType lidar_type;
+    } __attribute__((packed, aligned(1)));
+
+private:
+    static constexpr int64_t UsToNs_ = (int64_t)(1000);
+    static constexpr int64_t SecondToUs_ = (int64_t)(1000000);
+    static constexpr int64_t HourToUs_ = (int64_t)(3600) * SecondToUs_;
+    static constexpr int64_t HalfHourToUs_ = (int64_t)(1800) * SecondToUs_;
+    static constexpr int64_t MaxDelayToleranceUs_ = 30 * SecondToUs_;
+    static constexpr double AzimuthGranularity_ = M_PI / 18000.0;
+
+    // For more details, refer to the following document
+    // pdf: VLP-16 User Manual, table: Vertical Angles by Laser ID and Model, page: 53 - 54
+    // also, figure: 9-7, Single Return Mode Timing Offsets (in μs), page: 64
+    // also, section: 9.3.1.3, Data Point, Page 55
+    static double VerticalAngles16C_[16];
+    static double VerticalCorrection16C_[16];
+    static constexpr double DistanceGranularity16C_ = 0.002;
+    static double GetRelativeAzimuthChange16C(size_t index)
+    {
+        if (index < 16) {
+            return 2.304 / 110.592 * index;
+        } else {
+            return 55.296 + 2.304 / 110.592 * index;
+        }
+    }
+
+    // For more details, refer to the following document
+    // pdf: VLP-32C User Manual, table: VLP-32C Data Order in Data Block, page: 57 - 58
+    // also, figure: 9-7, Single Return Mode Timing Offsets (in μs), page: 64
+    // also, section: 9.3.1.3, Data Point, Page 54
+    static double VerticalAngles32C_[32];
+    static double AzimuthOffset32C_[32];
+    static constexpr double DistanceGranularity32C_ = 0.004;
+    static double GetRelativeAzimuthChange32C(size_t index)
+    {
+        return 2.304 / 55.296 * (index / 2);
+    }
+
+    // For more details, refer to the following document
+    // pdf: HDL-32E User Manual, table: HDL-32E Laser Firing Order, page: 62 - 63
+    // also, figure: 9-6, Single Return Mode Timing Offsets (in μs), page: 67
+    // also, section: 9.3.1.3, Data Point, Page 59
+    static double VerticalAngles32E_[32];
+    static constexpr double DistanceGranularity32E_ = 0.002;
+    static double GetRelativeAzimuthChange32E(size_t index)
+    {
+        return 1.152 / 46.080 * index;
+    }
+
 private:
     boost::asio::io_service io_service_;
     boost::asio::ip::udp::socket* data_socket_;
     boost::asio::ip::address address_;
     boost::asio::ip::udp::endpoint receive_data_endpoint_;
     unsigned short data_port_;
-    
+
+    static constexpr size_t kDataBufferSize = 1500;
     char receive_buffer_[kDataBufferSize];
 };
 
