@@ -30,8 +30,11 @@ ImuConverter::~ImuConverter()
 bool ImuConverter::convert_and_write_one_data(const std::shared_ptr<DeviceRawData>& rawdata)
 {
     auto sensor_data = Imu::do_convert(rawdata);
-    DataImu* data_imu_buf = reinterpret_cast<DataImu*>(sensor_data->data_buf);
+    if (!sensor_data) {
+        return false;
+    }
 
+    DataImu* data_imu_buf = reinterpret_cast<DataImu*>(sensor_data->data_buf);
     auto ros_time_intrinsic = to_ros_time(sensor_data->timestamp_intrinsic_ns);
     // auto ros_time_received = to_ros_time(sensor_data->timestamp_receive_ns);
 

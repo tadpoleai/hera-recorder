@@ -38,7 +38,7 @@ bool Converter::open_bag(const std::string& bag_filepath)
     }
 
     try {
-        bag_ = new rosbag::Bag(bag_filepath, rosbag::BagMode::Write);
+        bag_ = new rosbag_direct_write::DirectBag(bag_filepath, false);
         return true;
     } catch (...) {
         std::cout << "Error opening bagfile" << std::endl;
@@ -57,7 +57,7 @@ bool Converter::close_bag()
     return false;
 }
 
-rosbag::Bag* Converter::bag_ = nullptr;
+rosbag_direct_write::DirectBag* Converter::bag_ = nullptr;
 std::mutex Converter::bag_write_mutex_;
 
 int64_t Converter::get_converted_size() const

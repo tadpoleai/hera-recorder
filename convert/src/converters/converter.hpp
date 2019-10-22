@@ -17,6 +17,7 @@
 #include <devices/all_devices.hpp>
 #include <ros/ros.h>
 #include <rosbag/bag.h>
+#include <rosbag_direct_write/direct_bag.h>
 
 #include "../utils/utils.hpp"
 
@@ -38,7 +39,7 @@ public:
     int64_t get_converted_size() const;
 
 protected:
-    static rosbag::Bag* bag_;
+    static rosbag_direct_write::DirectBag* bag_;
     static std::mutex bag_write_mutex_;
 
     int64_t converted_size_;
