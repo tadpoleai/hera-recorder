@@ -13,10 +13,11 @@
 namespace wayz {
 namespace tron {
 
-LidarConverter::LidarConverter(const std::string& frame_id,
+LidarConverter::LidarConverter(const std::string& device_type,
                                const std::string& device_name,
-                               const std::string& device_data_folder) :
-    Converter(frame_id, device_name, device_data_folder)
+                               const std::string& device_data_folder,
+                               ConverterHandler* handler) :
+    Converter(device_type, device_name, device_data_folder, handler)
 {
     pcl_topic_name_ = topic_name_prefix_ + "pointcloud2";
 }
@@ -28,13 +29,19 @@ LidarConverter::~LidarConverter()
     }
 }
 
-bool LidarConverter::convert_and_write_one_data(const std::shared_ptr<DeviceRawData>& rawdata)
+bool LidarConverter::convert_one_data(const std::shared_ptr<DeviceRawData>& raw_data)
 {
-    auto sensor_data = Lidar::do_convert(rawdata);
-    if (!sensor_data) {
+    if (!raw_data) {
+        sem_wait(managed_this_->sem_converter);
+        managed_this_->data.msg_type = MsgType::Invalid;
+        managed_this_->data.msg = nullptr;
+        managed_this_->data.timestamp_ns = 0;
+        managed_this_->data.topic_name = "";
+        sem_post(managed_this_->sem_writer);
         return false;
     }
 
+    auto sensor_data = Lidar::do_convert(raw_data);
     DataLidar* data_lidar_buf = reinterpret_cast<DataLidar*>(sensor_data->data_buf);
     auto ros_time_intrinsic = to_ros_time(sensor_data->timestamp_intrinsic_ns);
 
@@ -50,16 +57,19 @@ bool LidarConverter::convert_and_write_one_data(const std::shared_ptr<DeviceRawD
         src_ptr += sizeof(LidarPoint) / sizeof(float);
     }
 
-    sensor_msgs::PointCloud2 pcl_msg;
-    pcl::toROSMsg(pcl_cloud, pcl_msg);
+    auto pcl_msg = new sensor_msgs::PointCloud2;
+    pcl::toROSMsg(pcl_cloud, *pcl_msg);
 
-    pcl_msg.header.stamp = ros_time_intrinsic;
-    pcl_msg.header.seq = sensor_data->sequence;
-    pcl_msg.header.frame_id = frame_id_;
+    pcl_msg->header.stamp = ros_time_intrinsic;
+    pcl_msg->header.seq = sensor_data->sequence;
+    pcl_msg->header.frame_id = frame_id_;
 
-    bag_write_mutex_.lock();
-    bag_->write(pcl_topic_name_, ros_time_intrinsic, pcl_msg);
-    bag_write_mutex_.unlock();
+    sem_wait(managed_this_->sem_converter);
+    managed_this_->data.msg_type = MsgType::SensorMsgsPointCloud2;
+    managed_this_->data.msg = reinterpret_cast<void*>(pcl_msg);
+    managed_this_->data.timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+    managed_this_->data.topic_name = pcl_topic_name_;
+    sem_post(managed_this_->sem_writer);
 
     return true;
 }

@@ -10,15 +10,16 @@ namespace tron {
 
 class LidarConverter final : public Converter {
 public:
-    LidarConverter(const std::string& frame_id,
+    LidarConverter(const std::string& device_type,
                    const std::string& device_name,
-                   const std::string& device_data_folder);
+                   const std::string& device_data_folder,
+                   ConverterHandler* handler);
     LidarConverter(const LidarConverter&) = delete;
     LidarConverter& operator=(const LidarConverter&) = delete;
     virtual ~LidarConverter();
 
 private:
-    bool convert_and_write_one_data(const std::shared_ptr<DeviceRawData>& rawdata) final;
+    bool convert_one_data(const std::shared_ptr<DeviceRawData>& raw_data) final;
 
     std::string pcl_topic_name_;
 };

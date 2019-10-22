@@ -7,58 +7,42 @@
 namespace wayz {
 namespace tron {
 
+ConverterHandler::ConverterHandler() : converter(nullptr)
+{
+    sem_writer = new sem_t;
+    sem_converter = new sem_t;
+    sem_init(sem_writer, 0, 0);
+    sem_init(sem_converter, 0, 0);
+    sem_post(sem_converter);
+}
+ConverterHandler::~ConverterHandler()
+{
+    sem_destroy(sem_writer);
+    sem_destroy(sem_converter);
+    if (converter) {
+        delete converter;
+    }
+}
+
 Converter::Converter(const std::string& device_type,
-                     const std::string device_name,
-                     const std::string& device_data_folder) :
+                     const std::string& device_name,
+                     const std::string& device_data_folder,
+                     ConverterHandler* handler) :
     converted_size_(0),
     frame_id_("frame_" + device_type + "_" + device_name),
     topic_name_prefix_("/" + device_type + "/" + device_name + "/"),
     thread_(nullptr),
+    managed_this_(handler),
     inited_(false),
     finished_(false),
     device_data_folder_(device_data_folder),
     file_number_counter_(0)
 {
-    if (!bag_) {
-        std::cout << "Open bagfile by static method first!";
-    }
     thread_ = new std::thread(&Converter::convert_thread_function, this);
     inited_ = true;
 }
 
 Converter::~Converter() {}
-
-// Static method
-bool Converter::open_bag(const std::string& bag_filepath)
-{
-    if (bag_) {
-        bag_->close();
-        delete bag_;
-        bag_ = nullptr;
-    }
-
-    try {
-        bag_ = new rosbag_direct_write::DirectBag(bag_filepath, false);
-        return true;
-    } catch (...) {
-        std::cout << "Error opening bagfile" << std::endl;
-        bag_ = nullptr;
-        return false;
-    }
-}
-
-// Static method
-bool Converter::close_bag()
-{
-    if (bag_) {
-        bag_->close();
-        return true;
-    }
-    return false;
-}
-
-rosbag_direct_write::DirectBag* Converter::bag_ = nullptr;
-std::mutex Converter::bag_write_mutex_;
 
 int64_t Converter::get_converted_size() const
 {
@@ -67,10 +51,11 @@ int64_t Converter::get_converted_size() const
 
 void Converter::convert_thread_function()
 {
-    std::shared_ptr<DeviceRawData> rawdata;
-    while ((rawdata = read_one_data())) {
-        convert_and_write_one_data(rawdata);
-    }
+    std::shared_ptr<DeviceRawData> raw_data;
+    do {
+        raw_data = read_one_data();
+        convert_one_data(raw_data);
+    } while (raw_data);
     finished_ = true;
 }
 
