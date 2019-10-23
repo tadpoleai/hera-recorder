@@ -4,6 +4,8 @@
 
 #include "serial_transport.hpp"
 
+#include <common/logger/logger.hpp>
+
 #include "serial_port.hpp"
 
 namespace wayz {

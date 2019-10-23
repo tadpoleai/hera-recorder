@@ -10,6 +10,7 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include <common/logger/logger.hpp>
 #include <linux/serial.h>
 #include <sys/ioctl.h>
 
@@ -58,7 +59,7 @@ SerialPort::~SerialPort()
 
 bool SerialPort::die(const std::string& msg)
 {
-    std::cout << "SerialPort Error: " << msg << std::endl;
+    Logger::error() << "SerialPort: " << msg << Logger::endl;
     return false;
 }
 

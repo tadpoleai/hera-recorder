@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include <common/logger/logger.hpp>
+
 namespace wayz {
 namespace tron {
 
@@ -42,9 +44,10 @@ TronErrno Lidar::connect()
                       parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
                              .c_str());
     if (ret == 0) {
-        std::cout << "success to power on " << get_name() << std::endl;
+        Logger::info() << "Succeeded to power on lidar " << get_name() << Logger::endl;
     } else {
-        std::cout << "fail to power on " << get_name() << std::endl;
+        Logger::error() << "Fail to power on lidar " << get_name() << Logger::endl;
+        return set_error_and_die(TronErrno::CanNotOpenEthernetDevice, "Failed to power on " + get_name());
     }
 
     try {
@@ -55,12 +58,11 @@ TronErrno Lidar::connect()
                                                data_port_));
     } catch (const std::exception& e) {
         data_socket_ = nullptr;
-        return set_error_and_die(TronErrno::CanNotOpenEthernetDevice);
     }
 
-    if (data_socket_ == nullptr) {  // || telemetry_socket_ == nullptr) {
-        std::cout << "create socket failed!" << std::endl;
-        return set_error_and_die(TronErrno::InsufficientParameters);
+    if (data_socket_ == nullptr) {
+        Logger::error() << "Can not create socket for" << get_name() << Logger::endl;
+        return set_error_and_die(TronErrno::CanNotOpenEthernetDevice, "Can not create socket for" + get_name());
     }
     return TronErrno::Success;
 }
@@ -75,10 +77,11 @@ void Lidar::do_disconnect()
                       parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
                              .c_str());
     if (ret == 0) {
-        std::cout << "success to power off " << get_name() << std::endl;
+        Logger::info() << "Succeeded to power off lidar " << get_name() << Logger::endl;
     } else {
-        std::cout << "fail to power off " << get_name() << std::endl;
+        Logger::error() << "Fail to power off lidar " << get_name() << Logger::endl;
     }
+
     if (data_socket_ && data_socket_->is_open()) {
         data_socket_->close();
         delete data_socket_;
@@ -106,7 +109,7 @@ std::shared_ptr<DeviceRawData> Lidar::fetch()
     data->device_type = DeviceType::Lidar;
     data->device_data_type = DeviceDataType::LidarVelodyneScan;
     data->sequence = sequence_++;
-    data->timestamp_receive_ns = get_system_timestamp();
+    data->timestamp_receive_ns = Timestamp::now();
 
     try {
         io_service_.run();

@@ -7,6 +7,7 @@
 #include <regex>
 
 #include <common/data_def/device_types.hpp>
+#include <common/logger/logger.hpp>
 #include <common/tron_errno.h>
 
 namespace wayz {
@@ -24,6 +25,7 @@ void TronServiceHandler::set_error(Result& _return,
     _return.error = tron_errno;
     _return.reason = reason;
     generate_status(_return);
+    Logger::error() << "TronService::SetError" << Logger::endl;
 }
 void TronServiceHandler::set_error_and_stop(Result& _return,
                                             TronErrno tron_errno,
@@ -33,6 +35,7 @@ void TronServiceHandler::set_error_and_stop(Result& _return,
     _return.reason = reason;
     clear();
     generate_status(_return);
+    Logger::error() << "TronService::SetErrorAndStop" << Logger::endl;
 }
 void TronServiceHandler::clear()
 {
@@ -78,7 +81,6 @@ void TronServiceHandler::generate_status(Result& _return)
 
 void TronServiceHandler::get_status(Result& _return)
 {
-    std::cout << "get_status" << std::endl;
     _return.error = TronErrno::Success;
     _return.reason = "OK";
     generate_status(_return);
@@ -88,8 +90,7 @@ void TronServiceHandler::start(Result& _return,
                                const std::vector<DeviceInitializer>& device_initializers,
                                const std::string& storage_folder)
 {
-    std::cout << "start" << std::endl;
-    usleep(1000000);
+    Logger::info() << "TronService::Start Called" << Logger::endl;
     _return.error = TronErrno::Success;
     _return.reason = "OK";
     int32_t id = 0;
@@ -100,11 +101,14 @@ void TronServiceHandler::start(Result& _return,
     }
     // Check if given devices list is empty
     if (device_initializers.size() == 0) {
+        Logger::error() << "TronService::Start EmptyDeviceList" << Logger::endl;
         return set_error(_return, TronErrno::EmptyDeviceList, "Device list given is empty");
     }
     // Check if storage_folder is valid
     std::regex folder_regex("[a-zA-Z0-9_]{1,64}");
     if (!std::regex_match(storage_folder, folder_regex)) {
+        Logger::error() << "TronService::Start InvalidStorageFolderName: " << storage_folder
+                        << Logger::endl;
         return set_error(_return,
                          TronErrno::InvalidStorageFolderName,
                          "Storage folder " + storage_folder + " is invalid");
@@ -115,12 +119,14 @@ void TronServiceHandler::start(Result& _return,
         const auto& type_str = device_initializer.type;
         auto type = DeviceType::_from_string_nocase_nothrow(type_str.c_str());
         if (!type) {
+            Logger::error() << "TronService::Start InvalidDeviceType: " << type_str << Logger::endl;
             return set_error(_return,
                              TronErrno::InvalidDeviceType,
                              "Device type \"" + type_str + "\" is invalid");
         }
         const auto& name = device_initializer.name;
         if (!std::regex_match(name, name_regex)) {
+            Logger::error() << "TronService::Start InvalidDeviceName: " << name << Logger::endl;
             return set_error(_return,
                              TronErrno::InvalidDeviceName,
                              "Device name \"" + name + "\" is invalid");
@@ -145,6 +151,8 @@ void TronServiceHandler::start(Result& _return,
             device = new Imu(id++, name);
             break;
         default:
+            Logger::error() << "TronService::Start UnimplementedDeviceType: " << type_str
+                            << Logger::endl;
             return set_error_and_stop(_return,
                                       TronErrno::InvalidDeviceType,
                                       "Device type \"" + type_str + "\" is invalid");
@@ -157,12 +165,16 @@ void TronServiceHandler::start(Result& _return,
         for (const auto& parameter : device_initializer.parameters) {
             TronErrno e = device->set_parameter(parameter.first, parameter.second);
             if (e != TronErrno::Success) {
+                Logger::error() << "TronService::Start Set parameters: " << parameter.first << ", "
+                                << parameter.second << ", " << device->get_reason() << Logger::endl;
                 return set_error_and_stop(_return, device->get_errno(), device->get_reason());
             }
         }
         // Set folder
         TronErrno e = device->set_storage(storage_folder);
         if (e != TronErrno::Success) {
+            Logger::error() << "TronService::Start Set storage: " << name << ", "
+                            << device->get_reason() << Logger::endl;
             return set_error_and_stop(_return,
                                       e,
                                       "Can not create storage folder for device \"" + name + "\"");
@@ -170,34 +182,41 @@ void TronServiceHandler::start(Result& _return,
         // Start device
         e = device->start();
         if (e != TronErrno::Success) {
+            Logger::error() << "TronService::Start Start device: " << name << ", "
+                            << device->get_reason() << Logger::endl;
             return set_error_and_stop(_return,
                                       e,
                                       "Device \"" + name + "\" occured " + device->get_reason());
         }
     }
     generate_status(_return);
+    Logger::open_extra(storage_folder + "/record.log");
+    Logger::info() << "TronService::Start Succeeded" << Logger::endl;
 }
 
 void TronServiceHandler::stop(Result& _return)
 {
-    std::cout << "stop" << std::endl;
-    usleep(1000000);
-    if (devices_.size() != 0) {
-        return set_error_and_stop(_return, TronErrno::Success, "OK");
-    } else {
+    Logger::info() << "TronService::Stop Called" << Logger::endl;
+    _return.error = TronErrno::Success;
+    _return.reason = "OK";
+    if (devices_.size() == 0) {
+        Logger::error() << "TronService::Stop Already stopped" << Logger::endl;
         return set_error(_return, TronErrno::EmptyDeviceList, "Already stopped");
     }
+    clear();
     generate_status(_return);
+    Logger::info() << "TronService::Stop Succeeded" << Logger::endl;
+    Logger::close_extra();
 }
 
 void TronServiceHandler::record_or_pause(Result& _return, const bool is_record)
 {
-    std::cout << "record_or_pause" << std::endl;
-    usleep(1000000);
+    Logger::info() << "TronService::Record/Pause Called" << Logger::endl;
     _return.error = TronErrno::Success;
     _return.reason = "OK";
 
     if (devices_.size() == 0) {
+        Logger::error() << "TronService::Record/Pause EmptyDeviceList" << Logger::endl;
         return set_error(_return, TronErrno::EmptyDeviceList, "Device list is empty");
     }
 
@@ -205,16 +224,19 @@ void TronServiceHandler::record_or_pause(Result& _return, const bool is_record)
         TronErrno e;
         if (is_record) {
             e = device->start_record();
-            printf("start_record\n");
+            Logger::info() << "TronService::Record/Pause StartRecord" << Logger::endl;
         } else {
             e = device->pause_record();
-            printf("pause_record\n");
+            Logger::info() << "TronService::Record/Pause PauseRecord" << Logger::endl;
         }
         if (e != TronErrno::Success) {
+            Logger::error() << "TronService::Record/Pause Device: " << device->get_name()
+                            << Logger::endl;
             set_error(_return, e, "Device \"" + device->get_name() + "\" occured error");
         }
     }
     generate_status(_return);
+    Logger::info() << "TronService::Record/Pause Succeeded" << Logger::endl;
 }
 
 void TronServiceHandler::adjust_device_parameters(
@@ -222,11 +244,12 @@ void TronServiceHandler::adjust_device_parameters(
         const int32_t device_id,
         const std::map<std::string, std::string>& parameters)
 {
-    printf("adjust_device_parameters\n");
+    Logger::info() << "TronService::Adjust" << Logger::endl;
     _return.error = TronErrno::Success;
     _return.reason = "OK";
 
     if (devices_.size() == 0) {
+        Logger::error() << "TronService::Adjust EmptyDeviceList" << Logger::endl;
         return set_error(_return, TronErrno::EmptyDeviceList, "Device list is empty");
     }
 
@@ -235,6 +258,9 @@ void TronServiceHandler::adjust_device_parameters(
         for (const auto& parameter : parameters) {
             TronErrno e = device->set_parameter(parameter.first, parameter.second);
             if (e != TronErrno::Success) {
+                Logger::error() << "TronService::Adjust Device: " << device->get_name() << ", "
+                                << parameter.first << ", " << parameter.second << ","
+                                << device->get_reason() << Logger::endl;
                 std::string reason = "Device \"" + device->get_name() + "\" occured " +
                                      device->get_reason() + " when applying parameter " +
                                      parameter.first;
@@ -242,11 +268,14 @@ void TronServiceHandler::adjust_device_parameters(
             }
         }
     } catch (std::out_of_range& oor) {
+        Logger::error() << "TronService::Adjust DeviceId: " << std::to_string(device_id)
+                        << " Out of Range" << Logger::endl;
         return set_error(_return,
                          TronErrno::InvalidDeviceId,
                          "Device id given " + std::to_string(device_id) + " out of range");
     }
     generate_status(_return);
+    Logger::info() << "TronService::Adjust Succeed" << Logger::endl;
 }
 
 }  // namespace tron

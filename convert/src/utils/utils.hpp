@@ -7,10 +7,13 @@
 #include <cstdint>
 #include <string>
 
+#include <common/utils/system_timestamp.hpp>
 #include <ros/ros.h>
 
-using TimestampNs = int64_t;
-using DurationNs = int64_t;
-constexpr int64_t OneSecondToNs = (int64_t)(1000000000L);
+namespace wayz {
+namespace tron {
 
-ros::Time to_ros_time(TimestampNs time);
+ros::Time to_ros_time(const Timestamp& ts);
+
+}  // namespace tron
+}  // namespace wayz

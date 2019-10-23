@@ -68,7 +68,7 @@ bool Converter::open_device_data_file()
     std::ostringstream filename;
     filename << device_data_folder_;
     filename.fill('0');
-    filename.width(FileNameWidth);
+    filename.width(FileNameWidth_);
     filename << file_number_counter_++;
     filename << ".bin";
 

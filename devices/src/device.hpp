@@ -86,14 +86,14 @@ private:
     volatile int64_t file_size_counter_;
     volatile int64_t total_file_size_counter_;
     static const int64_t FileMaxSize_ = 0x7FFFFFFFL;
-    static const int64_t FileNameWidth = 4;
+    static const size_t FileNameWidth_ = 4;
     std::ofstream file_;
 
     volatile DeviceStatus status_;
     volatile TronErrno last_errno_;
     mutable std::string last_errno_reason_;
-    volatile TimestampNs last_data_timestamp_ns_;
-    static const DurationNs MaxDataDurationNs_ = 3 * OneSecondToNs;
+    volatile int64_t last_data_timestamp_ns_;
+    static const Duration MaxDataDuration_;
     volatile bool is_record_;
     volatile bool is_forward_;
 

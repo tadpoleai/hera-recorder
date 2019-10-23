@@ -19,6 +19,8 @@
 namespace wayz {
 namespace tron {
 
+const Duration Device::MaxDataDuration_ = 3 * Duration::OneSecond;
+
 Device::Device(int32_t id, const std::string& name) :
     sequence_(0),
     id_(id),
@@ -149,7 +151,6 @@ TronErrno Device::set_storage(const std::string& folder)
 }
 TronErrno Device::set_parameter(const std::string& type, const std::string& value)
 {
-    printf("Set Parameter\n");
     auto status = status_;
     if (status == DeviceStatus::Error) {
         return TronErrno::InStatusError;
@@ -282,7 +283,7 @@ TronErrno Device::open_new_storage_file()
     std::ostringstream filename;
     filename << storage_path_;
     filename.fill('0');
-    filename.width(FileNameWidth);
+    filename.width(FileNameWidth_);
     filename << file_number_counter_++;
     filename << ".bin";
 
@@ -371,7 +372,7 @@ void Device::forward_thread_function()
 // Utils
 bool Device::check_new_data() const
 {
-    return (get_system_timestamp() - last_data_timestamp_ns_ < MaxDataDurationNs_);
+    return (Timestamp::now() - last_data_timestamp_ns_ < MaxDataDuration_);
 }
 
 }  // namespace tron

@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+#include <common/logger/logger.hpp>
+
 namespace wayz {
 namespace tron {
 
@@ -66,7 +68,7 @@ bool ConverterManager::open_bag(const std::string& bag_filepath)
         bag_ = new rosbag_direct_write::DirectBag(bag_filepath, false);
         return true;
     } catch (...) {
-        // std::cout << "Error opening bagfile" << std::endl;
+        Logger::error() << "Converter: Can not open bagfile" << bag_filepath << Logger::endl;
         bag_ = nullptr;
         return false;
     }
@@ -103,7 +105,7 @@ void ConverterManager::write_thread_function()
             }
         }
         if (!handler_to_wait_) {
-            std::cout << "Main: Conversion Completed!" << std::endl;
+            Logger::info() << "Converter: Conversion Completed" << Logger::endl;
             break;
         }
 
@@ -120,21 +122,18 @@ void ConverterManager::write_and_free_one_converted_msg(const ConvertedData* dat
     case MsgType::SensorMsgsImu: {
         auto msg = reinterpret_cast<sensor_msgs::Imu*>(data->msg);
         bag_->write(data->topic_name, msg->header.stamp, *msg);
-        //std::cout << "IMUtime: " << msg->header.stamp << std::endl;
         delete msg;
         return;
     }
     case MsgType::SensorMsgsMagneticField: {
         auto msg = reinterpret_cast<sensor_msgs::MagneticField*>(data->msg);
         bag_->write(data->topic_name, msg->header.stamp, *msg);
-        //std::cout << "MAGtime: " << msg->header.stamp << std::endl;
         delete msg;
         return;
     }
     case MsgType::SensorMsgsPointCloud2: {
         auto msg = reinterpret_cast<sensor_msgs::PointCloud2*>(data->msg);
         bag_->write(data->topic_name, msg->header.stamp, *msg);
-        //std::cout << "PCLtime: " << msg->header.stamp << std::endl;
         delete msg;
         return;
     }

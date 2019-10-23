@@ -71,7 +71,7 @@ private:
     bool finished_;
 
     std::string device_data_folder_;
-    static const int64_t FileNameWidth = 4;
+    static const size_t FileNameWidth_ = 4;
     int64_t file_number_counter_;
     std::ifstream device_data_file_;
 };

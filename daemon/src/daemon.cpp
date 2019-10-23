@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <unistd.h>
 
+#include <common/logger/logger.hpp>
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/protocol/TJSONProtocol.h>
 #include <thrift/server/TSimpleServer.h>
@@ -28,7 +29,7 @@ void sig_int_handler_func(int s)
         g_server_ptr->stop();
         g_handler_ptr->clear();
     }
-    printf("\n--SIGINT Received--\n");
+    Logger::info() << "TronMain: Sigint Received, Stopping" << Logger::endl;
 }
 
 int main(int argc, char** argv)
@@ -39,6 +40,8 @@ int main(int argc, char** argv)
     sig_int_handler.sa_flags = 0;
     sigaction(SIGINT, &sig_int_handler, NULL);
 
+    Logger::create("logs");
+
     int port = 9090;
     std::shared_ptr<TronServiceHandler> handler(new TronServiceHandler());
     g_handler_ptr = handler.get();
@@ -48,6 +51,8 @@ int main(int argc, char** argv)
     std::shared_ptr<TProtocolFactory> protocolFactory(new TJSONProtocolFactory());
 
     g_server_ptr = new TSimpleServer(processor, serverTransport, transportFactory, protocolFactory);
+    Logger::info() << "TronMain: Daemon Started" << Logger::endl;
     g_server_ptr->serve();
+    Logger::info() << "TronMain: Daemon Stoped" << Logger::endl;
     return 0;
 }

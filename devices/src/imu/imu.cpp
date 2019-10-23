@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include <common/logger/logger.hpp>
+
 namespace wayz {
 namespace tron {
 
@@ -93,7 +95,7 @@ std::shared_ptr<DeviceRawData> Imu::fetch()
     data->device_type = DeviceType::Imu;
     data->device_data_type = DeviceDataType::Imu;
     data->sequence = sequence_++;
-    data->timestamp_receive_ns = get_system_timestamp();
+    data->timestamp_receive_ns = Timestamp::now();
 
     // Use Memcpy to fill Buff
     memcpy(reinterpret_cast<uint8_t*>(data->rawdata_buf),

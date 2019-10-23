@@ -4,11 +4,13 @@
 
 #include "utils.hpp"
 
-#include <cstdint>
+namespace wayz {
+namespace tron {
 
-ros::Time to_ros_time(TimestampNs time)
+ros::Time to_ros_time(const Timestamp& ts)
 {
-    uint32_t sec = time / OneSecondToNs;
-    uint32_t nsec = time % OneSecondToNs;
-    return ros::Time(sec, nsec);
+    return ros::Time(ts.tv_sec, ts.tv_nsec);
 }
+
+}  // namespace tron
+}  // namespace wayz

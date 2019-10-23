@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include <common/logger/logger.hpp>
+
 namespace wayz {
 namespace tron {
 
@@ -36,7 +38,7 @@ TronErrno Dummy::connect()
     } else {
         return set_error_and_die(TronErrno::InsufficientParameters, "Paramater DummyRate absent");
     }
-    
+
     return TronErrno::Success;
 }
 void Dummy::disconnect()
@@ -68,7 +70,7 @@ std::shared_ptr<DeviceRawData> Dummy::fetch()
     data->device_type = DeviceType::Dummy;
     data->device_data_type = DeviceDataType::Dummy;
     data->sequence = sequence_++;
-    data->timestamp_receive_ns = get_system_timestamp();
+    data->timestamp_receive_ns = Timestamp::now();
 
     // Assume Rawdata is in sensor_rawata_src
     int32_t value_to_get_from_device = value_;
