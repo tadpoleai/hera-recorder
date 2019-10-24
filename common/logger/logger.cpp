@@ -88,10 +88,11 @@ Logger::Logger(const std::string& log_folder) :
 
     std::regex pattern(R"(^.*/\d{)" + std::to_string(FileNameWidth_) + R"(}\.log$)");
     for (auto& file : content.files) {
-        if (std::regex_match(file, pattern)) {
+        if (std::regex_match(file.fullname, pattern)) {
             constexpr size_t ExtensionWidth = sizeof(".log") - 1;
             auto file_count = std::stoi(
-                    file.substr(file.length() - FileNameWidth_ - ExtensionWidth, FileNameWidth_));
+                    file.fullname.substr(file.fullname.length() - FileNameWidth_ - ExtensionWidth,
+                                         FileNameWidth_));
             if (file_number_counter_ < file_count) {
                 file_number_counter_ = file_count;
             }
@@ -118,7 +119,7 @@ bool Logger::open_file(bool determine_line_count)
     }
 
     std::ostringstream filename;
-    filename << log_folder_ + "/";
+    filename << log_folder_ << "/";
     filename.fill('0');
     filename.width(FileNameWidth_);
     filename << file_number_counter_++;

@@ -281,7 +281,7 @@ TronErrno Device::open_new_storage_file()
     }
 
     std::ostringstream filename;
-    filename << storage_path_;
+    filename << storage_path_ << '/';
     filename.fill('0');
     filename.width(FileNameWidth_);
     filename << file_number_counter_++;

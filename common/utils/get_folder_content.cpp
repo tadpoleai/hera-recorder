@@ -6,6 +6,7 @@
 
 #include <cstring>
 #include <dirent.h>
+#include <iomanip>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +18,22 @@
 
 namespace wayz {
 namespace tron {
+
+std::ostream& operator<<(std::ostream& os, const FileSize& size)
+{
+    if (size.size < (1ULL << 10)) {
+        os << size.size << "Bytes";
+    } else if (size.size < (1ULL << 20)) {
+        os << std::setprecision(5) << size.size / float(1ULL << 10) << "KiB";
+    } else if (size.size < (1ULL << 30)) {
+        os << std::setprecision(5) << size.size / float(1ULL << 20) << "MiB";
+    } else if (size.size < (1ULL << 40)) {
+        os << std::setprecision(5) << size.size / float(1ULL << 30) << "GiB";
+    } else {
+        os << std::setprecision(5) << size.size / float(1ULL << 40) << "TiB";
+    }
+    return os;
+}
 
 FolderContent get_folder_content(const std::string& parent)
 {
@@ -35,14 +52,16 @@ FolderContent get_folder_content(const std::string& parent)
 
         auto node_fullname = parent + "/" + node->d_name;
         struct stat stat_result;
-        if (stat((node_fullname).c_str(), &stat_result)) {
+        if (stat(node_fullname.c_str(), &stat_result)) {
             continue;
         }
 
         if (S_ISREG(stat_result.st_mode)) {
-            content.files.emplace_back(node_fullname);
+            content.total_size = content.total_size + stat_result.st_size;
+            content.files.emplace_back(
+                    FileAttribute(node->d_name, node_fullname, stat_result.st_size));
         } else if (S_ISDIR(stat_result.st_mode)) {
-            content.folders.emplace_back(node_fullname);
+            content.folders.emplace_back(FileAttribute(node->d_name, node_fullname));
         }
     }
     closedir(dir);

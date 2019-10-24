@@ -14,6 +14,7 @@
 
 #include <common/data_def/device_types.hpp>
 #include <common/tron_errno.h>
+#include <common/utils/get_folder_content.hpp>
 #include <devices/all_devices.hpp>
 #include <ros/ros.h>
 #include <rosbag/bag.h>
@@ -34,6 +35,14 @@ public:
     ConverterManager& operator=(const Converter&) = delete;
     virtual ~ConverterManager();
 
+    FileSize report_progress();
+    inline FileSize total_size() const
+    {
+        return total_size_;
+    }
+    bool running() const;
+
+
 private:
     bool open_bag(const std::string& bag_filepath);
     bool close_bag();
@@ -42,9 +51,10 @@ private:
 
     rosbag_direct_write::DirectBag* bag_;
     std::vector<std::shared_ptr<ConverterHandler>> converter_handlers_;
+    FileSize total_size_;
     std::thread* thread_;
+    bool running_;
     std::string device_data_folder_;
-    ConverterHandler* handler_to_wait_; 
 };
 
 }  // namespace tron

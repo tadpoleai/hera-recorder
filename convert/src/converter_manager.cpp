@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include <common/logger/logger.hpp>
+#include <common/utils/get_folder_content.hpp>
 
 namespace wayz {
 namespace tron {
@@ -14,37 +15,73 @@ namespace tron {
 ConverterManager::ConverterManager(const std::string& bag_filepath,
                                    const std::string& device_data_folder) :
     bag_(nullptr),
+    total_size_(0),
     thread_(nullptr),
-    device_data_folder_(device_data_folder),
-    handler_to_wait_(nullptr)
+    running_(false),
+    device_data_folder_(device_data_folder)
 {
-    if (!open_bag(bag_filepath)) {
+    auto content = get_folder_content(device_data_folder);
+    if (!content.opened) {
+        Logger::error() << "Converter: Can not open folder '" << device_data_folder << "' to read"
+                        << Logger::endl;
         return;
     }
+    if (!content.folders.size()) {
+        Logger::error() << "Converter: Folder '" << device_data_folder << "' is empty"
+                        << Logger::endl;
+        return;
+    }
+    if (!open_bag(bag_filepath)) {
+        Logger::error() << "Converter: Can not open bagfile '" << bag_filepath << "' to write"
+                        << Logger::endl;
+        return;
+    }
+    Logger::info() << "Converter: Bagfile '" << bag_filepath << "' created" << Logger::endl;
 
-    auto imu_handler = std::make_shared<ConverterHandler>();
-    imu_handler->converter = new ImuConverter("imu",
-                                              "internal",
-                                              "../20191018103800_record_test_1min/Imu/internal/",
-                                              imu_handler.get());
+    Logger::info() << "Converter: Scanning devices" << Logger::endl;
+    for (const auto& subdir : content.folders) {
+        auto type = DeviceType::_from_string_nocase_nothrow(subdir.basename.c_str());
+        if (!type) {
+            continue;
+        }
+        auto devices = get_folder_content(subdir.fullname).folders;
 
-    auto lidar0_handler = std::make_shared<ConverterHandler>();
-    lidar0_handler->converter = new LidarConverter("lidar",
-                                                   "top",
-                                                   "../20191018103800_record_test_1min/Lidar/top/",
-                                                   lidar0_handler.get());
+        for (const auto& device : devices) {
+            // Get Total size
+            auto device_size = get_folder_content(device.fullname).total_size;
 
-    auto lidar1_handler = std::make_shared<ConverterHandler>();
-    lidar1_handler->converter = new LidarConverter("lidar",
-                                                   "back",
-                                                   "../20191018103800_record_test_1min/Lidar/back/",
-                                                   lidar1_handler.get());
+            // Create handler
+            auto handler = std::make_shared<ConverterHandler>();
 
-    converter_handlers_.emplace_back(imu_handler);
-    converter_handlers_.emplace_back(lidar0_handler);
-    converter_handlers_.emplace_back(lidar1_handler);
+            switch (type.value()) {
+            case DeviceType::Imu:
+                handler->converter = new ImuConverter(subdir.basename,
+                                                      device.basename,
+                                                      device.fullname,
+                                                      handler.get());
+                break;
+            case DeviceType::Lidar:
+                handler->converter = new LidarConverter(subdir.basename,
+                                                        device.basename,
+                                                        device.fullname,
+                                                        handler.get());
+                break;
+            default:
+                continue;
+            }
+            converter_handlers_.emplace_back(handler);
+            total_size_ = total_size_ + device_size;
+            Logger::info() << "Converter: Add " << subdir.basename << "/" << device.basename
+                           << ", sized " << device_size << Logger::endl;
+        }
+    }
 
+    Logger::info() << "Converter: Scanning Completed" << Logger::endl;
+    Logger::info() << "Converter: " << converter_handlers_.size()
+                   << " Devices, Total Size: " << total_size_ << Logger::endl;
+    running_ = true;
     thread_ = new std::thread(&ConverterManager::write_thread_function, this);
+    Logger::info() << "Converter: Converision Started" << Logger::endl;
 }
 
 ConverterManager::~ConverterManager()
@@ -54,6 +91,20 @@ ConverterManager::~ConverterManager()
         thread_->join();
     }
     close_bag();
+}
+
+FileSize ConverterManager::report_progress()
+{
+    FileSize size(0);
+    for (const auto& handler : converter_handlers_) {
+        size.size += handler->converter->get_converted_size();
+    }
+    return size;
+}
+
+bool ConverterManager::running() const
+{
+    return running_;
 }
 
 bool ConverterManager::open_bag(const std::string& bag_filepath)
@@ -68,7 +119,8 @@ bool ConverterManager::open_bag(const std::string& bag_filepath)
         bag_ = new rosbag_direct_write::DirectBag(bag_filepath, false);
         return true;
     } catch (...) {
-        Logger::error() << "Converter: Can not open bagfile" << bag_filepath << Logger::endl;
+        Logger::error() << "Converter: Can not open bagfile '" << bag_filepath << "'"
+                        << Logger::endl;
         bag_ = nullptr;
         return false;
     }
@@ -85,33 +137,34 @@ bool ConverterManager::close_bag()
 
 void ConverterManager::write_thread_function()
 {
+    ConverterHandler* oldest_handler = nullptr;
     while (true) {
-        if (handler_to_wait_ == nullptr) {
+        if (oldest_handler == nullptr) {
             for (const auto& handler : converter_handlers_) {
                 sem_wait(handler->sem_writer);
             }
         } else {
-            sem_wait(handler_to_wait_->sem_writer);
+            sem_wait(oldest_handler->sem_writer);
         }
 
         int64_t oldest_data_time = LONG_MAX;
-        handler_to_wait_ = nullptr;
+        oldest_handler = nullptr;
         for (const auto& handler : converter_handlers_) {
             if (handler->data.msg != nullptr) {
                 if (oldest_data_time > handler->data.timestamp_ns) {
                     oldest_data_time = handler->data.timestamp_ns;
-                    handler_to_wait_ = handler.get();
+                    oldest_handler = handler.get();
                 }
             }
         }
-        if (!handler_to_wait_) {
-            Logger::info() << "Converter: Conversion Completed" << Logger::endl;
+        if (!oldest_handler) {
             break;
         }
 
-        write_and_free_one_converted_msg(&handler_to_wait_->data);
-        sem_post(handler_to_wait_->sem_converter);
+        write_and_free_one_converted_msg(&oldest_handler->data);
+        sem_post(oldest_handler->sem_converter);
     }
+    running_ = false;
 }
 
 void ConverterManager::write_and_free_one_converted_msg(const ConvertedData* data)

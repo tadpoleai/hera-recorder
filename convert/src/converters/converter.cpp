@@ -66,7 +66,7 @@ bool Converter::open_device_data_file()
     }
 
     std::ostringstream filename;
-    filename << device_data_folder_;
+    filename << device_data_folder_ << '/';
     filename.fill('0');
     filename.width(FileNameWidth_);
     filename << file_number_counter_++;
