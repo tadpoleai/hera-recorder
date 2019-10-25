@@ -7,7 +7,7 @@ if (process.env.NODE_ENV === 'production') {
   port = 80;
   useHttps = false;
 } else {
-  hostName = '10.211.55.6';
+  hostName = '1.1.1.100';
   port = 9090;
   useHttps = false;
 }

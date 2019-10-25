@@ -28,6 +28,7 @@ enum TronErrno {
     CanNotOpenUsbDevice = 204,
     CanNotOpenTtyDevice = 205,
     CanNotOpenSmbusDevice = 206,
+    CanNotOpenCamera = 207,
 
     InvalidParameterType = 300,
     InsufficientParameters = 301,

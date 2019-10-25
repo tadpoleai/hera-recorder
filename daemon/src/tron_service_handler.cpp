@@ -150,6 +150,9 @@ void TronServiceHandler::start(Result& _return,
         case DeviceType::Imu:
             device = new Imu(id++, name);
             break;
+        case DeviceType::Camera:
+            device = new Camera(id++, name);
+            break;
         default:
             Logger::error() << "TronService::Start UnimplementedDeviceType: " << type_str
                             << Logger::endl;

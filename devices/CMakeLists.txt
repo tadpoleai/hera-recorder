@@ -18,6 +18,9 @@ set( Boost_USE_STATIC_RUNTIME OFF ) # Static Runtime Libraries ( *-s* )
 set( Boost_INCLUDE_DIR /usr/include)
 set( Boost_LIBRARY_DIR /usr/lib/x86_64-linux-gnu)
 
+SET(FLY_CAPTURE_INCLUDE_DIR /usr/include)
+SET(FLT_CAPTURE_LIBS /usr/lib/libflycapture.so) 
+
 file(GLOB_RECURSE
     ALL_SRC
     "src/*.cpp"
@@ -27,6 +30,7 @@ include_directories(
     "../"
     "/usr/local/include/"
     ${Boost_INCLUDE_DIR}
+    ${FLY_CAPTURE_INCLUDE_DIR}
 )
 add_library(${PROJECT_NAME}
     ${ALL_SRC}
@@ -35,4 +39,5 @@ target_link_libraries(${PROJECT_NAME}
     common
     Threads::Threads
     boost_system
+    ${FLT_CAPTURE_LIBS}
 )

@@ -22,6 +22,9 @@ const parameterTypes = {
     'IpAddress',
     'DataPort',
   ],
+  Camera: [
+    'IpAddress',
+  ],
 };
 
 const parameterRules = {

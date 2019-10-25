@@ -14,7 +14,6 @@
 
 #include <common/data_def/device_types.hpp>
 #include <common/tron_errno.h>
-#include <devices/all_devices.hpp>
 
 #include "../defs/defs.hpp"
 #include "../utils/utils.hpp"
@@ -47,7 +46,7 @@ public:
               const std::string& device_name,
               const std::string& device_data_folder,
               ConverterHandler* handler);
-    Converter(const Device&) = delete;
+    Converter(const Converter&) = delete;
     Converter& operator=(const Converter&) = delete;
     virtual ~Converter();
 

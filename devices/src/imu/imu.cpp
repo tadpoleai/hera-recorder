@@ -30,20 +30,20 @@ TronErrno Imu::connect()
     if (parameters_.count(DeviceParameterType::Kernel)) {
         kernel_ = parameters_[DeviceParameterType::Kernel];
     } else {
-        return set_error_and_die(TronErrno::InsufficientParameters, "Paramater Kernel absent");
+        return set_error_and_die(TronErrno::InsufficientParameters, "Parameter Kernel absent");
     }
 
     if (parameters_.count(DeviceParameterType::BaudRate)) {
         baud_rate_ = stoi(parameters_[DeviceParameterType::BaudRate]);
     } else {
-        return set_error_and_die(TronErrno::InsufficientParameters, "Paramater BaudRate absent");
+        return set_error_and_die(TronErrno::InsufficientParameters, "Parameter BaudRate absent");
     }
 
     if (parameters_.count(DeviceParameterType::SerialMsgType)) {
         serial_msg_type_ = stoi(parameters_[DeviceParameterType::SerialMsgType]);
     } else {
         return set_error_and_die(TronErrno::InsufficientParameters,
-                                 "Paramater SerialMsgType absent");
+                                 "Parameter SerialMsgType absent");
     }
 
     serial_port_ = SerialTransport::create(kernel_, SerialConfig(baud_rate_));

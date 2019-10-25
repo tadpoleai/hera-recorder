@@ -30,13 +30,13 @@ TronErrno Dummy::connect()
     if (parameters_.count(DeviceParameterType::DummyValue)) {
         value_ = std::stoi(parameters_[DeviceParameterType::DummyValue]);
     } else {
-        return set_error_and_die(TronErrno::InsufficientParameters, "Paramater DummyValue absent");
+        return set_error_and_die(TronErrno::InsufficientParameters, "Parameter DummyValue absent");
     }
 
     if (parameters_.count(DeviceParameterType::DummyRate)) {
         period_ms_ = 1000 / std::stof(parameters_[DeviceParameterType::DummyRate]);
     } else {
-        return set_error_and_die(TronErrno::InsufficientParameters, "Paramater DummyRate absent");
+        return set_error_and_die(TronErrno::InsufficientParameters, "Parameter DummyRate absent");
     }
 
     return TronErrno::Success;
