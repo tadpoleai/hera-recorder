@@ -18,8 +18,16 @@ set( Boost_USE_STATIC_RUNTIME OFF ) # Static Runtime Libraries ( *-s* )
 set( Boost_INCLUDE_DIR /usr/include)
 set( Boost_LIBRARY_DIR /usr/lib/x86_64-linux-gnu)
 
-SET(FLY_CAPTURE_INCLUDE_DIR /usr/include)
-SET(FLT_CAPTURE_LIBS /usr/lib/libflycapture.so) 
+set(FLY_CAPTURE_INCLUDE_DIR /usr/include)
+set(FLT_CAPTURE_LIBS /usr/lib/libflycapture.so) 
+
+set(JPEG_TURBO_ROOT_DIR /opt/libjpeg-turbo)
+set(JPEG_TURBO_INCLUDE_DIR ${JPEG_TURBO_ROOT_DIR}/include)
+set(JPEG_TURBO_LIBRARY_DIR ${JPEG_TURBO_ROOT_DIR}/lib64)
+set(JPEG_TURBO_LIBS
+    ${JPEG_TURBO_LIBRARY_DIR}/libjpeg.so
+    ${JPEG_TURBO_LIBRARY_DIR}/libturbojpeg.so
+)
 
 file(GLOB_RECURSE
     ALL_SRC
@@ -31,6 +39,7 @@ include_directories(
     "/usr/local/include/"
     ${Boost_INCLUDE_DIR}
     ${FLY_CAPTURE_INCLUDE_DIR}
+    ${JPEG_TURBO_INCLUDE_DIR}
 )
 add_library(${PROJECT_NAME}
     ${ALL_SRC}
@@ -40,4 +49,5 @@ target_link_libraries(${PROJECT_NAME}
     Threads::Threads
     boost_system
     ${FLT_CAPTURE_LIBS}
+    ${JPEG_TURBO_LIBS}
 )

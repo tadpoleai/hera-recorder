@@ -15,6 +15,7 @@ enum class MsgType : int32_t {
     SensorMsgsImu = 0,
     SensorMsgsMagneticField,
     SensorMsgsPointCloud2,
+    SensorMsgsCompressedImage,
 };
 
 }

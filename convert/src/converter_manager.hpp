@@ -19,6 +19,7 @@
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <rosbag_direct_write/direct_bag.h>
+#include <sensor_msgs/CompressedImage.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/MagneticField.h>
 #include <sensor_msgs/PointCloud2.h>

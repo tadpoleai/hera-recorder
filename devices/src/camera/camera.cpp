@@ -40,7 +40,7 @@ TronErrno Camera::connect()
     // Connect to Camera
     FlyCapture2::Error error;
     FlyCapture2::BusManager bus_manager;
-    FlyCapture2::IPAddress flycapture_ipv4(inet_addr(ipAddress_.c_str()));
+    FlyCapture2::IPAddress flycapture_ipv4(ntohl(inet_addr(ipAddress_.c_str())));
     error = bus_manager.GetCameraFromIPAddress(flycapture_ipv4, &guid_);
     if (error != FlyCapture2::PGRERROR_OK) {
         return handle_error(error);
@@ -66,10 +66,10 @@ TronErrno Camera::connect()
     config.grabTimeout = GrabTimeoutMs;
     config.numBuffers = NumBuffers;
     config.grabMode = FlyCapture2::BUFFER_FRAMES;
-   // error = camera_.SetConfiguration(&config);
-   // if (error != FlyCapture2::PGRERROR_OK) {
-   //     return handle_error(error);
-   // }
+    error = camera_.SetConfiguration(&config);
+    if (error != FlyCapture2::PGRERROR_OK) {
+        return handle_error(error);
+    }
 
     error = camera_.StartCapture();
     if (error != FlyCapture2::PGRERROR_OK) {
@@ -93,35 +93,66 @@ void Camera::do_disconnect()
 
 std::shared_ptr<DeviceRawData> Camera::fetch()
 {
+    // Fetch rawdata from camera;
     FlyCapture2::Image raw_image;
     auto error = camera_.RetrieveBuffer(&raw_image);
 
-    auto now = Timestamp::now();
     if (error != FlyCapture2::PGRERROR_OK) {
         Logger::warn() << "Camera/" << get_name() << " failed to retrieve due to "
                        << error.GetDescription() << Logger::endl;
         return nullptr;
     }
 
+    auto now = Timestamp::now();
     int64_t timestamp_intrinsic_ns;
     auto metadata = raw_image.GetMetadata();
-    camera_timestamp_.get_intrinsic_time(timestamp_intrinsic_ns,
-                                         now,
-                                         FlirEmbeddedTimestamp(metadata.embeddedTimeStamp),
-                                         FlirEmbeddedShutter(metadata.embeddedShutter));
+    bool synced =
+            camera_timestamp_.get_intrinsic_time(timestamp_intrinsic_ns,
+                                                 now,
+                                                 FlirEmbeddedTimestamp(metadata.embeddedTimeStamp),
+                                                 FlirEmbeddedShutter(metadata.embeddedShutter));
+    if (!synced) {
+        Logger::warn() << "Camera/" << get_name() << " have not synced" << Logger::endl;
+        return nullptr;
+    }
 
-    Logger::debug() << "Camera Time is: " << Timestamp(timestamp_intrinsic_ns) << " Delay is "
-                    << (now - timestamp_intrinsic_ns) / 1000000L << "ms" << Logger::endl;
-    return nullptr;
+    // Create a Buff to Store Rawdata
+    int32_t data_size = raw_image.GetDataSize();
+    int32_t total_length = sizeof(DeviceRawData) + sizeof(DeviceRawDataImage) + data_size;
+    DeviceRawData* data = reinterpret_cast<DeviceRawData*>(new uint8_t[total_length]);
+
+    // Fullfil Metadata (Header) of Rawdata;
+    data->length = total_length;
+    data->device_type = DeviceType::Camera;
+    data->device_data_type = DeviceDataType::ImageRaw;
+    data->sequence = sequence_++;
+    data->timestamp_receive_ns = now;
+
+    // Fullfil Metadata (Header) of Camera Image;
+    auto data_image = reinterpret_cast<DeviceRawDataImage*>(data->rawdata_buf);
+    data_image->timestamp_intrinsic_ns = timestamp_intrinsic_ns;
+    data_image->rows = raw_image.GetRows();
+    data_image->cols = raw_image.GetCols();
+    data_image->stride = raw_image.GetStride();
+    data_image->is_compressed = 0;
+    data_image->data_size = data_size;
+    data_image->compressed_data_size = -1;  // Mark -1 as unknown
+    data_image->format = static_cast<uint32_t>(raw_image.GetPixelFormat());
+    data_image->bayer = static_cast<uint32_t>(raw_image.GetBayerTileFormat());
+    data_image->meta_timestamp = raw_image.GetMetadata().embeddedTimeStamp;
+    data_image->meta_shutter = raw_image.GetMetadata().embeddedShutter;
+
+    // Use Memcpy to fill Buff
+    memcpy(reinterpret_cast<char*>(data_image->data), raw_image.GetData(), data_size);
+
+    // Return a Shared Ptr
+    return std::shared_ptr<DeviceRawData>(data);
 }
 std::shared_ptr<SensorData> Camera::convert(const std::shared_ptr<DeviceRawData>& rawdata)
 {
-    return do_convert(rawdata);
-}
-std::shared_ptr<SensorData> Camera::do_convert(const std::shared_ptr<DeviceRawData>& rawdata)
-{
     return nullptr;
 }
+
 TronErrno Camera::do_adjust_parameter(DeviceParameterType type, const std::string& value)
 {
     switch (type) {

@@ -332,7 +332,10 @@ void Device::storage_thread_function()
         }
         if (status == DeviceStatus::Inited && is_storage_path_set_) {
             if (!queue_storage_.empty()) {
-                auto rawdata = queue_storage_.wait_and_pop();
+                auto rawdata = compress(queue_storage_.wait_and_pop());
+                if (!rawdata) {
+                    continue;
+                }
                 if (file_number_counter_ == 0 && file_size_counter_ == 0) {
                     open_new_storage_file();
                 } else if ((file_size_counter_ != 0) &&
@@ -372,7 +375,13 @@ void Device::forward_thread_function()
 // Utils
 bool Device::check_new_data() const
 {
-    return (Timestamp::now() - last_data_timestamp_ns_ < MaxDataDuration_);
+    return (int64_t(Timestamp::now()) - last_data_timestamp_ns_ < MaxDataDuration_);
+}
+
+// Default compress
+std::shared_ptr<DeviceRawData> Device::compress(const std::shared_ptr<DeviceRawData>& rawdata)
+{
+    return rawdata;
 }
 
 }  // namespace tron

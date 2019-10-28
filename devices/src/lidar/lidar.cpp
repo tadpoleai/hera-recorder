@@ -96,16 +96,16 @@ void Lidar::do_disconnect()
 std::shared_ptr<DeviceRawData> Lidar::fetch()
 {
     memset(receive_buffer_, 0, kDataBufferSize);
-    int32_t receivedRawdataLength =
+    int32_t received_rawdata_length =
             data_socket_->receive_from(boost::asio::buffer(receive_buffer_,
                                                            sizeof(receive_buffer_)),
                                        receive_data_endpoint_);
     // Create a Buff to Store Rawdata
-    int32_t totalLength = sizeof(DeviceRawData) + receivedRawdataLength;
-    DeviceRawData* data = reinterpret_cast<DeviceRawData*>(new uint8_t[totalLength]);
+    int32_t total_length = sizeof(DeviceRawData) + received_rawdata_length;
+    DeviceRawData* data = reinterpret_cast<DeviceRawData*>(new uint8_t[total_length]);
 
     // Fullfil Metadata (Header) of Rawdata;
-    data->length = totalLength;
+    data->length = total_length;
     data->device_type = DeviceType::Lidar;
     data->device_data_type = DeviceDataType::LidarVelodyneScan;
     data->sequence = sequence_++;
@@ -118,7 +118,7 @@ std::shared_ptr<DeviceRawData> Lidar::fetch()
         return nullptr;
     }
     // Use Memcpy to fill Buff
-    memcpy(reinterpret_cast<char*>(data->rawdata_buf), receive_buffer_, receivedRawdataLength);
+    memcpy(reinterpret_cast<char*>(data->rawdata_buf), receive_buffer_, received_rawdata_length);
     // Return a Shared Ptr
     return std::shared_ptr<DeviceRawData>(data);
 }

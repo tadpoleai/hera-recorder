@@ -14,10 +14,13 @@ namespace tron {
 class Timestamp;
 
 class Duration final {
+    friend std::ostream& operator<<(std::ostream& os, const Duration& duration);
+
 public:
     Duration(int64_t duration_ns);
     operator int64_t() const;
     static const Duration OneSecond;
+    static const Duration OneMinute;
 
 private:
     int64_t duration_ns_;
@@ -31,6 +34,7 @@ public:
     Timestamp(int64_t ts_ns);
     void set(int64_t ts_ns);
     operator int64_t() const;
+    Duration operator-(const Timestamp& rhs) const;
 
 private:
     Timestamp() = default;

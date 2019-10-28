@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include "converters/camera/camera_converter.hpp"
 #include "converters/converter.hpp"
 #include "converters/imu/imu_converter.hpp"
 #include "converters/lidar/lidar_converter.hpp"

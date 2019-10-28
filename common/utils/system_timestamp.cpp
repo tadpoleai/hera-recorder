@@ -16,6 +16,7 @@ Duration::operator int64_t() const
     return duration_ns_;
 }
 const Duration Duration::OneSecond = Duration(OneSecondToNs);
+const Duration Duration::OneMinute = Duration(60 * OneSecondToNs);
 
 Timestamp Timestamp::now()
 {
@@ -36,6 +37,10 @@ Timestamp::operator int64_t() const
 {
     return OneSecondToNs * (int64_t)(tv_sec) + (int64_t)(tv_nsec);
 }
+Duration Timestamp::operator-(const Timestamp& rhs) const
+{
+    return Duration(int64_t(*this) - int64_t(rhs));
+}
 
 std::ostream& operator<<(std::ostream& os, const Timestamp& ts)
 {
@@ -51,6 +56,24 @@ std::ostream& operator<<(std::ostream& os, const Timestamp& ts)
     os.fill('0');
     os.width(9);
     os << ts.tv_nsec;
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const Duration& duration)
+{
+    int64_t ns = int64_t(duration);
+    if (ns < 1000LL) {
+        os << ns << "ns";
+    } else if (ns < 1000000LL) {
+        os << ns / 1000.0 << "μs";
+    } else if (ns < Duration::OneSecond) {
+        os << ns / 1000000.0 << "ms";
+    } else if (ns < Duration::OneMinute) {
+        os << ns / double(Duration::OneSecond) << "sec";
+    } else {
+        os << ns / int64_t(Duration::OneMinute) << "min"
+           << (ns % int64_t(Duration::OneMinute)) / double(Duration::OneSecond) << "sec";
+    }
     return os;
 }
 

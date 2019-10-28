@@ -68,6 +68,9 @@ protected:
             const std::shared_ptr<DeviceRawData>& rawdata) = 0;
     virtual TronErrno do_adjust_parameter(DeviceParameterType type, const std::string& value) = 0;
 
+    // Optional: Compress
+    virtual std::shared_ptr<DeviceRawData> compress(const std::shared_ptr<DeviceRawData>& rawdata);
+ 
 private:
     TronErrno create_storage_folder();
     TronErrno open_new_storage_file();

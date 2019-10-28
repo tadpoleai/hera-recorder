@@ -30,9 +30,7 @@ BETTER_ENUM(DeviceDataType,
             Gpgga = 0x301,
 
             ImageRaw = 0x400,
-            ImageCompressed = 0x401,
-            ImageColor = 0x402,
-            ImageMono = 0x403,
+            ImageJpeg = 0x401,
 
             LidarVelodyneScan = 0x500)
 

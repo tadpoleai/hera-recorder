@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include "../device.hpp"
+#include <cstdint>
 
 namespace wayz {
 namespace tron {

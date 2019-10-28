@@ -66,6 +66,12 @@ ConverterManager::ConverterManager(const std::string& bag_filepath,
                                                         device.fullname,
                                                         handler.get());
                 break;
+            case DeviceType::Camera:
+                handler->converter = new CameraConverter(subdir.basename,
+                                                         device.basename,
+                                                         device.fullname,
+                                                         handler.get());
+                break;
             default:
                 continue;
             }
@@ -186,6 +192,12 @@ void ConverterManager::write_and_free_one_converted_msg(const ConvertedData* dat
     }
     case MsgType::SensorMsgsPointCloud2: {
         auto msg = reinterpret_cast<sensor_msgs::PointCloud2*>(data->msg);
+        bag_->write(data->topic_name, msg->header.stamp, *msg);
+        delete msg;
+        return;
+    }
+    case MsgType::SensorMsgsCompressedImage: {
+        auto msg = reinterpret_cast<sensor_msgs::CompressedImage*>(data->msg);
         bag_->write(data->topic_name, msg->header.stamp, *msg);
         delete msg;
         return;

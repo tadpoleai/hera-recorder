@@ -5,7 +5,6 @@
 #include "camera_timestamp.hpp"
 
 #include <cmath>
-#include <cstdlib>
 
 namespace wayz {
 namespace tron {
@@ -73,16 +72,10 @@ bool CameraTimestamp::get_intrinsic_time(int64_t& out_ns,
         last_sync_time_multipler_ = time_received_ns / SyncPeriodNs_;
         frame_count_ = 1;
         inited = true;
-        std::cout << escaped_time_us << std::endl;
-        std::cout << time_received_ns << std::endl;
-        std::cout << last_sync_time_multipler_ << std::endl;
-        std::cout << last_sync_time_multipler_ * SyncPeriodNs_ << std::endl;
-        std::cout << (1 + last_sync_time_multipler_) * SyncPeriodNs_ << std::endl;
     } else {
         frame_count_ += std::round(escaped_time_us / float(PeriodUs_));
     }
 
-    std::cout << frame_count_ << std::endl;
     bool result;
     result = inited;
     if (frame_count_ > SyncPeriodNs_ / PeriodNs_) {

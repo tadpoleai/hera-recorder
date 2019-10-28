@@ -12,7 +12,18 @@ namespace wayz {
 namespace tron {
 
 #pragma pack(push, 1)
-struct DeviceRawDataCamera {
+struct DeviceRawDataImage {
+    int64_t timestamp_intrinsic_ns;
+    int32_t rows;
+    int32_t cols;
+    int32_t stride;
+    int32_t is_compressed;
+    int32_t data_size;
+    int32_t compressed_data_size;
+    uint32_t format;          // See FlyCapture2::PixelFormat;
+    uint32_t bayer;           // See FlyCapture2::BayerTileFormat;
+    uint32_t meta_timestamp;  // See FlyCapture2::ImageMetadata
+    uint32_t meta_shutter;    // See FlyCapture2::ImageMetadata
     uint8_t data[0];
 };
 #pragma pack(pop)
@@ -32,8 +43,10 @@ public:
     std::shared_ptr<SensorData> convert(const std::shared_ptr<DeviceRawData>& rawdata) final;
     TronErrno do_adjust_parameter(DeviceParameterType type, const std::string& value) final;
 
+    std::shared_ptr<DeviceRawData> compress(const std::shared_ptr<DeviceRawData>& rawdata) final;
+
     // Convert should be implemented as static function
-    static std::shared_ptr<SensorData> do_convert(const std::shared_ptr<DeviceRawData>& rawdata);
+    // No convertion needed for CompressedImage
 
     // Disconnect should be implemented as non-virtual function
     void do_disconnect();
