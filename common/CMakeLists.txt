@@ -31,6 +31,7 @@ include_directories(
     "/usr/local/include/"
 )
 add_library(${PROJECT_NAME}
+    STATIC
     ${ALL_SRC}
     ${RPC_GEN_CPP}/tron_constants.cpp
     ${RPC_GEN_CPP}/tron_types.cpp

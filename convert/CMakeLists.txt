@@ -13,10 +13,11 @@ project(${PROJECT_NAME})
 set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/cmake")
 set(ROS_ROOT_DIR "/opt/ros/kinetic")
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${ROS_ROOT_DIR}")
+set(PCL_INCLUDE_DIRS /usr/include/pcl-1.7)
 
 find_package(Threads REQUIRED)
 find_package(rosbag REQUIRED)
-find_package(PCL REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 file(GLOB_RECURSE
     ALL_SRC
@@ -29,6 +30,7 @@ include_directories(
     "/usr/local/include/"
     ${rosbag_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIR}
 )
 add_executable(${PROJECT_NAME}
     ${ALL_SRC}
@@ -37,5 +39,4 @@ target_link_libraries(${PROJECT_NAME}
     devices
     rosbag_direct_write
     ${rosbag_LIBRARIES}
-    ${PCL_LIBRARIES}
 )

@@ -8,10 +8,10 @@ else
     echo "thrift-${VERSION} already downloaded."
 fi
 
-#tar -zxf thrift-${VERSION}.tar.gz 
+tar -zxf thrift-${VERSION}.tar.gz 
 cd thrift-${VERSION}
 echo `pwd`
 ./bootstrap.sh
-./configure --without-java --without-php --without-qt4 --without-qt5
-make
+./configure --without-java --without-php --without-qt4 --without-qt5 --without-nodejs
+make -j 12
 sudo make install

@@ -87,7 +87,7 @@ const connectionOptions = {
   },
 };
 
-function newClient(callback: (e: Error) => void): TronService.Client {
+function newClient(callback: (e: any) => void): TronService.Client {
   const connection = createHttpConnection(
     config.hostName,
     config.port,
@@ -115,18 +115,20 @@ function apiWrapper<T0, T1>(apiName: string) {
       daemonStatus.pending.command = true;
     }
 
-    const client = newClient((err: Error) => {
-      console.log(`error${err}`);
-      if (apiName === 'getStatus') {
-        daemonStatus.pending.sync = false;
-      } else {
-        daemonStatus.pending.command = false;
+    const client = newClient((err: any) => {
+      if (err.captureStackTrace != undefined) {
+        if (apiName === 'getStatus') {
+          daemonStatus.pending.sync = false;
+        } else {
+          daemonStatus.pending.command = false;
+        }
+        daemonStatus.connected = false;
+        resolve(connectionFailedResult);
       }
-      daemonStatus.connected = false;
-      resolve(connectionFailedResult);
     });
 
     let result: Result | ISimpleResult;
+    console.log("GOGOGO");
     switch (apiName) {
       case 'getStatus':
         result = await client.get_status();
@@ -170,6 +172,8 @@ function apiWrapper<T0, T1>(apiName: string) {
         result = connectionFailedResult;
         break;
     }
+
+    console.log(result);
 
     if (apiName === 'getStatus') {
       daemonStatus.pending.sync = false;

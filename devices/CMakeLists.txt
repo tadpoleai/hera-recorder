@@ -42,6 +42,7 @@ include_directories(
     ${JPEG_TURBO_INCLUDE_DIR}
 )
 add_library(${PROJECT_NAME}
+    STATIC
     ${ALL_SRC}
 )
 target_link_libraries(${PROJECT_NAME}
