@@ -16,10 +16,16 @@ namespace tron {
 LidarConverter::LidarConverter(const std::string& device_type,
                                const std::string& device_name,
                                const std::string& device_data_folder,
+                               const std::string& optional_frame_id,
+                               const std::vector<std::string>& optional_topics,
                                ConverterHandler* handler) :
-    Converter(device_type, device_name, device_data_folder, handler)
+    Converter(device_type, device_name, device_data_folder, optional_frame_id, handler)
 {
-    pcl_topic_name_ = topic_name_prefix_ + "pointcloud2";
+    if (optional_topics.size() > 0) {
+        pcl_topic_name_ = optional_topics[0];
+    } else {
+        pcl_topic_name_ = topic_name_prefix_ + "point_cloud";
+    }
 }
 
 LidarConverter::~LidarConverter()

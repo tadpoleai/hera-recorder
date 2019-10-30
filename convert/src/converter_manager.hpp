@@ -13,6 +13,7 @@
 #include <vector>
 
 #include <common/data_def/device_types.hpp>
+#include <common/third_party/json.hpp>
 #include <common/tron_errno.h>
 #include <common/utils/get_folder_content.hpp>
 #include <devices/all_devices.hpp>
@@ -26,12 +27,16 @@
 
 #include "all_converters.hpp"
 
+using json = nlohmann::json;
+
 namespace wayz {
 namespace tron {
 
 class ConverterManager final {
 public:
-    ConverterManager(const std::string& bag_filepath, const std::string& device_data_folder);
+    ConverterManager(const std::string& bag_filepath,
+                     const std::string& device_data_folder,
+                     const json& remap);
     ConverterManager(const Device&) = delete;
     ConverterManager& operator=(const Converter&) = delete;
     virtual ~ConverterManager();

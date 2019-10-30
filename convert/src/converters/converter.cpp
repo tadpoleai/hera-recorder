@@ -27,6 +27,7 @@ ConverterHandler::~ConverterHandler()
 Converter::Converter(const std::string& device_type,
                      const std::string& device_name,
                      const std::string& device_data_folder,
+                     const std::string& optional_frame_id,
                      ConverterHandler* handler) :
     converted_size_(0),
     frame_id_("frame_" + device_type + "_" + device_name),
@@ -38,6 +39,11 @@ Converter::Converter(const std::string& device_type,
     device_data_folder_(device_data_folder),
     file_number_counter_(0)
 {
+    if (!optional_frame_id.size()) {
+        frame_id_ = device_type + "_" + device_name + "_link";
+    } else {
+        frame_id_ = optional_frame_id;
+    }
     thread_ = new std::thread(&Converter::convert_thread_function, this);
     inited_ = true;
 }

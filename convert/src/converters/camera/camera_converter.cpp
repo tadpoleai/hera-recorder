@@ -13,10 +13,16 @@ namespace tron {
 CameraConverter::CameraConverter(const std::string& device_type,
                                  const std::string& device_name,
                                  const std::string& device_data_folder,
+                                 const std::string& optional_frame_id,
+                                 const std::vector<std::string>& optional_topics,
                                  ConverterHandler* handler) :
-    Converter(device_type, device_name, device_data_folder, handler)
+    Converter(device_type, device_name, device_data_folder, optional_frame_id, handler)
 {
-    image_topic_name_ = topic_name_prefix_ + "image";
+    if (optional_topics.size() > 0) {
+        image_topic_name_ = optional_topics[0];
+    } else {
+        image_topic_name_ = topic_name_prefix_ + "image";
+    }
 }
 
 CameraConverter::~CameraConverter()
@@ -38,7 +44,8 @@ bool CameraConverter::convert_one_data(const std::shared_ptr<DeviceRawData>& raw
         return false;
     }
 
-    DeviceRawDataImage* raw_data_image = reinterpret_cast<DeviceRawDataImage*>(raw_data->rawdata_buf);
+    DeviceRawDataImage* raw_data_image =
+            reinterpret_cast<DeviceRawDataImage*>(raw_data->rawdata_buf);
     auto ros_time_intrinsic = to_ros_time(raw_data_image->timestamp_intrinsic_ns);
 
     auto image_msg = new sensor_msgs::CompressedImage;

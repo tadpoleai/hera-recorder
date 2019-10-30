@@ -13,7 +13,8 @@ namespace wayz {
 namespace tron {
 
 ConverterManager::ConverterManager(const std::string& bag_filepath,
-                                   const std::string& device_data_folder) :
+                                   const std::string& device_data_folder,
+                                   const json& remap) :
     bag_(nullptr),
     total_size_(0),
     thread_(nullptr),
@@ -53,23 +54,59 @@ ConverterManager::ConverterManager(const std::string& bag_filepath,
             // Create handler
             auto handler = std::make_shared<ConverterHandler>();
 
+            // Detect Remap
+            std::string frame_id = "";
+            std::vector<std::string> topics;
+            std::string device_typename = subdir.basename + "/" + device.basename;
+
+            try {
+                for (const auto& el_device : remap.items()) {
+                    if (el_device.key() == device_typename) {
+                        for (const auto& el_param : el_device.value().items()) {
+                            if (el_param.key() == "frame_id") {
+                                frame_id = el_param.value();
+                                Logger::warn() << "Converter: Frame_id for " << device_typename
+                                               << " remapped to " << frame_id << Logger::endl;
+                            } else if (el_param.key() == "topics") {
+                                for (const auto& topic : el_param.value().items()) {
+                                    topics.push_back(topic.value().get<std::string>());
+                                }
+                                Logger::warn()
+                                        << "Converter: Topics for " << device_typename
+                                        << " remapped to " << el_param.value() << Logger::endl;
+                            }
+                        }
+                    }
+                    continue;
+                }
+            } catch (...) {
+                Logger::error() << "Converter: "
+                                << "Remapping for " << device_typename << " Error" << Logger::endl;
+            }
+
             switch (type.value()) {
             case DeviceType::Imu:
                 handler->converter = new ImuConverter(subdir.basename,
                                                       device.basename,
                                                       device.fullname,
+                                                      frame_id,
+                                                      topics,
                                                       handler.get());
                 break;
             case DeviceType::Lidar:
                 handler->converter = new LidarConverter(subdir.basename,
                                                         device.basename,
                                                         device.fullname,
+                                                        frame_id,
+                                                        topics,
                                                         handler.get());
                 break;
             case DeviceType::Camera:
                 handler->converter = new CameraConverter(subdir.basename,
                                                          device.basename,
                                                          device.fullname,
+                                                         frame_id,
+                                                         topics,
                                                          handler.get());
                 break;
             default:

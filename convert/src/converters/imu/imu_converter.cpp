@@ -11,14 +11,25 @@
 namespace wayz {
 namespace tron {
 
-ImuConverter::ImuConverter(const std::string& frame_id,
+ImuConverter::ImuConverter(const std::string& device_type,
                            const std::string& device_name,
                            const std::string& device_data_folder,
+                           const std::string& optional_frame_id,
+                           const std::vector<std::string>& optional_topics,
                            ConverterHandler* handler) :
-    Converter(frame_id, device_name, device_data_folder, handler)
+    Converter(device_type, device_name, device_data_folder, optional_frame_id, handler)
 {
-    imu_topic_name_ = topic_name_prefix_ + "imu";
-    magnetic_topic_name_ = topic_name_prefix_ + "magnetic_field";
+    if (optional_topics.size() > 0) {
+        imu_topic_name_ = optional_topics[0];
+    } else {
+        imu_topic_name_ = topic_name_prefix_ + "imu";
+    }
+
+    if (optional_topics.size() > 1) {
+        magnetic_topic_name_ = optional_topics[1];
+    } else {
+        magnetic_topic_name_ = topic_name_prefix_ + "magnetic_field";
+    }
 }
 
 ImuConverter::~ImuConverter()

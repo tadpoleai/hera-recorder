@@ -45,6 +45,7 @@ public:
     Converter(const std::string& device_type,
               const std::string& device_name,
               const std::string& device_data_folder,
+              const std::string& optional_frame_id,
               ConverterHandler* handler);
     Converter(const Converter&) = delete;
     Converter& operator=(const Converter&) = delete;

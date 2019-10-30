@@ -1,11 +1,13 @@
 #include <unistd.h>
 
 #include <common/logger/logger.hpp>
+#include <common/third_party/json.hpp>
 
 #include "converter_manager.hpp"
 #include "iostream"
 
 using namespace wayz::tron;
+using json = nlohmann::json;
 
 void print_help(char** argv)
 {
@@ -17,16 +19,19 @@ int main(int argc, char** argv)
 {
     std::string bag_file;
     std::string src_folder;
+    std::string remap_file;
 
     // opterr = 0;
     while (true) {
-        switch (getopt(argc, argv, "i:o:h")) {
+        switch (getopt(argc, argv, "i:o:r:h")) {
         case 'i':
             src_folder = optarg;
             continue;
         case 'o':
             bag_file = optarg;
             continue;
+        case 'r':
+            remap_file = optarg;
         case -1:
             break;
         case 'h':
@@ -53,9 +58,22 @@ int main(int argc, char** argv)
         bag_file += ".bag";
     }
 
+    json remap;
+    if (remap_file.size() != 0) {
+        try {
+            std::ifstream remap_file_stream;
+            remap_file_stream.open(remap_file.c_str(), std::ios::in);
+            remap_file_stream >> remap;
+            remap_file_stream.close();
+        } catch (...) {
+            Logger::error() << "Converter: Can not apply remap file " << remap_file << Logger::endl;
+            exit(0);
+        }
+    }
+
     Logger::create("logs");
     Logger::info() << "Converter: Converter Initialized" << Logger::endl;
-    auto manager = new ConverterManager(bag_file, src_folder);
+    auto manager = new ConverterManager(bag_file, src_folder, remap);
     do {
         usleep(1000000);
         auto converted = manager->report_progress();
