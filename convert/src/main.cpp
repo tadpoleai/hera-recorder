@@ -32,6 +32,7 @@ int main(int argc, char** argv)
             continue;
         case 'r':
             remap_file = optarg;
+            continue;
         case -1:
             break;
         case 'h':

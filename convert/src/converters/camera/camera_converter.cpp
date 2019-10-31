@@ -21,7 +21,7 @@ CameraConverter::CameraConverter(const std::string& device_type,
     if (optional_topics.size() > 0) {
         image_topic_name_ = optional_topics[0];
     } else {
-        image_topic_name_ = topic_name_prefix_ + "image";
+        image_topic_name_ = topic_name_prefix_ + "compressed_image";
     }
 }
 

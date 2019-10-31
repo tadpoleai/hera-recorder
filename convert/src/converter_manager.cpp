@@ -172,6 +172,7 @@ bool ConverterManager::open_bag(const std::string& bag_filepath)
 bool ConverterManager::close_bag()
 {
     if (bag_) {
+        Logger::info() << "Converter: Waiting for flushing" << Logger::endl;
         bag_->close();
         return true;
     }

@@ -47,7 +47,8 @@ TronErrno Lidar::connect()
         Logger::info() << "Succeeded to power on lidar " << get_name() << Logger::endl;
     } else {
         Logger::error() << "Fail to power on lidar " << get_name() << Logger::endl;
-        return set_error_and_die(TronErrno::CanNotOpenEthernetDevice, "Failed to power on " + get_name());
+        return set_error_and_die(TronErrno::CanNotOpenEthernetDevice,
+                                 "Failed to power on " + get_name());
     }
 
     try {
@@ -62,7 +63,8 @@ TronErrno Lidar::connect()
 
     if (data_socket_ == nullptr) {
         Logger::error() << "Can not create socket for" << get_name() << Logger::endl;
-        return set_error_and_die(TronErrno::CanNotOpenEthernetDevice, "Can not create socket for" + get_name());
+        return set_error_and_die(TronErrno::CanNotOpenEthernetDevice,
+                                 "Can not create socket for" + get_name());
     }
     return TronErrno::Success;
 }
@@ -195,9 +197,8 @@ std::shared_ptr<SensorData> Lidar::do_convert(const std::shared_ptr<DeviceRawDat
         // regardless of velodyne's original axes definitions
         // refer to web: https://www.ros.org/reps/rep-0103.html#axis-orientation
         // also, web: https://blog.csdn.net/chengde6896383/article/details/86682882
-        // consequently, a +90deg (M_PI/2) shiftation is added to azimuth
-        double azimuth_base = AzimuthGranularity_ * (data_block->azimuth) + M_PI / 2;
 
+        double azimuth_base = AzimuthGranularity_ * (data_block->azimuth);
         for (size_t channel_index = 0; channel_index < NumChannelPerDataBlock_; ++channel_index) {
             const auto* channel = &data_block->channels[channel_index];
 
@@ -215,8 +216,10 @@ std::shared_ptr<SensorData> Lidar::do_convert(const std::shared_ptr<DeviceRawDat
 
                 double pitch = VerticalAngles16C_[channel_index % 16];
                 double distance_horizontal = distance * cos(pitch);
-                lidar_point->x = distance_horizontal * sin(azimuth);
-                lidar_point->y = distance_horizontal * cos(azimuth);
+                // Origin X, ROS Definition -Y
+                lidar_point->y = -distance_horizontal * sin(azimuth);
+                // Origin Y, ROS Definition X
+                lidar_point->x = distance_horizontal * cos(azimuth);
                 lidar_point->z = distance * sin(pitch) + VerticalCorrection16C_[channel_index];
                 lidar_point->channel = channel_index % 16;
             } break;
@@ -228,8 +231,10 @@ std::shared_ptr<SensorData> Lidar::do_convert(const std::shared_ptr<DeviceRawDat
 
                 double pitch = VerticalAngles32C_[channel_index];
                 double distance_horizontal = distance * cos(pitch);
-                lidar_point->x = distance_horizontal * sin(azimuth);
-                lidar_point->y = distance_horizontal * cos(azimuth);
+                // Origin X, ROS Definition -Y
+                lidar_point->y = -distance_horizontal * sin(azimuth);
+                // Origin Y, ROS Definition X
+                lidar_point->x = distance_horizontal * cos(azimuth);
                 lidar_point->z = distance * sin(pitch);
                 lidar_point->channel = channel_index;
             } break;
@@ -241,8 +246,10 @@ std::shared_ptr<SensorData> Lidar::do_convert(const std::shared_ptr<DeviceRawDat
 
                 double pitch = VerticalAngles32E_[channel_index];
                 double distance_horizontal = distance * cos(pitch);
-                lidar_point->x = distance_horizontal * sin(azimuth);
-                lidar_point->y = distance_horizontal * cos(azimuth);
+                // Origin X, ROS Definition -X
+                lidar_point->x = -distance_horizontal * sin(azimuth);
+                // Origin Y, ROS Definition -Y
+                lidar_point->y = -distance_horizontal * cos(azimuth);
                 lidar_point->z = distance * sin(pitch);
                 lidar_point->channel = channel_index;
             } break;

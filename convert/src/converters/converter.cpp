@@ -30,7 +30,7 @@ Converter::Converter(const std::string& device_type,
                      const std::string& optional_frame_id,
                      ConverterHandler* handler) :
     converted_size_(0),
-    frame_id_("frame_" + device_type + "_" + device_name),
+    frame_id_(device_type + "_" + device_name + "_link"),
     topic_name_prefix_("/" + device_type + "/" + device_name + "/"),
     thread_(nullptr),
     managed_this_(handler),

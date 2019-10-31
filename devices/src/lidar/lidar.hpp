@@ -80,7 +80,7 @@ private:
         if (index < 16) {
             return 2.304 / 110.592 * index;
         } else {
-            return 55.296 + 2.304 / 110.592 * index;
+            return 55.296 / 110.592 + 2.304 / 110.592 * index;
         }
     }
 

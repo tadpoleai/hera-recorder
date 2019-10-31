@@ -24,7 +24,7 @@ LidarConverter::LidarConverter(const std::string& device_type,
     if (optional_topics.size() > 0) {
         pcl_topic_name_ = optional_topics[0];
     } else {
-        pcl_topic_name_ = topic_name_prefix_ + "point_cloud";
+        pcl_topic_name_ = topic_name_prefix_ + "point_cloud2";
     }
 }
 
