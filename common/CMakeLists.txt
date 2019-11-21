@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "-Werror -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-set(PROJECT_NAME common)
+set(PROJECT_NAME hera-common)
 project(${PROJECT_NAME})
 
 set(RPC_GEN_CPP "rpc/gen-cpp")

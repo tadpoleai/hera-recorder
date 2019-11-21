@@ -1,0 +1,45 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:         syncd
+# Required-Start:   $all
+# Required-Stop:    
+# Default-Start:    2 3 4 5
+# Default-Stop:     0 1 6
+# Short-Description:Daemon for gpio
+### END INIT INFO
+
+start()
+{
+    echo "start hera daemon"
+    /usr/local/bin/hera-daemon /var/hera/data /var/hera/profiles.json /var/hera/logs/hera-daemon &
+    exit 0
+}
+
+stop()
+{
+    pkill hera-daemon
+    echo "stop start hera daemon"
+}
+
+. /lib/lsb/init-functions
+
+case "$1" in
+start)
+    start
+    ;;
+
+stop)
+    stop
+    ;;
+
+restart|reload)
+    stop
+    start
+    ;;
+
+*)
+    echo "Usage: $0 {start|stop|restart|reload}"
+    exit 0
+
+esac
+exit 0

@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "-Werror -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-set(PROJECT_NAME devices)
+set(PROJECT_NAME hera-devices)
 project(${PROJECT_NAME})
 
 find_package(Threads REQUIRED)
@@ -25,7 +25,6 @@ set(JPEG_TURBO_ROOT_DIR /opt/libjpeg-turbo)
 set(JPEG_TURBO_INCLUDE_DIR ${JPEG_TURBO_ROOT_DIR}/include)
 set(JPEG_TURBO_LIBRARY_DIR ${JPEG_TURBO_ROOT_DIR}/lib64)
 set(JPEG_TURBO_LIBS
-    ${JPEG_TURBO_LIBRARY_DIR}/libjpeg.so
     ${JPEG_TURBO_LIBRARY_DIR}/libturbojpeg.so
 )
 
@@ -48,7 +47,7 @@ add_library(${PROJECT_NAME}
     ${ALL_SRC}
 )
 target_link_libraries(${PROJECT_NAME}
-    common
+    hera-common
     Threads::Threads
     boost_system
     ${FLT_CAPTURE_LIBS}

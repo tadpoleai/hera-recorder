@@ -49,22 +49,33 @@ npm build
 
 ## 部署
 
+### 配置硬件
+
+以太网接口和USB接口的传感器，需要配置设备名，网卡名，内核参数，网络地址等等，可以参考[`deploy/dev_etc.md`](deploy/dev_etc.md)
+
+### 配置无线AP
+
+参考[`deploy/wlan.md`](deploy/wlan.md)，配置无线AP
+
 ### 配置Nginx
 
-参考`deploy/nginx.md`，配置Nginx
+参考[`deploy/nginx.md`](deploy/nginx.md)，配置Nginx
 
-### 配置网口(若有需要)
-
-参考[硬件设置](https://confluence.newayz.com/pages/viewpage.action?pageId=20644872)中的网口配置，设置网口MTU，内核缓存以及udev文件
-
-### 安装服务端为自启动
+### 安装软件
 
 ```shell
 cd build
 sudo make install
 ```
 
-### 部署客户端到Nginx指定页面
+### 部署服务器(仅对下位机执行)
+
+```shell
+cd daemon/script/
+sh install-extra.sh
+```
+
+### 部署客户端到Nginx
 
 ```shell
 cd client

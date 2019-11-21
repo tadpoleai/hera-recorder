@@ -12,9 +12,6 @@ namespace wayz {
 namespace hera {
 namespace daemon {
 
-const std::string AcquisitionManager::FolderPrefix_ = "./";
-const std::string AcquisitionManager::JsonFile_ = "./profiles.json";
-
 void AcquisitionManager::get(Result& result)
 {
     append_status(result);

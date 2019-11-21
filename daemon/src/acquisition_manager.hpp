@@ -18,7 +18,12 @@ namespace daemon {
 
 class AcquisitionManager final : public AcquisitionManagerIf {
 public:
-    AcquisitionManager() : record_(false), inited_(false)
+    AcquisitionManager(const std::string& folder_prefix = "./",
+                       const std::string& json_file = "./profiles.json") :
+        record_(false),
+        inited_(false),
+        FolderPrefix_(folder_prefix),
+        JsonFile_(json_file)
     {
         read_profiles();
     }
@@ -58,10 +63,10 @@ private:
     bool record_;
     bool inited_;
 
-    static const std::string FolderPrefix_;
+    const std::string FolderPrefix_;
     std::string folder_;
 
-    static const std::string JsonFile_;
+    const std::string JsonFile_;
     json json_instance_;
 };
 

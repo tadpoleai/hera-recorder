@@ -53,10 +53,24 @@ int main(int argc, char** argv)
     sig_int_handler.sa_flags = 0;
     sigaction(SIGINT, &sig_int_handler, NULL);
 
-    log::init("daemon");
+    std::string folder_prefix = "./";
+    std::string json_file = "./profiles.json";
+    std::string log_file = "hera-daemon";
+    if (argc >= 2) {
+        folder_prefix = argv[1];
+    }
+    if (argc >= 3) {
+        json_file = argv[2];
+    }
+    if (argc >= 4) {
+        log_file = argv[3];
+    }
+
+    log::init(log_file);
 
     int port = 9090;
-    std::shared_ptr<daemon::AcquisitionManager> handler(new daemon::AcquisitionManager());
+    std::shared_ptr<daemon::AcquisitionManager> handler(
+            new daemon::AcquisitionManager(folder_prefix, json_file));
     g_handler_ptr = handler.get();
     std::shared_ptr<TProcessor> processor(new AcquisitionManagerProcessor(handler));
     std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));

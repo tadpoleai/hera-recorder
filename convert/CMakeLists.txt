@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "-Werror -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-set(PROJECT_NAME hera_convert)
+set(PROJECT_NAME hera-convert)
 project(${PROJECT_NAME})
 
 set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/cmake")
@@ -35,6 +35,13 @@ add_executable(${PROJECT_NAME}
     ${ALL_SRC}
 )
 target_link_libraries(${PROJECT_NAME}
-    devices
+    hera-common
+    hera-devices
     ${rosbag_LIBRARIES}
+)
+
+install(
+    TARGETS hera-convert
+    PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
+    DESTINATION /usr/local/bin
 )

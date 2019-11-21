@@ -1,0 +1,13 @@
+[Unit]
+Description=Daemon of Hera
+
+[Service]
+Type=forking
+ExecStart=/usr/local/bin/hera-daemon /var/hera/data/ /var/hera/profiles.json /var/hera/logs/hera-daemon
+Restart=on-failure
+RestartSec=42s
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,31 @@
+server {
+	listen 80;
+	root /var/www/hera-client/;
+	index index.html;
+	server_name tron.newayz.com;
+	#return 301 https://$host$request_uri;
+
+	# Web Client
+	location / {
+		try_files $uri $uri/ =404;
+	}
+	# Thrift Api for Daemon
+	location /hera {
+		proxy_pass http://127.0.0.1:9090/;
+	}
+}
+
+server {
+	listen 443;
+	root /var/www/hera-client/;
+	index index.html;
+	server_name tron.newayz.com;
+	# Web Client
+	location / {
+		try_files $uri $uri/ =404;
+	}
+	# Thrift Api for Daemon
+	location /hera {
+		proxy_pass http://127.0.0.1:9090/;
+	}
+}
