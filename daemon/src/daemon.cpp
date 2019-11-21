@@ -1,0 +1,71 @@
+///
+/// @file daemon.cpp
+/// @author zheming.lyu (zheming.lyu@wayz.ai)
+/// @brief Main process of Acquistion Daemon
+/// @version 0.1
+/// @date 2019-11-08
+///
+/// @copyright Copyright (c) 2019
+///
+
+#include <signal.h>
+#include <unistd.h>
+
+#include <common/logger/logger.hpp>
+#include <thrift/protocol/TBinaryProtocol.h>
+#include <thrift/protocol/TJSONProtocol.h>
+#include <thrift/server/TSimpleServer.h>
+#include <thrift/transport/TBufferTransports.h>
+#include <thrift/transport/THttpServer.h>
+#include <thrift/transport/THttpTransport.h>
+#include <thrift/transport/TServerSocket.h>
+
+#include "acquisition_manager.hpp"
+
+using namespace ::apache::thrift;
+using namespace ::apache::thrift::protocol;
+using namespace ::apache::thrift::transport;
+using namespace ::apache::thrift::server;
+using namespace ::wayz::hera;
+
+TSimpleServer* g_server_ptr = nullptr;                ///< global pointer to TSimpleServer
+daemon::AcquisitionManager* g_handler_ptr = nullptr;  ///< global pointer to AcquisitionManager
+
+///
+/// @brief Handler Ctrl+C(SIGINT)
+///
+/// @param s signal
+void sig_int_handler_func(int s)
+{
+    if (g_server_ptr) {
+        g_server_ptr->stop();
+        g_handler_ptr->reset();
+    }
+    log::info << "HeraMain: Sigint Received, Stopping" << log::endl;
+}
+
+/// Main process
+int main(int argc, char** argv)
+{
+    struct sigaction sig_int_handler;
+    sig_int_handler.sa_handler = sig_int_handler_func;
+    sigemptyset(&sig_int_handler.sa_mask);
+    sig_int_handler.sa_flags = 0;
+    sigaction(SIGINT, &sig_int_handler, NULL);
+
+    log::init("daemon");
+
+    int port = 9090;
+    std::shared_ptr<daemon::AcquisitionManager> handler(new daemon::AcquisitionManager());
+    g_handler_ptr = handler.get();
+    std::shared_ptr<TProcessor> processor(new AcquisitionManagerProcessor(handler));
+    std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
+    std::shared_ptr<TTransportFactory> transportFactory(new THttpServerTransportFactory());
+    std::shared_ptr<TProtocolFactory> protocolFactory(new TJSONProtocolFactory());
+
+    g_server_ptr = new TSimpleServer(processor, serverTransport, transportFactory, protocolFactory);
+    log::info << "HeraMain: Daemon Started" << log::endl;
+    g_server_ptr->serve();
+    log::info << "HeraMain: Daemon Stoped" << log::endl;
+    return 0;
+}

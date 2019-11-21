@@ -1,0 +1,15 @@
+{
+    "/imu/embedded/imu": "/imu/raw_data",
+    "/imu/embedded/magnetic_field": "/imu/mag",
+    "imu_embedded_link": "imu_link",
+    "/lidar/horizontal/point_cloud2": "/velodyne_points",
+    "lidar_horizontal_link": "frame_velodyne_points",
+    "/lidar/inclined/point_cloud2": "/l2",
+    "lidar_inclined_link": "frame_l2",
+    "/camera/rear/compressed_image": "/camera/left/image_raw",
+    "camera_rear_link": "camera_left",
+    "/camera/front/compressed_image": "/camera/right/image_raw",
+    "camera_front_link": "camera_right",
+    "/camera/middle/compressed_image": "/camera/quadrant2/image_raw",
+    "camera_middle_link": "camera_quadrant2"
+}

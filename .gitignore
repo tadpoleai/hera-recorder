@@ -49,7 +49,12 @@ CTestTestfile.cmake
 _deps
 
 # Editor
-.vscode/
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 *.sw?
 
 # Folder
@@ -59,3 +64,21 @@ dist/
 runtime/
 tmp/
 temp/
+deploy/
+
+# Thrift Generated
+gen-js/
+gen-ts/
+gen-cpp/
+
+# MacOS
+.DS_Store
+
+# Recorded Data
+20????????????_*/
+
+# ! deploy script
+!deploy/*.sh
+
+# Doxygen
+doxygen/
