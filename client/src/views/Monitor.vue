@@ -14,7 +14,7 @@ import {
   IDevice,
   IDeviceInfo,
   ISimpleResult,
-} from '@/core/tronApi';
+} from '@/core/daemonApi';
 import deviceDefine from '@/core/deviceDefine';
 import DeviceListMonitor from '@/views/Monitor/DeviceListMonitor.vue';
 
@@ -30,11 +30,11 @@ export default class Monitor extends Vue {
   deviceDefine = deviceDefine;
 
   get devices() {
-    return toDeviceInfo(daemonStatus.status.devices);
+    return toDeviceInfo(this.daemonStatus.status.devices);
   }
 
   get daemonRunning(): boolean {
-    return this.daemonStatus.status.can_stop;
+    return this.daemonStatus.status.inited;
   }
 }
 </script>

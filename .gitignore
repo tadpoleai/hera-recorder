@@ -79,3 +79,6 @@ gen-cpp/
 
 # ! deploy script
 !deploy/*.sh
+
+# Doxygen
+doxygen/

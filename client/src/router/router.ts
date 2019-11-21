@@ -1,10 +1,8 @@
 import Vue, { VueConstructor } from 'vue';
 import Router from 'vue-router';
-import VHome from '@/views/Home.vue';
 import VAcquisition from '@/views/Acquisition.vue';
 import VMonitor from '@/views/Monitor.vue';
-import VStorage from '@/views/About.vue';
-import VAbout from '@/views/About.vue';
+import VStorage from '@/views/Storage.vue';
 
 Vue.use(Router);
 
@@ -16,12 +14,6 @@ export interface RouteEntry {
 }
 
 const routeList: Array<RouteEntry> = [
-  {
-    path: '/',
-    name: 'Views.home',
-    icon: 'mdi-home',
-    component: VHome,
-  },
   {
     path: '/acquisition',
     name: 'Views.acquisition',

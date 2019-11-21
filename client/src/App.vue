@@ -62,7 +62,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import router from '@/router/router';
-import { daemonStatus } from '@/core/tronApi';
+import { daemonStatus } from '@/core/daemonApi';
 
 @Component
 export default class App extends Vue {

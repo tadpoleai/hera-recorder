@@ -17,20 +17,24 @@
 #include <sys/types.h>
 
 namespace wayz {
-namespace tron {
+namespace hera {
 
 std::ostream& operator<<(std::ostream& os, const FileSize& size)
 {
+
     if (size.size < (1ULL << 10)) {
-        os << size.size << "Bytes";
-    } else if (size.size < (1ULL << 20)) {
-        os << std::setprecision(5) << size.size / float(1ULL << 10) << "KiB";
-    } else if (size.size < (1ULL << 30)) {
-        os << std::setprecision(5) << size.size / float(1ULL << 20) << "MiB";
-    } else if (size.size < (1ULL << 40)) {
-        os << std::setprecision(5) << size.size / float(1ULL << 30) << "GiB";
+        os << std::setw(4) << size.size << "Bytes";
     } else {
-        os << std::setprecision(5) << size.size / float(1ULL << 40) << "TiB";
+        os << std::setw(6) << std::setprecision(5) << std::setfill('0') << std::left;
+        if (size.size < (1ULL << 20)) {
+            os << size.size / float(1ULL << 10) << "KiB";
+        } else if (size.size < (1ULL << 30)) {
+            os << size.size / float(1ULL << 20) << "MiB";
+        } else if (size.size < (1ULL << 40)) {
+            os << size.size / float(1ULL << 30) << "GiB";
+        } else {
+            os << size.size / float(1ULL << 40) << "TiB";
+        }
     }
     return os;
 }
@@ -38,7 +42,6 @@ std::ostream& operator<<(std::ostream& os, const FileSize& size)
 FolderContent get_folder_content(const std::string& parent)
 {
     FolderContent content;
-
     auto dir = opendir(parent.c_str());
     if (!dir) {
         return content;
@@ -69,5 +72,5 @@ FolderContent get_folder_content(const std::string& parent)
     return content;
 }
 
-}  // namespace tron
+}  // namespace hera
 }  // namespace wayz

@@ -10,20 +10,25 @@
 #include <thread>
 #include <vector>
 
-#include <common/utils/threadsafe_queue.hpp>
+#include <common/utils/thread_queue.hpp>
 
 #include "serial_port.hpp"
 
 namespace wayz {
-namespace tron {
+namespace hera {
 
 using SerialData = std::vector<uint8_t>;
 
-typedef struct {
+
+#pragma pack(push, 1)
+
+struct SerialRawMsg {
     uint8_t msg_type;
     uint8_t msg_length;
     uint8_t msg_rawdata[0];
-} __attribute__((packed, aligned(1))) SerialRawMsg;
+};
+
+#pragma pack(pop)
 
 class SerialTransportDecoder {
 public:
@@ -54,7 +59,7 @@ private:
 class SerialTransport {
 public:
     static SerialTransport* create(const std::string& kernel, const SerialConfig& serial_config);
-    ThreadsafeQueue<std::shared_ptr<SerialData>>* get_queue_handler(const int32_t msg_type);
+    ThreadQueue<SerialData>* get_queue_handler(const int32_t msg_type);
     bool is_opened() const;
     void free();
 
@@ -79,9 +84,9 @@ private:
     static const size_t MaxMsgType_ = 7;
     std::mutex mutex_queue_handler_;
     volatile bool queue_registered[MaxMsgType_ + 1];
-    ThreadsafeQueue<std::shared_ptr<SerialData>> queue_[MaxMsgType_ + 1];
+    ThreadQueue<SerialData> queue_[MaxMsgType_ + 1];
 };
 
 
-}  // namespace tron
+}  // namespace hera
 }  // namespace wayz

@@ -10,7 +10,7 @@
 #include <iostream>
 
 namespace wayz {
-namespace tron {
+namespace hera {
 
 class SerialConfig {
 public:
@@ -52,5 +52,5 @@ private:
     int fd_;
 };
 
-}  // namespace tron
+}  // namespace hera
 }  // namespace wayz

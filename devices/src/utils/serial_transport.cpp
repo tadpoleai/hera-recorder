@@ -9,7 +9,7 @@
 #include "serial_port.hpp"
 
 namespace wayz {
-namespace tron {
+namespace hera {
 
 SerialTransport* SerialTransport::instance_ = nullptr;
 int32_t SerialTransport::reference_count_ = 0;
@@ -77,14 +77,13 @@ bool SerialTransport::is_opened() const
     return port_opened_;
 }
 
-ThreadsafeQueue<std::shared_ptr<SerialData>>* SerialTransport::get_queue_handler(
-        const int32_t msg_type)
+ThreadQueue<SerialData>* SerialTransport::get_queue_handler(const int32_t msg_type)
 {
     if (msg_type < 0 || msg_type > (int32_t)MaxMsgType_) {
         return nullptr;
     }
 
-    ThreadsafeQueue<std::shared_ptr<SerialData>>* result = nullptr;
+    ThreadQueue<SerialData>* result = nullptr;
     mutex_queue_handler_.lock();
     if (!queue_registered[msg_type]) {
         queue_registered[msg_type] = true;
@@ -192,5 +191,5 @@ size_t SerialTransportDecoder::decode(size_t encoded_len)
     return msg_length;
 }
 
-}  // namespace tron
+}  // namespace hera
 }  // namespace wayz

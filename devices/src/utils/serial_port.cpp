@@ -15,7 +15,7 @@
 #include <sys/ioctl.h>
 
 namespace wayz {
-namespace tron {
+namespace hera {
 
 SerialConfig::SerialConfig(int32_t baud_rate,
                            int32_t data_bits,
@@ -59,7 +59,8 @@ SerialPort::~SerialPort()
 
 bool SerialPort::die(const std::string& msg)
 {
-    Logger::error() << "SerialPort: " << msg << Logger::endl;
+    log::error << "SerialPort: " << msg << log::endl;
+    std::cout << msg << std::endl;
     return false;
 }
 
@@ -203,8 +204,8 @@ std::vector<uint8_t> SerialPort::read_port(size_t max_size, int32_t timeout_ms)
     int read_size = read(fd_, result.data(), size_to_read);
     result.resize(read_size);
 
-    return std::move(result);
+    return result;
 }
 
-}  // namespace tron
+}  // namespace hera
 }  // namespace wayz

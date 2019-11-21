@@ -4,95 +4,43 @@
 
 #pragma once
 
-#include <cstdint>
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <mutex>
-#include <string>
+#include "impl/log_impl.hpp"
 
 namespace wayz {
-namespace tron {
+namespace hera {
+namespace log {
 
-enum class LoggerLevel : int32_t {
-    Debug = 0,
-    Info,
-    Warn,
-    Error,
-};
+const auto debug = impl::LogStartl(LogLevel::Debug);
+const auto info = impl::LogStartl(LogLevel::Info);
+const auto warn = impl::LogStartl(LogLevel::Warn);
+const auto error = impl::LogStartl(LogLevel::Error);
+const auto endl = impl::LogEndl();
 
-class Logger final {
-public:
-    static bool create(const std::string& log_folder);
-    ~Logger();
+inline void onlyprint()
+{
+    return impl::Logger::onlyprint();
+}
 
-public:
-    Logger& operator<<(Logger& (*op)(Logger&))
-    {
-        return (*op)(*this);
-    }
-    template<typename T>
-    Logger& operator<<(const T& t)
-    {
-        file_ << t;
-        if (extra_file_.is_open()) {
-            extra_file_ << t;
-        }
-        std::cout << t;
-        return *this;
-    }
-    static inline Logger& debug()
-    {
-        return start(LoggerLevel::Debug);
-    }
-    static inline Logger& info()
-    {
-        return start(LoggerLevel::Info);
-    }
-    static inline Logger& warn()
-    {
-        return start(LoggerLevel::Warn);
-    }
-    static inline Logger& error()
-    {
-        return start(LoggerLevel::Error);
-    }
-    static inline Logger& endl(Logger& that)
-    {
-        that.file_.put('\n');
-        if (that.extra_file_.is_open()) {
-            that.extra_file_.put('\n');
-        }
-        std::cout << "\n";
-        that.end_line();
-        return that;
-    }
+inline bool init(const std::string& file)
+{
+    return impl::Logger::init(file);
+}
 
-    static bool open_extra(const std::string& filepath);
-    static void close_extra();
+inline void set_level(LogLevel level)
+{
+    return impl::Logger::set_level(level);
+}
 
-private:
-    explicit Logger(const std::string& log_folder);
-    Logger(const Logger&) = delete;
-    Logger& operator=(const Logger&) = delete;
+inline bool open_aux(const std::string& file)
+{
+    return impl::Logger::open_aux(file);
+}
 
-    static Logger& start(LoggerLevel level);
-    bool open_file(bool determine_line_count = false);
-    void end_line();
+inline void close_aux()
+{
+    return impl::Logger::close_aux();
+}
 
-    static std::unique_ptr<Logger> instance_;
-    static std::mutex mutex_;
-
-    static constexpr size_t FileNameWidth_ = 4;
-    static const int32_t FileLineMax_ = 3000;
-    bool created_;
-    std::string log_folder_;
-    int64_t file_number_counter_;
-    int32_t file_line_counter_;
-    std::mutex write_mutex_;
-    std::ofstream file_;
-    std::ofstream extra_file_;
-};
-
-}  // namespace tron
+}  // namespace log
+}  // namespace hera
 }  // namespace wayz

@@ -9,7 +9,7 @@
 #include <vector>
 
 namespace wayz {
-namespace tron {
+namespace hera {
 
 struct FileSize {
     friend std::ostream& operator<<(std::ostream& os, const FileSize& size);
@@ -46,5 +46,5 @@ struct FolderContent {
 
 FolderContent get_folder_content(const std::string& parent);
 
-}  // namespace tron
+}  // namespace hera
 }  // namespace wayz
