@@ -13,7 +13,7 @@
 命令行输入
 
 ```shell
-hera_convert -i <input> [-o <output> -r <remap> -vl]
+hera-convert -i <input> [-o <output> -r <remap> -vl]
 ```
 
 其中
