@@ -1,10 +1,9 @@
 cmake_minimum_required( VERSION 2.8 )
 
-set(PROJECT_NAME tron)
+set(PROJECT_NAME hera)
 project(${PROJECT_NAME})
 
 add_subdirectory(common)
 add_subdirectory(devices)
 add_subdirectory(daemon)
 add_subdirectory(convert)
-add_subdirectory(rosbag_direct_write)

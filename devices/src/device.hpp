@@ -1,112 +1,334 @@
-//
-// Copyright 2018 Wayz.ai. All Rights Reserved.
-//
+///
+/// @file device.hpp
+/// @author zheming.lyu (zheming.lyu@wayz.ai)
+/// @brief Header of class Device
+/// @version 0.1
+/// @date 2019-11-06
+///
+/// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
+///
 
 #pragma once
 
 #include <cstdint>
-#include <fstream>
 #include <map>
 #include <string>
-#include <thread>
 #include <utility>
 #include <vector>
 
-#include <common/data_def/device_types.hpp>
-#include <common/third_party/enum.h>
-#include <common/tron_errno.h>
-#include <common/utils/system_timestamp.hpp>
-#include <common/utils/threadsafe_queue.hpp>
+#include "common/hera_errno.h"
+#include "common/logger/logger.hpp"
+#include "device_data.hpp"
+#include "storage.hpp"
 
 namespace wayz {
-namespace tron {
+namespace hera {
 
+class Device;
+class DeviceFactory;
+
+///
+/// @brief A unique pointer to Device
+///
+using DevicePtr = std::unique_ptr<Device>;
+
+///
+/// @brief A Map from DeviceParameterType(enum) to ParameterValue(string)
+///
+/// Used to in derived classes of Devices
+///
+using ParametersMap = std::map<DeviceParameterType, std::string>;
+
+///
+/// @brief A Map from ParameterType(string) to Value(string)
+///
+using OutParametersMap = std::map<std::string, std::string>;
+
+/// DeviceId use uint32_t
+using DeviceIdType = uint32_t;
+
+///
+/// @brief Abstract base class of all devices
+///
+/// Provides common interfaces and realizes common operations
+///
 class Device {
+private:
+    ///
+    /// @brief Indicating a Device's status
+    ///
+    enum class DeviceStatus : int32_t {
+        BeforeConnect = 0,  ///< Constructed, ready for start()->connect() calling
+        Connected = 1,      ///< Started and No error occured
+        Terminated = 2,     ///< After stop()->disconnect() called, ready for deconstruction
+        Error = 3           ///< Some error occured
+    };
+
 public:
-    Device(int32_t id, const std::string& name);
+    ///
+    /// @brief Construct a new Device object
+    ///
+    /// @param id device_id, from 0
+    /// @param vendor_type valid vendor_type from DeviceVendorType,
+    /// in slash/case, i.e, category/vendor,
+    /// e.g., lidar/velodyne, camera/flir
+    /// @param name device name,
+    /// @param folder parent folder for all devices
+    /// @param essential_parameter_types essential parameter types for a specific vendor_type
+    /// @param read_mode whether device operates in read mode
+    Device(DeviceIdType id,
+           const std::string& vendor_type,
+           const std::string& name,
+           const std::string& folder,
+           bool read_mode,
+           std::initializer_list<DeviceParameterType>&& essential_parameter_types);
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
+
+    ///
+    /// @brief Destroy the Device object
+    ///
+    /// @note Derived Dtor should call stop()
+    /// since abstract function disconnect(), which will be called in stop(),
+    /// need a v-table that will be destroyed before ~Device()
     virtual ~Device();
 
-    // Control
-    TronErrno start();
-    TronErrno stop();
-    TronErrno start_record();
-    TronErrno pause_record();
-    TronErrno enable_forward();
-    TronErrno disable_forward();
+    ///
+    /// @brief Connect and start fetching data
+    ///
+    /// @return HeraErrno operation result
+    HeraErrno start();
 
-    // Configure
-    TronErrno set_storage(const std::string& folder);
-    TronErrno set_parameter(const std::string& type, const std::string& value);
-    TronErrno adjust_parameter(const std::string& type, const std::string& value);
+    ///
+    /// @brief Stop fetching data and disconnect
+    ///
+    /// @note This should be called in derived class's dtor,
+    /// since abstract function disconnect(), which called in stop(),
+    /// need a v-table that would be destroyed before ~Device()
+    void stop();
 
-    // Status
-    virtual DeviceType get_type() const = 0;
-    int32_t get_id() const;
-    std::string get_name() const;
-    std::map<std::string, std::string> get_parameters() const;
-    int64_t get_volume() const;
-    std::string get_status() const;
-    TronErrno get_errno() const;
-    std::string get_reason() const;
-    bool get_is_record() const;
-    bool get_is_forward() const;
-    bool get_is_storage_set() const;
-    std::string get_storage_folder() const;
+    ///
+    /// @brief Start record or pause record
+    ///
+    /// @param value true to start record
+    /// @param value false to pause record
+    /// @return HeraErrno operation result
+    HeraErrno record(bool value);
+
+    ///
+    /// @todo Forward sensor data by socket
+    ///
+    // HeraErrno forward(bool value);
+
+    ///
+    /// @brief Set or adjust a single parameter
+    ///
+    /// @param type valid parameter type in string
+    /// @see DeviceParameterType in device_type.hpp
+    /// @param value paramaeter value
+    /// @return HeraErrno operation result
+    /// @note Essential parameters should be set before start()
+    /// @note Some parameter is immutable after start()
+    HeraErrno parameter(const std::string& type, const std::string& value);
+
+    ///
+    /// @brief Read a SensorData from storaged data
+    ///
+    /// @return SensorDataPtr a shared pointer to sensor data, if succeed, otherwise nullptr
+    /// @note This operation is only allowed, and the only operation allowed in read mode
+    SensorDataPtr read();
+
+    ///
+    /// @brief Get the vendor type
+    ///
+    /// @return std::string vendor type in category/vendor
+    inline std::string get_type() const noexcept
+    {
+        return type_;
+    }
+
+    ///
+    /// @brief Get the device id
+    ///
+    /// @return DeviceIdType device id
+    inline DeviceIdType get_id() const noexcept
+    {
+        return id_;
+    }
+
+    ///
+    /// @brief Get the device name object
+    ///
+    /// @return std::string device name
+    inline std::string get_name() const noexcept
+    {
+        return name_;
+    }
+
+    ///
+    /// @brief Get current storage data size
+    ///
+    /// @return uint64_t data size in bytes
+    inline uint64_t get_volume() const noexcept
+    {
+        return storage_->get_volume();
+    }
+
+    ///
+    /// @brief Get the current status of device
+    ///
+    /// @return DeviceStatus device status
+    inline DeviceStatus get_status() const noexcept
+    {
+        return status_;
+    }
+
+    ///
+    /// @brief Get the current error code
+    ///
+    /// @return HeraErrno error code
+    inline HeraErrno get_errno() const noexcept
+    {
+        return hera_errno_;
+    }
+
+    ///
+    /// @brief Get the extra reason of error
+    ///
+    /// @return std::string reason of error
+    inline std::string get_reason() const noexcept
+    {
+        return reason_;
+    }
+
+    ///
+    /// @brief Get the if device is recording
+    ///
+    /// @return true device is recording
+    /// @return false device is not recording
+    inline bool get_record() const noexcept
+    {
+        return is_record_;
+    }
+
+    /// @todo To realize forwarding
+    // bool get_forward() const;
+
+    ///
+    /// @brief Get the parameters
+    ///
+    /// @return OutParametersType parameters in map<string, string>
+    OutParametersMap get_parameters() const;
 
 protected:
-    TronErrno set_error_and_die(TronErrno e, const std::string& reason = "");
-    std::map<DeviceParameterType, std::string> parameters_;
-    int64_t sequence_;
+    ///
+    /// @brief Error handling function called by derived classes
+    ///
+    /// @param e error code
+    /// @param reason optional extra reason
+    /// @return HeraErrno error code
+    /// @note This function will set status to DeviceStatus::Error
+    /// @note Typical usage is return handler_error(...) in connect()
+    HeraErrno handle_error(HeraErrno e, std::string&& reason = "");
 
-    // Device Dependent Functions
-    virtual TronErrno connect() = 0;
+    ParametersMap parameters_;  ///< Parameters set by define_parameter()
+    uint32_t sequence_;         ///< Data sequence, increased by 1 when a valid data comes
+
+protected:
+    ///
+    /// @brief Connect to derived device
+    ///
+    /// @return HeraErrno operation result
+    /// @note This function should be implemented by derived class.
+    /// @note This function will called by start();
+    /// @see start()
+    virtual HeraErrno connect() = 0;
+
+    ///
+    /// @brief Disconnect from derived device
+    ///
+    /// @return HeraErrno operation result
+    /// @note This function should be implemented by derived class.
+    /// @note This function will called by stop();
     virtual void disconnect() = 0;
-    virtual std::shared_ptr<DeviceRawData> fetch() = 0;
-    virtual std::shared_ptr<SensorData> convert(
-            const std::shared_ptr<DeviceRawData>& rawdata) = 0;
-    virtual TronErrno do_adjust_parameter(DeviceParameterType type, const std::string& value) = 0;
 
-    // Optional: Compress
-    virtual std::shared_ptr<DeviceRawData> compress(const std::shared_ptr<DeviceRawData>& rawdata);
- 
+    ///
+    /// @brief Fetch from d device
+    ///
+    /// @return StorageDataPtr A shared pointer to storage data if a valid data was fetched
+    /// successfully, otherwise, A nullptr.
+    /// @note Caller must check if return value is nullptr
+    /// @note This function should be implemented by derived class.
+    /// @note This function will called by fetch_thread_function()
+    /// @note This function shoule be a synchronized function, not asynchronized.
+    /// If derived device only provides asynchronized interface, await it inside this function.
+    /// @note This function must return within a certain timeout, even if no data comes,
+    /// otherwise the main thread will be blocked during deconstruction of device.
+    virtual StorageDataPtr fetch() = 0;
+
+    ///
+    /// @brief Convert from storage data to sensor data
+    ///
+    /// @param storage_data storage data to convert
+    /// @return SensorDataPtr shared pointer to converted sensor data if convertion succeed,
+    /// otherwise return SensorData::broken_data()
+    /// @note This function should be implemented by derived class.
+    /// @note Caller must check if return value is broken_data
+    /// @note Do not return nullptr in derived implementions
+    virtual SensorDataPtr convert(StorageDataPtr&& storage_data) = 0;
+
+    ///
+    /// @brief Adjust a single parameter after start()/connect()
+    ///
+    /// @param type valid parameter type in enum
+    /// @see DeviceParameterType in device_type.hpp
+    /// @param value paramaeter value
+    /// @return HeraErrno operation result
+    /// @note Some parameter is immutable during operation
+    /// @note This function should be implemented by derived class.
+    /// @note This function will be called by parameter()
+    virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) = 0;
+
 private:
-    TronErrno create_storage_folder();
-    TronErrno open_new_storage_file();
+    ///
+    /// @brief Check whether essential parameters of a specific device are all settled
+    ///
+    /// @return true all essential parameters all settled
+    /// @return false some of essential parameters not settled
+    bool check_parameter();
 
+    ///
+    /// @brief function of fetching thread
+    ///
     void fetch_thread_function();
-    void storage_thread_function();
-    void forward_thread_function();
-    bool check_new_data() const;
 
-    int32_t id_;
-    std::string name_;
-    std::string storage_root_;
-    std::string storage_path_;
-    volatile bool is_storage_path_set_;
-    volatile int64_t file_number_counter_;
-    volatile int64_t file_size_counter_;
-    volatile int64_t total_file_size_counter_;
-    static const int64_t FileMaxSize_ = 0x7FFFFFFFL;
-    static const size_t FileNameWidth_ = 4;
-    std::ofstream file_;
+    // void forward_thread_function();
 
-    volatile DeviceStatus status_;
-    volatile TronErrno last_errno_;
-    mutable std::string last_errno_reason_;
-    volatile int64_t last_data_timestamp_ns_;
-    static const Duration MaxDataDuration_;
-    volatile bool is_record_;
-    volatile bool is_forward_;
+private:
+    DeviceIdType id_;     ///< device id
+    std::string type_;    ///< device vendor type
+    std::string name_;    ///< device name
+    std::string folder_;  ///< parent folder for all devices
 
-    std::thread* thread_fetch_;
-    std::thread* thread_storage_;
-    std::thread* thread_forward_;
-    ThreadsafeQueue<std::shared_ptr<DeviceRawData>> queue_storage_;
-    ThreadsafeQueue<std::shared_ptr<DeviceRawData>> queue_forward_;
-    int32_t TimeSleepNotDataUs_ = 500;
+    ///
+    /// @brief Device is in read mode
+    ///
+    /// This determines whether to read data from a storage,
+    /// instead of fetching from physical device.
+    /// And in this mode, only read() is allowed
+    /// @see read()
+    bool read_mode_;
+
+    volatile DeviceStatus status_;  ///< device status
+    HeraErrno hera_errno_;          ///< device error code
+    std::string reason_;            ///< extra error reason
+
+    volatile bool is_record_;    ///< if device is recording
+    Storage* storage_;           ///< storage for this device
+    std::thread* thread_fetch_;  ///< fetching thread
+
+    std::vector<DeviceParameterType> essential_parameter_types_;  ///< essential parameters types
 };
 
-}  // namespace tron
+}  // namespace hera
 }  // namespace wayz

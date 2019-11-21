@@ -1,17 +1,14 @@
 #include <unistd.h>
 
-#include <common/logger/logger.hpp>
-#include <common/third_party/json.hpp>
+#include "aligned_converter.hpp"
+#include "common/utils/remapper.hpp"
 
-#include "converter_manager.hpp"
-#include "iostream"
-
-using namespace wayz::tron;
-using json = nlohmann::json;
+using namespace wayz::hera;
+using namespace wayz::hera::convert;
 
 void print_help(char** argv)
 {
-    std::cout << "usage: " << argv[0] << " -i <source data folder> [-o <output bag file>]"
+    std::cout << "usage: " << argv[0] << " -i <source data folder> [-o <output bag file>] [-l] [-v]"
               << std::endl;
 }
 
@@ -20,10 +17,12 @@ int main(int argc, char** argv)
     std::string bag_file;
     std::string src_folder;
     std::string remap_file;
+    bool islog = false;
+    bool isverbose = false;
 
     // opterr = 0;
     while (true) {
-        switch (getopt(argc, argv, "i:o:r:h")) {
+        switch (getopt(argc, argv, "i:o:r:hlv")) {
         case 'i':
             src_folder = optarg;
             continue;
@@ -32,6 +31,12 @@ int main(int argc, char** argv)
             continue;
         case 'r':
             remap_file = optarg;
+            continue;
+        case 'l':
+            islog = true;
+            continue;
+        case 'v':
+            isverbose = true;
             continue;
         case -1:
             break;
@@ -59,29 +64,68 @@ int main(int argc, char** argv)
         bag_file += ".bag";
     }
 
-    json remap;
+    RemapperPtr remapper = nullptr;
     if (remap_file.size() != 0) {
-        try {
-            std::ifstream remap_file_stream;
-            remap_file_stream.open(remap_file.c_str(), std::ios::in);
-            remap_file_stream >> remap;
-            remap_file_stream.close();
-        } catch (...) {
-            Logger::error() << "Converter: Can not apply remap file " << remap_file << Logger::endl;
-            exit(0);
-        }
+        auto remapper = Remapper::create(remap_file);
     }
 
-    Logger::create("logs");
-    Logger::info() << "Converter: Converter Initialized" << Logger::endl;
-    auto manager = new ConverterManager(bag_file, src_folder, remap);
-    do {
-        usleep(1000000);
-        auto converted = manager->report_progress();
-        auto total = manager->total_size();
-        Logger::info() << "Converter: " << converted << " / " << total << Logger::endl;
-    } while (manager->running());
+    if (islog) {
+        log::init("converter");
+    } else {
+        log::onlyprint();
+    }
 
-    delete manager;
-    Logger::info() << "Converter: Conversion Completed" << Logger::endl;
+    if (isverbose) {
+        log::set_level(log::LogLevel::Debug);
+    } else {
+        log::set_level(log::LogLevel::Info);
+    }
+
+    log::debug << "Conversion Start" << log::endl;
+    auto handler = std::make_unique<AlignedConverter>(src_folder, bag_file, std::move(remapper));
+
+    usleep(100000);
+
+    auto converted = handler->converted_size();
+    auto last_converted = converted;
+    auto total = handler->total_size();
+    auto ts = Timestamp::now();
+    auto last_ts = ts;
+    auto gamma = 1.0;
+    constexpr auto Damp = 0.7;
+    constexpr auto MinGamma = 0.05;
+    auto speed = 0.0;
+    do {
+        if (isverbose) {
+            usleep(1000000);
+        } else {
+            usleep(2000000);
+        }
+
+        converted = handler->converted_size();
+        auto new_converted = converted - last_converted;
+        last_converted = converted;
+
+        ts = Timestamp::now();
+        auto duration = ts - last_ts;
+        last_ts = ts;
+
+        auto raw_speed = (double)new_converted / duration;
+        speed = raw_speed * gamma + speed * (1 - gamma);
+        gamma *= Damp;
+        if (gamma < MinGamma) {
+            gamma = MinGamma;
+        }
+
+        auto rest = total - converted;
+        if (rest == 0) {
+            break;
+        }
+
+        Duration eta = rest / speed;
+        log::info << "Converter: " << converted << " / " << total << '\t'
+                  << "eta: " << eta.to_str_second() << log::endl;
+    } while (handler->running());
+
+    log::debug << "Conversion End" << log::endl;
 }

@@ -1,0 +1,60 @@
+{
+    "tron4": [
+        {
+            "type": "imu/aceinna",
+            "name": "embedded",
+            "parameters": [
+                {
+                    "type": "Kernel",
+                    "value": "/dev/ttyUSB0"
+                },
+                {
+                    "type": "BaudRate",
+                    "value": "230400"
+                },
+                {
+                    "type": "SerialMsgType",
+                    "value": "0"
+                }
+            ]
+        },
+        {
+            "type": "lidar/velodyne",
+            "name": "horizontal",
+            "parameters": [
+                {
+                    "type": "IpAddress",
+                    "value": "10.0.10.100"
+                },
+                {
+                    "type": "DataPort",
+                    "value": "2368"
+                }
+            ]
+        },
+        {
+            "type": "lidar/velodyne",
+            "name": "inclined",
+            "parameters": [
+                {
+                    "type": "IpAddress",
+                    "value": "10.0.11.100"
+                },
+                {
+                    "type": "DataPort",
+                    "value": "2370"
+                }
+            ]
+        },
+        {
+            "type": "camera/flir",
+            "name": "rear",
+            "parameters": [
+                {
+                    "type": "IpAddress",
+                    "value": "10.0.2.100"
+                }
+            ]
+        }
+    ]
+}

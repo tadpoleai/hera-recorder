@@ -1,0 +1,71 @@
+//
+// Copyright 2018 Wayz.ai. All Rights Reserved.
+//
+
+#pragma once
+
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <thread>
+
+#include "log_level.hpp"
+#include "log_string.hpp"
+
+namespace wayz {
+namespace hera {
+namespace log {
+namespace impl {
+
+class Logger;
+
+class Logger {
+public:
+    static void onlyprint();
+    static bool init(const std::string& file);
+    static void set_level(LogLevel level);
+    static void stop();
+    static bool open_aux(const std::string& file);
+    static void close_aux();
+    static LogStringStream create_string(LogLevel level);
+
+private:
+    static std::unique_ptr<Logger> instance_;
+
+private:
+    Logger();
+
+public:
+    ~Logger();
+
+private:
+    void write_thread_function();
+    void write(const LogString& data);
+    std::string format(const LogString& data);
+
+private:
+    bool inited_;
+
+    std::ofstream file_;
+    std::ofstream aux_file_;
+
+    LogLevel level_;
+    LogQueue queue_;
+
+    volatile bool running_;
+    std::thread thread_;
+};
+
+template<class T>
+LogStringStream operator<<(const LogStartl startl, T&& rhs)
+{
+    auto result = Logger::create_string(startl.level);
+    result << rhs;
+    return result;
+}
+
+}  // namespace impl
+}  // namespace log
+}  // namespace hera
+}  // namespace wayz

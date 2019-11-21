@@ -1,28 +1,28 @@
 import rules from '@/core/inputRules';
 
 const deviceTypes = [
-  'Dummy',
-  'Imu',
-  'Gps',
-  'Lidar',
-  'Camera',
+  'dummy/foobar',
+  'imu/aceinna',
+  'gps/huace',
+  'lidar/velodyne',
+  'camera/flir',
 ];
 
 const parameterTypes = {
-  Dummy: [
+  'dummy/foobar': [
     'DummyRate',
     'DummyValue',
   ],
-  Imu: [
+  'imu/aceinna': [
     'Kernel',
     'BaudRate',
     'SerialMsgType',
   ],
-  Lidar: [
+  'lidar/velodyne': [
     'IpAddress',
     'DataPort',
   ],
-  Camera: [
+  'camera/flir': [
     'IpAddress',
   ],
 };
@@ -39,9 +39,18 @@ const parameterRules = {
 
 const maxDeviceNameLength = 32;
 
+const deviceIconTypes = {
+  'dummy/foobar': 'mdi-ethereum',
+  'imu/aceinna': 'mdi-compass',
+  'gps/huace': 'mdi-satellite-variant',
+  'lidar/velodyne': 'mdi-hazard-lights',
+  'camera/flir': 'mdi-camera',
+};
+
 export default {
   deviceTypes,
   parameterTypes,
   parameterRules,
   maxDeviceNameLength,
+  deviceIconTypes
 };

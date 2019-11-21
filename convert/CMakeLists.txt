@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "-Werror -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-set(PROJECT_NAME convert)
+set(PROJECT_NAME hera_convert)
 project(${PROJECT_NAME})
 
 set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/cmake")
@@ -26,7 +26,6 @@ file(GLOB_RECURSE
 )
 include_directories(
     "../"
-    "../rosbag_direct_write/include/"
     "/usr/local/include/"
     ${rosbag_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
@@ -37,6 +36,5 @@ add_executable(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME}
     devices
-    rosbag_direct_write
     ${rosbag_LIBRARIES}
 )

@@ -1,4 +1,4 @@
-# tron-client
+# hera-client
 
 ## Project setup
 ```

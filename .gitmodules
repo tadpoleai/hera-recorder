@@ -1,3 +1,0 @@
-[submodule "rosbag_direct_write"]
-	path = rosbag_direct_write
-	url = https://github.com/osrf/rosbag_direct_write.git

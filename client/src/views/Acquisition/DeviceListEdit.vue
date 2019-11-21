@@ -20,24 +20,26 @@
               <v-card-text>
                 <v-container class="ma-0 pa-0">
                   <v-row no-gutters>
-                    <v-col cols="11">{{getIndex(indexDevice, props) + 1}}</v-col>
-                    <v-col cols="1">
+                    <v-col cols="auto" class="mr-auto">{{getIndex(indexDevice, props) + 1}}</v-col>
+                    <v-col cols="auto">
                       <v-btn
-                        icon
+                        text
                         @click="deleteDevice(getIndex(indexDevice, props))"
                         :disabled="!editable"
                       >
-                        <v-icon dark>mdi-close</v-icon>
+                        {{$t('Actions.deleteDevice')}}
+                        <v-icon right dark>mdi-close</v-icon>
                       </v-btn>
                     </v-col>
                   </v-row>
                   <v-row no-gutters>
                     <!-- Device Type -->
                     <v-col cols="6" class="pa-1">
-                      <v-select
+                      <v-text-field
                         v-model="device.type"
-                        :disabled="!editable"
-                        :items="deviceDefine.deviceTypes"
+                        :disabled="true"
+                        :rules="[rules.required, rules.onlyIdentifier]"
+                        :counter="deviceDefine.maxDeviceNameLength"
                         :label="$t('Devices.Type.label')"
                       />
                     </v-col>
@@ -63,8 +65,16 @@
                     :key="indexDevice+'-'+indexParam"
                     no-gutters
                   >
+                    <v-col cols="10" class="mr-auto pa-1">
+                      <v-text-field
+                        v-model="param.value"
+                        :disabled="!editable"
+                        :rules="deviceDefine.parameterRules[param.type]"
+                        :label="param.type"
+                      ></v-text-field>
+                    </v-col>
                     <!-- Delete a Parameter -->
-                    <v-col cols="2">
+                    <v-col cols="auto">
                       <v-btn
                         icon
                         class="mt-3"
@@ -74,18 +84,11 @@
                         <v-icon dark>mdi-minus</v-icon>
                       </v-btn>
                     </v-col>
-                    <v-col cols="10" class="pa-1">
-                      <v-text-field
-                        v-model="param.value"
-                        :disabled="!editable"
-                        :rules="deviceDefine.parameterRules[param.type]"
-                        :label="param.type"
-                      ></v-text-field>
-                    </v-col>
                   </v-row>
                   <!-- Add a Parameter -->
                   <v-row>
-                    <v-col cols="2">
+                    <v-col cols="10" class="mr-auto"></v-col>
+                    <v-col cols="auto">
                       <v-menu transition="slide-y-transition" top offset-y close-on-content-click>
                         <template v-slot:activator="{ on }">
                           <v-btn icon class="mt-2" v-on="on" :disabled="!editable">
@@ -103,7 +106,6 @@
                         </v-list>
                       </v-menu>
                     </v-col>
-                    <v-col cols="10"></v-col>
                   </v-row>
                 </v-container>
               </v-card-text>
@@ -118,8 +120,9 @@
       <v-spacer />
       <v-menu transition="slide-y-transition" top offset-y close-on-content-click>
         <template v-slot:activator="{ on }">
-          <v-btn icon class="mt-2" v-on="on" :disabled="!editable">
-            <v-icon dark>mdi-plus</v-icon>
+          <v-btn text class="mt-2" v-on="on" :disabled="!editable">
+            {{$t('Actions.addDevice')}}
+            <v-icon right dark>mdi-plus</v-icon>
           </v-btn>
         </template>
         <v-list>
@@ -137,10 +140,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { IParameter, IDevice, IDeviceInfo } from '@/core/tronApi';
-import deviceDefine from '@/core/deviceDefine';
-import inputRules from '@/core/inputRules';
+import { Component, Vue, Prop } from "vue-property-decorator";
+import { IParameter, IDevice, IDeviceInfo } from "@/core/daemonApi";
+import deviceDefine from "@/core/deviceDefine";
+import inputRules from "@/core/inputRules";
 
 @Component
 export default class DeviceListEdit extends Vue {
@@ -174,7 +177,7 @@ export default class DeviceListEdit extends Vue {
 
   addParameter(indexDevice: number, ParamType: string) {
     const device = this.devices[indexDevice];
-    const newParam: IParameter = { type: ParamType, value: '' };
+    const newParam: IParameter = { type: ParamType, value: "" };
     device.parameters.push(newParam);
   }
 
@@ -185,8 +188,8 @@ export default class DeviceListEdit extends Vue {
   addDevice(deviceType: string) {
     this.devices.push({
       type: deviceType,
-      name: '',
-      parameters: [],
+      name: "",
+      parameters: []
     });
   }
 }

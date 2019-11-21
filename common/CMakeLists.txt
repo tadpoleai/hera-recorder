@@ -12,30 +12,30 @@ project(${PROJECT_NAME})
 
 set(RPC_GEN_CPP "rpc/gen-cpp")
 add_custom_command(
-    OUTPUT ${RPC_GEN_CPP}/tron_constants.cpp
-    OUTPUT ${RPC_GEN_CPP}/tron_constants.h
-    OUTPUT ${RPC_GEN_CPP}/tron_types.cpp
-    OUTPUT ${RPC_GEN_CPP}/tron_type.h
-    OUTPUT ${RPC_GEN_CPP}/TronService.cpp
-    OUTPUT ${RPC_GEN_CPP}/TronService.h
-    DEPENDS rpc/tron.thrift
+    OUTPUT ${RPC_GEN_CPP}/hera_types.cpp
+    OUTPUT ${RPC_GEN_CPP}/hera_constants.cpp
+    OUTPUT ${RPC_GEN_CPP}/AcquisitionManager.cpp
+    DEPENDS rpc/hera.thrift
     COMMAND "mkdir" "-p" "${RPC_GEN_CPP}"
-    COMMAND "thrift" "-r" "--strict" "-out" "${RPC_GEN_CPP}" "--gen" "cpp" "${CMAKE_CURRENT_SOURCE_DIR}/rpc/tron.thrift"
- )
+    COMMAND "thrift" "-out" "${RPC_GEN_CPP}"
+        "--gen" "cpp:no_skeleton"
+        "${CMAKE_CURRENT_SOURCE_DIR}/rpc/hera.thrift"
+)
 
 file(GLOB_RECURSE
     ALL_SRC
     "**/*.cpp"
 )
 include_directories(
+    "../"
     "/usr/local/include/"
 )
 add_library(${PROJECT_NAME}
     STATIC
     ${ALL_SRC}
-    ${RPC_GEN_CPP}/tron_constants.cpp
-    ${RPC_GEN_CPP}/tron_types.cpp
-    ${RPC_GEN_CPP}/TronService.cpp
+    ${RPC_GEN_CPP}/hera_types.cpp
+    ${RPC_GEN_CPP}/hera_constants.cpp
+    ${RPC_GEN_CPP}/AcquisitionManager.cpp
 )
 target_link_libraries(${PROJECT_NAME}
     "/usr/local/lib/libthrift.so"

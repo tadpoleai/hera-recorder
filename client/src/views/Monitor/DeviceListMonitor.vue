@@ -10,27 +10,20 @@
     >
       <!-- For Device List -->
       <v-card :color="getCardColor(device)">
-        <v-card-title>{{device.type}}</v-card-title>
-        <v-card-text>{{device.name}}</v-card-text>
+        <v-card-title>
+          <v-icon large left>{{deviceDefine.deviceIconTypes[device.type]}}</v-icon>
+          {{device.type}}
+        </v-card-title>
 
-        <v-card-text>
-          <!-- Device Parameters -->
-          {{$t('Devices.parameters')}}
-          <v-container>
-            <v-row
-              v-for="(param, indexParam) in device.parameters"
-              :key="indexDevice+'-'+indexParam"
-              no-gutters
-            >
-              <v-col cols="6" class="pa-1">{{param.type}}</v-col>
-              <v-col cols="6" class="pa-1">{{param.value}}</v-col>
-            </v-row>
-
-            <v-row>
-              <v-col cols="6" class="pa-1">Volume</v-col>
-              <v-col cols="6" class="pa-1">{{device.volume}}</v-col>
-            </v-row>
-          </v-container>
+        <v-card-text class="ma-4">
+          <v-row>
+            <v-col cols="6" class="pa-1">{{$t('Acquisition.deviceName')}}</v-col>
+            <v-col cols="6" class="pa-1">{{device.name}}</v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="6" class="pa-1">{{$t('Acquisition.volume')}}</v-col>
+            <v-col cols="6" class="pa-1">{{device.volume}}</v-col>
+          </v-row>
         </v-card-text>
       </v-card>
     </v-col>
@@ -38,9 +31,9 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator';
-import { IParameter, IDevice, IDeviceInfo } from '@/core/tronApi';
-import deviceDefine from '@/core/deviceDefine';
+import { Component, Vue, Prop } from "vue-property-decorator";
+import { IParameter, IDevice, IDeviceInfo } from "@/core/daemonApi";
+import deviceDefine from "@/core/deviceDefine";
 
 @Component
 export default class DeviceListEdit extends Vue {
@@ -68,11 +61,12 @@ export default class DeviceListEdit extends Vue {
 
   getCardColor(device: IDeviceInfo): string {
     if (device.error === 0) {
-      return 'light-green';
-    } if (device.error === 700) {
-      return 'warn';
+      return "";
     }
-    return 'error';
+    if (device.error === 700) {
+      return "warn";
+    }
+    return "error";
   }
 }
 </script>

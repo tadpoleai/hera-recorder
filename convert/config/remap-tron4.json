@@ -1,126 +1,15 @@
 {
-	"Imu/default": {
-		"frame_id": "imu_link",
-		"topics": [
-			"/imu/raw_data",
-			"/imu/mag"
-		]
-	},
-	"Imu/internal": {
-		"frame_id": "imu_link",
-		"topics": [
-			"/imu/raw_data",
-			"/imu/mag"
-		]
-	},
-	"Imu/embedded": {
-		"frame_id": "imu_link",
-		"topics": [
-			"/imu/raw_data",
-			"/imu/mag"
-		]
-	},
-	"Imu/imu0": {
-		"frame_id": "imu_link",
-		"topics": [
-			"/imu/raw_data",
-			"/imu/mag"
-		]
-	},
-	"Lidar/default": {
-		"frame_id": "frame_velodyne_points",
-		"topics": [
-			"/velodyne_points"
-		]
-	},
-	"Lidar/top": {
-		"frame_id": "frame_velodyne_points",
-		"topics": [
-			"/velodyne_points"
-		]
-	},
-	"Lidar/horizontal": {
-		"frame_id": "frame_velodyne_points",
-		"topics": [
-			"/velodyne_points"
-		]
-	},
-	"Lidar/first": {
-		"frame_id": "frame_velodyne_points",
-		"topics": [
-			"/velodyne_points"
-		]
-	},
-	"Lidar/main": {
-		"frame_id": "frame_velodyne_points",
-		"topics": [
-			"/velodyne_points"
-		]
-	},
-	"Lidar/l1": {
-		"frame_id": "frame_velodyne_points",
-		"topics": [
-			"/velodyne_points"
-		]
-	},
-	"Lidar/back": {
-		"frame_id": "frame_l2",
-		"topics": [
-			"/l2"
-		]
-	},
-	"Lidar/bottom": {
-		"frame_id": "frame_l2",
-		"topics": [
-			"/l2"
-		]
-	},
-	"Lidar/secondary": {
-		"frame_id": "frame_l2",
-		"topics": [
-			"/l2"
-		]
-	},
-	"Lidar/l2": {
-		"frame_id": "frame_l2",
-		"topics": [
-			"/l2"
-		]
-	},
-	"Camera/back": {
-		"frame_id": "camera_left",
-		"topics": [
-			"/camera/left/image_raw"
-		]
-	},
-	"Camera/c1": {
-		"frame_id": "camera_left",
-		"topics": [
-			"/camera/left/image_raw"
-		]
-	},
-	"Camera/front": {
-		"frame_id": "camera_right",
-		"topics": [
-			"/camera/right/image_raw"
-		]
-	},
-	"Camera/c2": {
-		"frame_id": "camera_right",
-		"topics": [
-			"/camera/right/image_raw"
-		]
-	},
-	"Camera/middle": {
-		"frame_id": "camera_quadrant2",
-		"topics": [
-			"/camera/camera_quadrant2/image_raw"
-		]
-	},
-	"Camera/c3": {
-		"frame_id": "camera_quadrant2",
-		"topics": [
-			"/camera/camera_quadrant2/image_raw"
-		]
-	}
+    "/imu/embedded/imu": "/imu/raw_data",
+    "/imu/embedded/magnetic_field": "/imu/mag",
+    "imu_embedded_link": "imu_link",
+    "/lidar/horizontal/point_cloud2": "/velodyne_points",
+    "lidar_horizontal_link": "frame_velodyne_points",
+    "/lidar/inclined/point_cloud2": "/l2",
+    "lidar_inclined_link": "frame_l2",
+    "/camera/rear/compressed_image": "/camera/left/image_raw",
+    "camera_rear_link": "camera_left",
+    "/camera/front/compressed_image": "/camera/right/image_raw",
+    "camera_front_link": "camera_right",
+    "/camera/middle/compressed_image": "/camera/quadrant2/image_raw",
+    "camera_middle_link": "camera_quadrant2"
 }
