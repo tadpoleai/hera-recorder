@@ -44,6 +44,7 @@ make
 ```shell
 cd client
 npm i
+npm thrift
 npm build
 ```
 
