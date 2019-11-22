@@ -14,16 +14,26 @@ namespace wayz {
 namespace hera {
 namespace lidar {
 
+const timeval Velodyne::TimeOut_ = {0, 50000};
+
 /// Turn on Lidar's Laser by Remote Control (curl),
 /// then created a socket by IP and UDP Port
 HeraErrno Velodyne::connect()
 {
+    log::debug << "Velodyne:: Connecting to velodyne by binding port: "
+               << parameters_[DeviceParameterType::DataPort] << log::endl;
     try {
-        address_ = boost::asio::ip::address_v4::from_string(
-                parameters_[DeviceParameterType::IpAddress]);
-        data_port_ = std::stoi(parameters_[DeviceParameterType::DataPort]);
+        addr_in_.sin_family = AF_INET;
+        addr_in_.sin_port = htons(std::stoi(parameters_[DeviceParameterType::DataPort]));
+        addr_in_.sin_addr.s_addr = 0;
+
+        socket_ = ::socket(AF_INET, SOCK_DGRAM, 0);
+        if (::bind(socket_, (::sockaddr*)&addr_in_, sizeof(addr_in_)) < 0) {
+            return handle_error(HeraErrno::CanNotOpenEthernetDevice, "Can not bind");
+        }
+        setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &TimeOut_, sizeof(TimeOut_));
     } catch (...) {
-        return handle_error(HeraErrno::InvalidParameterValue);
+        return handle_error(HeraErrno::CanNotOpenEthernetDevice);
     }
 
     try {
@@ -41,18 +51,7 @@ HeraErrno Velodyne::connect()
                             "Failed to power on " + get_name());
     }
 
-    try {
-        data_socket_ = new boost::asio::ip::udp::socket(
-                io_service_,
-                boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::from_string(
-                                                       "255.255.255.255"),
-                                               data_port_));
-    } catch (const std::exception& e) {
-        delete data_socket_;
-        return handle_error(HeraErrno::CanNotOpenEthernetDevice,
-                            "Can not create socket for" + get_name());
-    }
-
+    log::debug << "Velodyne::Connection succeed: " << log::endl;
     return HeraErrno::Success;
 }
 
@@ -60,7 +59,6 @@ HeraErrno Velodyne::connect()
 /// then delete the socket
 void Velodyne::disconnect()
 {
-
     try {
         int ret = system(("curl --data \"laser=off\" http://" +
                           parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
@@ -74,24 +72,14 @@ void Velodyne::disconnect()
         log::info << "Velodyne::Failed to power off lidar " << get_name() << log::endl;
     }
 
-    if (data_socket_ && data_socket_->is_open()) {
-        data_socket_->close();
-        delete data_socket_;
-        data_socket_ = nullptr;
-    }
-    if (io_service_.stopped()) {
-        io_service_.stop();
-        io_service_.reset();
-    }
+    ::close(socket_);
 }
 
 /// Wait a UDP packet from socket, then create a VelodyneStorage,
 /// after that, spin io_service
 StorageDataPtr Velodyne::fetch()
 {
-    auto received_length = data_socket_->receive_from(boost::asio::buffer(receive_buffer_,
-                                                                          sizeof(receive_buffer_)),
-                                                      receive_data_endpoint_);
+    auto received_length = ::recv(socket_, receive_buffer_, sizeof(receive_buffer_), 0);
 
     // Total length of storage data
     auto length = sizeof(VelodyneStorageData);
@@ -106,13 +94,6 @@ StorageDataPtr Velodyne::fetch()
     }
     // Use Memcpy to directly fill buf
     memcpy(derived_data->buf, &receive_buffer_, received_length);
-
-    try {
-        io_service_.run();
-    } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        return nullptr;
-    }
 
     return data;
 }
@@ -274,8 +255,8 @@ SensorDataPtr Velodyne::convert(StorageDataPtr&& storage_data)
 HeraErrno Velodyne::adjust_parameter(DeviceParameterType type, const std::string& value)
 {
     switch (type) {
-    case DeviceParameterType::IpAddress:
     case DeviceParameterType::DataPort:
+    case DeviceParameterType::IpAddress:
         return HeraErrno::ImmutableParameter;
     default:
         return HeraErrno::UnimplementedParameter;

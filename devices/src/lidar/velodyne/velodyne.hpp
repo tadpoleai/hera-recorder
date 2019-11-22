@@ -10,8 +10,11 @@
 
 #pragma once
 #include <cmath>
+#include <unistd.h>
 
-#include <boost/asio.hpp>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #include "velodyne_data.hpp"
 #include "velodyne_defs.hpp"
@@ -74,14 +77,12 @@ private:
             30ULL * SecondToUs_;  ///< Max valid transmission delay, in us
 
 private:
-    boost::asio::io_service io_service_;
-    boost::asio::ip::udp::socket* data_socket_;
-    boost::asio::ip::address address_;
-    boost::asio::ip::udp::endpoint receive_data_endpoint_;
+    static constexpr size_t EthernetMTU_ = 1500;  ///< MTU/PacketSize of ethernet interface
+    static const timeval TimeOut_;                ///< Timeout for UDP recvform
 
-    uint16_t data_port_;                          ///< Data port from UDP
-    static constexpr size_t EthernetMTU_ = 1500;  ///< MTU of ethernet interface
-    uint8_t receive_buffer_[EthernetMTU_];        ///< UDP Receive buffer
+    ::sockaddr_in addr_in_;                 ///< Ip Address and Data Port of Lidar
+    int socket_;                            ///< Socket handler
+    uint8_t receive_buffer_[EthernetMTU_];  ///< UDP Receive buffer
 };
 
 }  // namespace lidar

@@ -142,7 +142,7 @@ void Storage::write_thread_function()
         return;
     }
 
-    bool fulfilled = false;
+    thread_local bool fulfilled = false;
 
     /// Thread wait until thread_running_ is false and queue is empty,
     /// to ensure every data in memory written to storage file

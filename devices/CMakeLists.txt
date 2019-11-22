@@ -12,12 +12,6 @@ project(${PROJECT_NAME})
 
 find_package(Threads REQUIRED)
 
-set(Boost_USE_STATIC_LIBS ON) # Static Link Libraries ( libboost_* )
-set(Boost_USE_MULTITHREADED ON) # Multi Thread Libraries ( *-mt-* )
-set(Boost_USE_STATIC_RUNTIME OFF) # Static Runtime Libraries ( *-s* )
-set(Boost_INCLUDE_DIR /usr/include)
-set(Boost_LIBRARY_DIR /usr/lib/x86_64-linux-gnu)
-
 set(FLY_CAPTURE_INCLUDE_DIR /usr/include)
 set(FLT_CAPTURE_LIBS /usr/lib/libflycapture.so) 
 
@@ -27,7 +21,6 @@ set(JPEG_TURBO_LIBRARY_DIR ${JPEG_TURBO_ROOT_DIR}/lib64)
 set(JPEG_TURBO_LIBS
     ${JPEG_TURBO_LIBRARY_DIR}/libturbojpeg.so
 )
-
 
 file(GLOB_RECURSE
     ALL_SRC
@@ -49,7 +42,6 @@ add_library(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     hera-common
     Threads::Threads
-    boost_system
     ${FLT_CAPTURE_LIBS}
     ${JPEG_TURBO_LIBS}
 )

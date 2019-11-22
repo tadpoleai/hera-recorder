@@ -132,7 +132,7 @@ HeraErrno Foobar::adjust_parameter(DeviceParameterType type, const std::string& 
         try {
             int_value_ = stoi(value);
         } catch (...) {
-            return HeraErrno::UnimplementedParameter;
+            return HeraErrno::InvalidParameterValue;
         }
         return HeraErrno::OK;
         break;
@@ -141,7 +141,7 @@ HeraErrno Foobar::adjust_parameter(DeviceParameterType type, const std::string& 
         try {
             period_us_ = 1'000'000 / stoi(value);
         } catch (...) {
-            return HeraErrno::UnimplementedParameter;
+            return HeraErrno::InvalidParameterValue;
         }
         return HeraErrno::OK;
         break;

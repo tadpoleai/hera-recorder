@@ -145,7 +145,7 @@ StorageDataPtr Flir::fetch()
                 converted_image.GetCols(),
                 0,
                 converted_image.GetRows(),
-                TJPF_RGB,          // Source Image Format
+                TJPF_BGR,          // Source Image Format
                 &jpeg_image,       // Output Image Pointer
                 &jpeg_image_size,  // Output Image Size
                 TJSAMP_422,        // YUV Binning
@@ -208,7 +208,7 @@ HeraErrno Flir::adjust_parameter(DeviceParameterType type, const std::string& va
 {
     switch (type) {
     case DeviceParameterType::IpAddress: {
-        return HeraErrno::InvalidParameterValue;
+        return HeraErrno::ImmutableParameter;
         break;
     }
     default:

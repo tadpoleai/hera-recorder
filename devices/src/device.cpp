@@ -210,7 +210,7 @@ void Device::fetch_thread_function()
 {
     while (status_ == DeviceStatus::Connected) {
         auto data = fetch();
-        if (data != nullptr) {
+        if (data != nullptr && is_record_) {
             storage_->write(std::move(data));
         }
     }

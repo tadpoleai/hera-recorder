@@ -100,9 +100,8 @@ bool FlirTimestampCalculator::get_intrinsic_time(int64_t& out_ns,
     bool result;
     result = inited;
     if (frame_count_ > SyncCycleNs_ / PeriodNs_) {
-        result = false;
         if (inited) {
-            log::warn << "FlirTs:: frame count out of range, sync lost" << log::endl;
+            log::warn << "FlirTs:: frame count out of range, maybe sync is lost" << log::endl;
         }
     }
 
