@@ -31,18 +31,6 @@
 
 ### 分配网络地址
 
-用root权限编辑`/etc/dhcp/dhcpd.conf`，并在最后添加
-
-```plain-text
-subnet 10.0.0.0 netmask 255.255.255.0 {
-    option      routers         10.0.0.1;
-    option      subnet-mask     255.255.255.0;
-    range       10.0.0.100      10.0.0.200;
-}
-```
-
-### 配置无线AP服务
-
 用root权限编辑`/etc/network/interfaces`，添加
 
 ```plain-text
@@ -69,7 +57,7 @@ source /etc/network/interfaces.d/*
 
 参考[FLIR的网口相机设置指南](https://www.flir.com/support-center/iis/machine-vision/knowledge-base/lost-ethernet-data-packets-on-linux-systems)
 
-首先增大内核缓存大小，用root权限编辑`/etc/sysctl.conf`，添加
+增大内核缓存大小，用root权限编辑`/etc/sysctl.conf`，添加
 
 ```plain-text
 net.core.rmem_max=67108864
