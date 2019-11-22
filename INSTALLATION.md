@@ -16,7 +16,7 @@
 
 ### 安装服务端构建依赖
 
-- `deploy/install-thrift.sh`
+- `deploy/install-thrift.sh` (该步骤可能会需要比较长的时间)
 
 ### 安装设备驱动依赖
 
@@ -36,7 +36,7 @@
 mkdir build
 cd build
 cmake ..
-make
+make -j
 ```
 
 ### 构建客户端
