@@ -9,9 +9,21 @@ else
 fi
 
 tar -zxf thrift-${VERSION}.tar.gz 
+
 cd thrift-${VERSION}
+
 echo `pwd`
+
 ./bootstrap.sh
-./configure --without-java --without-php --without-qt4 --without-qt5 --without-nodejs
-make -j 12
+
+./configure \
+--with-cpp \
+--without-qt4 --without-qt5 --without-c_glib --without-csharp \
+--without-java --without-erlang --without-nodejs --without-nodets --without-lua \
+--without-python --without-py3 --without-perl --without-php --without-php_extension --without-ruby \
+--without-haskell --without-go --without-rs --without-cl --without-haxe --without-d \
+--disable-tests --disable-tutorial \
+CFLAGS="-g0 -O3" CXXFLAGS="-g0 -O3"
+
+make -j
 sudo make install
