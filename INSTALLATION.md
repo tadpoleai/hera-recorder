@@ -44,8 +44,8 @@ make -j
 ```shell
 cd client
 npm i
-npm thrift
-npm build
+npm run thrift
+npm run build
 ```
 
 ## 部署
