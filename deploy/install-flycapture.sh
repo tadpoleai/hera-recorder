@@ -14,8 +14,7 @@ if [ ! -f "./$FLYCAPTURE_PKG" ]; then
     if [ -f "/mnt/nfs/hdmap/software/$FLYCAPTURE_PKG" ]; then
         cp /mnt/nfs/hdmap/software/$FLYCAPTURE_PKG .
     else
-        echo "$FLYCAPTURE_PKG doesn't exist!"
-        exit 1
+        wget "https://github.com/LeeXujie/Ubuntu16.04-FlyCapture-OpenCV/raw/master/$FLYCAPTURE_PKG"
     fi
 fi
 
