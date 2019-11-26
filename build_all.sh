@@ -9,7 +9,7 @@ if [ $? -ne 0 ];then
 fi
 
 cd ..
-mkdir build
+mkdir -p build
 cd build
 cmake ..
 make -j
