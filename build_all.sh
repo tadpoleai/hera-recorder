@@ -17,4 +17,4 @@ if [ $? -ne 0 ];then
         echo "build error"
 fi
 
-tar -czvf install.tar.gz  convert/hera-convert daemon/hera-daemon ../daemon/script ../client/dist
+tar -czvf install.tar.gz  convert/hera-convert daemon/hera-daemon ../daemon/script ../client/dist ../README.md ../INSTALLATION.md ../client/USAGE.md ../convert/USAGE.md ../deploy/*.md ../jenkins_deploy.sh
