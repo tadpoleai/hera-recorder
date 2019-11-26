@@ -9,14 +9,6 @@ namespace wayz {
 namespace hera {
 
 static constexpr int64_t OneSecondToNs = 1'000'000'000;
-const Duration Duration::OneSecond = Duration(OneSecondToNs);
-const Duration Duration::OneMinute = Duration(60 * OneSecondToNs);
-
-Duration::Duration(int64_t duration_ns) : duration_ns_(duration_ns) {}
-Duration::operator int64_t() const
-{
-    return duration_ns_;
-}
 
 Timestamp Timestamp::now()
 {
@@ -27,21 +19,16 @@ Timestamp Timestamp::now()
 
 Timestamp::Timestamp(uint64_t ts_ns)
 {
-    set(ts_ns);
-}
-
-void Timestamp::set(uint64_t ts_ns)
-{
     tv_sec = ts_ns / OneSecondToNs;
     tv_nsec = ts_ns % OneSecondToNs;
 }
 
-Timestamp::operator uint64_t() const
+Timestamp::operator uint64_t() const noexcept
 {
     return OneSecondToNs * (uint64_t)(tv_sec) + (uint64_t)(tv_nsec);
 }
 
-Duration Timestamp::operator-(const Timestamp& rhs) const
+Duration Timestamp::operator-(const Timestamp& rhs) const noexcept
 {
     return Duration(int64_t(*this) - int64_t(rhs));
 }
@@ -66,7 +53,7 @@ std::ostream& operator<<(std::ostream& os, const Timestamp& ts)
 std::string Duration::to_str_second() const
 {
     std::string result;
-    int64_t sec = double(duration_ns_) / double(Duration::OneSecond);
+    int64_t sec = double(duration_ns_) / double(OneSecond);
     if (sec < 0) {
         sec = -sec;
         result += '-';
@@ -98,13 +85,13 @@ std::ostream& operator<<(std::ostream& os, const Duration& duration)
         os << ns << "ns";
     } else if (ns < 1000000LL) {
         os << ns / 1000.0 << "μs";
-    } else if (ns < Duration::OneSecond) {
+    } else if (ns < OneSecond) {
         os << ns / 1000000.0 << "ms";
-    } else if (ns < Duration::OneMinute) {
-        os << ns / double(Duration::OneSecond) << "sec";
+    } else if (ns < OneMinute) {
+        os << ns / double(OneSecond) << "sec";
     } else {
-        os << ns / int64_t(Duration::OneMinute) << "min"
-           << (ns % int64_t(Duration::OneMinute)) / double(Duration::OneSecond) << "sec";
+        os << ns / int64_t(OneMinute) << "min" << (ns % int64_t(OneMinute)) / double(OneSecond)
+           << "sec";
     }
     return os;
 }

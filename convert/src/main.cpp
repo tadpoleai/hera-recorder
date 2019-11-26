@@ -83,8 +83,11 @@ int main(int argc, char** argv)
     log::debug << "Conversion Start" << log::endl;
     auto handler = std::make_unique<AlignedConverter>(src_folder, bag_file, std::move(remapper));
 
-    usleep(100000);
+    if (!handler->running()) {
+        exit(1);
+    }
 
+    usleep(100000);
     auto converted = handler->converted_size();
     auto last_converted = converted;
     auto total = handler->total_size();
@@ -94,7 +97,8 @@ int main(int argc, char** argv)
     constexpr auto Damp = 0.7;
     constexpr auto MinGamma = 0.05;
     auto speed = 0.0;
-    do {
+
+    while (handler->running()) {
         if (isverbose) {
             usleep(1000000);
         } else {
@@ -122,9 +126,9 @@ int main(int argc, char** argv)
         }
 
         Duration eta = rest / speed;
-        log::info << "Converter: " << converted << " / " << total << '\t' << "eta: " << eta.to_str_second()
-                  << log::endl;
-    } while (handler->running());
+        log::info << "Converter: " << converted << " / " << total << '\t'
+                  << "eta: " << eta.to_str_second() << log::endl;
+    }
 
     log::debug << "Conversion End" << log::endl;
 }

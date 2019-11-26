@@ -8,7 +8,7 @@ if (process.env.NODE_ENV === 'production') {
   useHttps = false;
 } else {
   hostName = '127.0.0.1';
-  port = 80;
+  port = 9090;
   useHttps = false;
 }
 export default {

@@ -13,8 +13,10 @@
 #include <memory>
 
 #include <sensor_msgs/CompressedImage.h>
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/MagneticField.h>
+#include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/PointCloud2.h>
 
 #include "direct_bag/direct_bag.h"
@@ -38,6 +40,7 @@ enum class ROSMessageType : int32_t {
     PointCloud2,      ///< ROS sensor_msgs/PointCloud2
     CompressedImage,  ///< ROS sensor_msgs/CompressedImage
     Image,            ///< ROS sensor_msgs/Image
+    NavSatFix,        ///< ROS sensor_msgs/NavSatFix
 };
 
 class ROSMessage;

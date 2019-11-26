@@ -18,15 +18,22 @@ class Duration final {
     friend std::ostream& operator<<(std::ostream& os, const Duration& duration);
 
 public:
-    Duration(int64_t duration_ns);
-    operator int64_t() const;
+    constexpr Duration(int64_t duration_ns) : duration_ns_(duration_ns) {}
+    constexpr operator int64_t() const noexcept
+    {
+        return duration_ns_;
+    }
+
     std::string to_str_second() const;
-    static const Duration OneSecond;
-    static const Duration OneMinute;
 
 private:
     int64_t duration_ns_;
 };
+
+constexpr Duration OneSecond = 1'000'000'000LL;
+constexpr Duration OneMinute = OneSecond * 60;
+constexpr Duration OneHour = OneMinute * 60;
+constexpr Duration OneDay = OneHour * 24;
 
 class Timestamp final : public timespec {
     friend std::ostream& operator<<(std::ostream& os, const Timestamp& ts);
@@ -34,17 +41,14 @@ class Timestamp final : public timespec {
 public:
     static Timestamp now();
 
+    Timestamp() = default;
     Timestamp(uint64_t ts_ns);
     Timestamp(const Timestamp&) = default;
     Timestamp& operator=(const Timestamp&) = default;
     Timestamp(Timestamp&&) = default;
 
-    void set(uint64_t ts_ns);
-    operator uint64_t() const;
-    Duration operator-(const Timestamp& rhs) const;
-
-private:
-    Timestamp() = default;
+    operator uint64_t() const noexcept;
+    Duration operator-(const Timestamp& rhs) const noexcept;
 };
 
 }  // namespace hera

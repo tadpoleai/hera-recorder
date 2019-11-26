@@ -17,6 +17,7 @@
 // Device Vendors
 #include "camera/flir/flir.hpp"
 #include "dummy/foobar/foobar.hpp"
+#include "gnss/serialsync/serialsync.hpp"
 #include "imu/aceinna/aceinna.hpp"
 #include "lidar/velodyne/velodyne.hpp"
 
@@ -57,6 +58,8 @@ public:
             return std::make_unique<lidar::Velodyne>(id, vendor_type, name, folder, read_mode);
         } else if (vendor_type.compare("camera/flir") == 0) {
             return std::make_unique<camera::Flir>(id, vendor_type, name, folder, read_mode);
+        } else if (vendor_type.compare("gnss/serialsync") == 0) {
+            return std::make_unique<gnss::Serialsync>(id, vendor_type, name, folder, read_mode);
         }
         return nullptr;
     }
@@ -76,13 +79,14 @@ public:
         if (vendor_type.compare("dummy/foobar") == 0 ||    // Foobar
             vendor_type.compare("imu/aceinna") == 0 ||     // Aceinna
             vendor_type.compare("lidar/velodyne") == 0 ||  // Velodyne
-            vendor_type.compare("camera/flir") == 0        // Flir
+            vendor_type.compare("camera/flir") == 0 ||     // Flir
+            vendor_type.compare("gnss/serialsync") == 0    // SerialSync
         ) {
             return true;
         }
         return false;
     }
-};
+};  // namespace hera
 
 }  // namespace hera
 }  // namespace wayz

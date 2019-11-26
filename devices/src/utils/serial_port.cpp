@@ -42,10 +42,10 @@ SerialPort::~SerialPort()
     close_port();
 }
 
-bool SerialPort::die(const std::string& msg)
+bool SerialPort::die(std::string&& msg)
 {
     log::error << "SerialPort: " << msg << log::endl;
-    std::cout << msg << std::endl;
+    reason_ = std::forward<std::string>(msg);
     return false;
 }
 
@@ -190,6 +190,11 @@ std::vector<uint8_t> SerialPort::read_port(size_t max_size, int32_t timeout_ms)
     result.resize(read_size);
 
     return result;
+}
+
+std::string SerialPort::error_reason() const noexcept
+{
+    return reason_;
 }
 
 }  // namespace hera

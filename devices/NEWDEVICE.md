@@ -8,7 +8,7 @@
 
 - 设备种类(Device Category)
 
-  传感器设备的种类，目前包括惯性测量单元(IMU)，激光雷达(Lidar)，相机(Camera)，GPS(GPS)
+  传感器设备的种类，目前包括惯性测量单元(IMU)，激光雷达(Lidar)，相机(Camera), GNSS(GNSS)
 
   同一个种类下的不同传感器，即使有不同的驱动(Vendor Driver)和原始储存数据(Storage Data)，但是它们具有相似或者相同的传感器数据(Sensor Data)类型
 

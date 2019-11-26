@@ -72,7 +72,11 @@ std::string Processer::remap(std::string&& str)
 void Processer::thread_function()
 {
     while (true) {
-        auto data = device_->read();
+        decltype(device_->read()) data = nullptr;
+        if (device_ != nullptr) {
+            data = device_->read();
+        }
+
         if (data == nullptr) {
             publish(ROSMessage::create<ROSMessageType::EndOfFile>());
             break;
@@ -89,6 +93,9 @@ void Processer::thread_function()
                 break;
             case SensorDataType::CompressedImage:
                 process<SensorDataType::CompressedImage>(data);
+                break;
+            case SensorDataType::NavSatFix:
+                process<SensorDataType::NavSatFix>(data);
                 break;
             default:
                 log::error << "Converter:: Invalid Sensor Data Type" << log::endl;

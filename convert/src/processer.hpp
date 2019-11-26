@@ -57,7 +57,20 @@ public:
     /// @return uint64_t processed s`torage data size
     inline uint64_t processed_size() const noexcept
     {
-        return device_->get_volume();
+        if (device_) {
+            return device_->get_volume();
+        } else {
+            return 0;
+        }
+    }
+
+    ///
+    /// @brief Get if processer's device is valid and opened
+    ///
+    /// @return bool is_open is processer's device valid
+    inline bool is_open() const noexcept
+    {
+        return (device_ != nullptr);
     }
 
 private:

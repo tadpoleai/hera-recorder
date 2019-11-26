@@ -17,17 +17,18 @@ namespace hera {
 namespace convert {
 
 /// Scan the recorded data folder and construct processers.
-///
 /// Open the bag file for writing, and init the writing thread
-AlignedConverter::AlignedConverter(const std::string& folder, const std::string& bagfile, RemapperPtr&& remapper) :
+AlignedConverter::AlignedConverter(const std::string& folder,
+                                   const std::string& bagfile,
+                                   RemapperPtr&& remapper) :
+    write_thread_(nullptr),
+    running_(false),
     total_size_(0),
-    bag_(bagfile, false),
     remapper_(std::move(remapper))
 {
-    running_ = true;
     auto types = get_folder_content(folder);
     if (!types.opened) {
-        return;
+        log::error << "Can not open folder " << folder << log::endl;
     }
     for (const auto& type : types.folders) {
         auto vendors = get_folder_content(type.fullname);
@@ -42,29 +43,46 @@ AlignedConverter::AlignedConverter(const std::string& folder, const std::string&
             }
 
             for (const auto& device : devices.folders) {
-                processers_.emplace_back(
-                        Processer::create(type.basename, vendor.basename, device.basename, folder, remapper_.get()));
-
-                auto device_size = get_folder_content(device.fullname).total_size;
-                total_size_ = total_size_ + device_size;
-                log::debug << "Add device " << type.basename << "/" << vendor.basename << "/" << device.basename
-                           << ", sized " << device_size << log::endl;
+                auto processer = Processer::create(type.basename,
+                                                   vendor.basename,
+                                                   device.basename,
+                                                   folder,
+                                                   remapper_.get());
+                if (processer->is_open()) {
+                    processers_.emplace_back(std::move(processer));
+                    auto device_size = get_folder_content(device.fullname).total_size;
+                    total_size_ = total_size_ + device_size;
+                    log::debug << "Add device " << type.basename << "/" << vendor.basename << "/"
+                               << device.basename << ", sized " << device_size << log::endl;
+                }
             }
         }
     }
 
-    write_thread_ = std::thread(&AlignedConverter::write_thread_function, this);
+    if (processers_.size() > 0) {
+        running_ = true;
+        bag_.open(bagfile, false);
+        write_thread_ = new std::thread(&AlignedConverter::write_thread_function, this);
+    } else {
+        running_ = false;
+        log::error << "No hera record data in " << folder << log::endl;
+    }
 }
 
 /// Wait for thread to join, and close bag file
 ///
 AlignedConverter::~AlignedConverter()
 {
-    write_thread_.join();
-    log::info << "Flushing to file system" << log::endl;
-    log::info << "This may take a while depending on destination file system" << log::endl;
-    bag_.close();
-    log::info << "Flushed to file system" << log::endl;
+    if (write_thread_) {
+        write_thread_->join();
+    }
+
+    if (bag_.is_open()) {
+        log::info << "Flushing to file system" << log::endl;
+        log::info << "This may take a while depending on destination file system" << log::endl;
+        bag_.close();
+        log::info << "Flushed to file system" << log::endl;
+    }
 }
 
 

@@ -63,6 +63,14 @@ ROSMessagePtr ROSMessage::create<ROSMessageType::CompressedImage>()
     return result;
 }
 
+template<>
+ROSMessagePtr ROSMessage::create<ROSMessageType::NavSatFix>()
+{
+    auto result = std::unique_ptr<ROSMessage>(new ROSMessage(ROSMessageType::NavSatFix));
+    result->ptr = new sensor_msgs::NavSatFix();
+    return result;
+}
+
 /// Destroy with variant deleter, by type information
 ///
 ROSMessage::~ROSMessage()
@@ -80,6 +88,9 @@ ROSMessage::~ROSMessage()
             break;
         case ROSMessageType::CompressedImage:
             delete reinterpret_cast<sensor_msgs::CompressedImage*>(ptr);
+            break;
+        case ROSMessageType::NavSatFix:
+            delete reinterpret_cast<sensor_msgs::NavSatFix*>(ptr);
             break;
         default:
             std::cout << "Fatal: Unknown Message Type" << std::endl;
@@ -110,6 +121,11 @@ void operator<<(rosbag_direct_write::DirectBag& bag, ROSMessagePtr&& message)
     }
     case ROSMessageType::CompressedImage: {
         auto ros_message = reinterpret_cast<sensor_msgs::CompressedImage*>(message->ptr);
+        bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
+        break;
+    }
+    case ROSMessageType::NavSatFix: {
+        auto ros_message = reinterpret_cast<sensor_msgs::NavSatFix*>(message->ptr);
         bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
         break;
     }

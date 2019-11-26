@@ -75,6 +75,24 @@ public:
     /// @brief Pop a data from queue
     ///
     /// @note pop a data immediately if queue is not empty,
+    /// otherwise, return nullptr immediately
+    /// @return DataType data poped from queue, or nullptr if empty
+    DataType pop()
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        if (queue_.empty()) {
+            return nullptr;
+        } else {
+            auto data = std::move(queue_.front());
+            queue_.pop();
+            return data;
+        }
+    }
+
+    ///
+    /// @brief Pop a data from queue
+    ///
+    /// @note pop a data immediately if queue is not empty,
     /// otherwise, wait for new data until a certain timeout
     /// @return DataType data poped from queue, or nullptr if timed out
     DataType wait_pop()

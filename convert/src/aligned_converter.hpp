@@ -73,7 +73,7 @@ private:
     void write_thread_function();
 
 private:
-    std::thread write_thread_;              ///< thread handler of writing
+    std::thread* write_thread_;             ///< thread handler of writing
     std::vector<ProcesserPtr> processers_;  ///< array of processers
     volatile bool running_;                 ///< indicating whether conversion is running
     FileSize total_size_;                   ///< file size of total source data, in bytes

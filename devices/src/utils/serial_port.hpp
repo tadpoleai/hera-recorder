@@ -43,13 +43,16 @@ public:
     bool open_port(const std::string& kernel, const SerialConfig& serial_config);
     void close_port();
     std::vector<uint8_t> read_port(size_t max_size = 0, int32_t timeout_ms = 10);
+    std::string error_reason() const noexcept;
 
 private:
-    bool die(const std::string& msg);
+    bool die(std::string&& msg);
     bool set_low_latency_mode();
 
     static const std::set<int32_t> ValidBaudRates_;
     int fd_;
+
+    std::string reason_;
 };
 
 }  // namespace hera

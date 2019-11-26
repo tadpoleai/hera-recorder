@@ -44,7 +44,7 @@ enum HeraErrno {
     ImmutableParameter = 304,
 
     CanNotConnectSynchronizer = 400,
-    GpsTimeShiftOutOfRange = 401,
+    GnssTimeShiftOutOfRange = 401,
     CameraTimeShiftOutOfRange = 402,
     LidarTimeShiftOutOfRange = 403,
 
