@@ -82,4 +82,3 @@ sh install-extra.sh
 cd client
 npm run deploy-linux
 ```
-
