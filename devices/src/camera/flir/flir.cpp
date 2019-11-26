@@ -52,8 +52,7 @@ HeraErrno Flir::connect()
     if (error != FlyCapture2::PGRERROR_OK) {
         return handle_flir_error(error);
     }
-    log::info << "Flir:: camera " << get_name() << " serial is " << camera_info.serialNumber
-              << log::endl;
+    log::info << "Flir:: camera " << get_name() << " serial is " << camera_info.serialNumber << log::endl;
 
     // Set Driver to Buffer Mode
     FlyCapture2::FC2Config config;
@@ -97,8 +96,8 @@ StorageDataPtr Flir::fetch()
     auto error = camera_.RetrieveBuffer(&raw_image);
 
     if (error != FlyCapture2::PGRERROR_OK) {
-        log::warn << get_type() << "/" << get_name() << " failed to retrieve due to "
-                  << error.GetDescription() << log::endl;
+        log::warn << get_type() << "/" << get_name() << " failed to retrieve due to " << error.GetDescription()
+                  << log::endl;
         return nullptr;
     }
 
@@ -123,16 +122,14 @@ StorageDataPtr Flir::fetch()
     FlyCapture2::Image converted_image;
     error = raw_image.Convert(FlyCapture2::PIXEL_FORMAT_RGB8, &converted_image);
     if (error != FlyCapture2::PGRERROR_OK) {
-        log::warn << get_type() << "/" << get_name() << " can not convert, data abandoned"
-                  << log::endl;
+        log::warn << get_type() << "/" << get_name() << " can not convert, data abandoned" << log::endl;
         return nullptr;
     }
 
     // Start Compression
     auto tj_instance = tjInitCompress();
     if (!tj_instance) {
-        log::warn << get_type() << "/" << get_name() << " can not compress, data abandoned"
-                  << log::endl;
+        log::warn << get_type() << "/" << get_name() << " can not compress, data abandoned" << log::endl;
         return nullptr;
     }
     uint8_t* jpeg_image = nullptr;
@@ -183,8 +180,7 @@ SensorDataPtr Flir::convert(StorageDataPtr&& storage_data)
         // Create a SensorData from StorageData
         uint32_t image_data_size = raw_data->data.image_data_size;
         uint32_t length = sizeof(CompressedImageSensorData) + image_data_size;
-        auto sensor_data =
-                SensorData::create_from(storage_data, SensorDataType::CompressedImage, length);
+        auto sensor_data = SensorData::create_from(storage_data, SensorDataType::CompressedImage, length);
         auto camera_sensor_data = static_cast<CompressedImageSensorData*>(sensor_data.get());
 
         // Parse Data

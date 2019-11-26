@@ -33,23 +33,8 @@ SerialConfig::SerialConfig(int32_t baud_rate,
     writable(writable)
 {}
 
-const std::set<int32_t> SerialPort::ValidBaudRates_ = {50,
-                                                       75,
-                                                       110,
-                                                       134,
-                                                       150,
-                                                       200,
-                                                       300,
-                                                       600,
-                                                       1200,
-                                                       1800,
-                                                       2400,
-                                                       9600,
-                                                       19200,
-                                                       38400,
-                                                       57600,
-                                                       115200,
-                                                       230400};
+const std::set<int32_t> SerialPort::ValidBaudRates_ =
+        {50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 9600, 19200, 38400, 57600, 115200, 230400};
 
 SerialPort::SerialPort() : fd_(-1) {}
 SerialPort::~SerialPort()

@@ -73,9 +73,7 @@ public:
                name,
                folder,
                read_mode,
-               {DeviceParameterType::Kernel,
-                DeviceParameterType::BaudRate,
-                DeviceParameterType::SerialMsgType})
+               {DeviceParameterType::Kernel, DeviceParameterType::BaudRate, DeviceParameterType::SerialMsgType})
     {}
     Aceinna(const Aceinna&) = delete;
     Aceinna& operator=(const Aceinna&) = delete;

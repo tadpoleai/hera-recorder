@@ -80,8 +80,7 @@ public:
     DataType wait_pop()
     {
         std::unique_lock<std::mutex> lock(mutex_);
-        const bool fulfilled =
-                cond_.wait_for(lock, Wait_Duration_, [this] { return !queue_.empty(); });
+        const bool fulfilled = cond_.wait_for(lock, Wait_Duration_, [this] { return !queue_.empty(); });
         DataType data = nullptr;
         if (fulfilled) {
             data = std::move(queue_.front());

@@ -22,7 +22,7 @@ namespace imu {
 ///
 class ImuMagneticFieldSensorData final : public SensorData {
 public:
-    double angular_velocity[3];  ///< array of 3-axis angular velocity, in rad/s, CCW, right-handed
+    double angular_velocity[3];     ///< array of 3-axis angular velocity, in rad/s, CCW, right-handed
     double linear_acceleration[3];  ///< array of 3-axis linear acceleration, in m/s^2, right-handed
     double magnetic_field[3];       ///< array of 3-axis magnetic field, in Tesla, right-handed
 };

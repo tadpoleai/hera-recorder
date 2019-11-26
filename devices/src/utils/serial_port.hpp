@@ -4,10 +4,10 @@
 
 #pragma once
 #include <cstdint>
+#include <iostream>
 #include <set>
 #include <string>
 #include <vector>
-#include <iostream>
 
 namespace wayz {
 namespace hera {

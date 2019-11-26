@@ -170,14 +170,12 @@ private:
     ///
     /// @brief Upper limit of interval duration of a shifted trigger
     ///
-    static constexpr int64_t MaxMatchedIntervalUs_ =
-            PeriodUs_ + ShiftationUs_ + ShiftationToleranceUs_;
+    static constexpr int64_t MaxMatchedIntervalUs_ = PeriodUs_ + ShiftationUs_ + ShiftationToleranceUs_;
 
     ///
     /// @brief Lower limit of interval duration of a shifted trigger
     ///
-    static constexpr int64_t MinMatchedIntervalUs_ =
-            PeriodUs_ + ShiftationUs_ - ShiftationToleranceUs_;
+    static constexpr int64_t MinMatchedIntervalUs_ = PeriodUs_ + ShiftationUs_ - ShiftationToleranceUs_;
 
 private:
     ///

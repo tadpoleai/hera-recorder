@@ -10,11 +10,11 @@
 
 1. 安装hostapd
 
-    `sudo apt install hostapd`
+    `sudo apt-get install hostapd`
 
 1. 安装dhcpd
 
-    `sudo apt install isc-dhcp-server`
+    `sudo apt-get install isc-dhcp-server`
 
 ### 无线适配器
 

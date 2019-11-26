@@ -65,12 +65,7 @@ public:
            const std::string& name,
            const std::string& folder,
            bool read_mode) :
-        Device(id,
-               type,
-               name,
-               folder,
-               read_mode,
-               {DeviceParameterType::DummyRate, DeviceParameterType::DummyValue})
+        Device(id, type, name, folder, read_mode, {DeviceParameterType::DummyRate, DeviceParameterType::DummyValue})
     {}
     Foobar(const Foobar&) = delete;
     Foobar& operator=(const Foobar&) = delete;
@@ -93,8 +88,7 @@ public:
 
     virtual SensorDataPtr convert(StorageDataPtr&& storage_data) override;
 
-    virtual HeraErrno adjust_parameter(DeviceParameterType type,
-                                          const std::string& value) override;
+    virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
 
 private:
     int64_t period_us_;           ///< period on which dummy device return a new data, in us

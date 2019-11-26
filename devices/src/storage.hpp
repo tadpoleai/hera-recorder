@@ -91,16 +91,16 @@ private:
     static constexpr size_t FileMaxSize_ = 1'000'000'000;  ///< Max size a single storage file
     static constexpr size_t FileNameWidth_ = 4;            ///< Storage file name width
     std::string folder_;                                   ///< Storage folder name
-    size_t file_number_counter_;      ///< Storage file count of current writing
-    size_t file_size_counter_;        ///< Size of current storage file, in bytes
-    size_t total_file_size_counter_;  ///< Size of all this storage, in bytes, if write mode
-                                      ///, other wise read storage data size, if read mode
+    size_t file_number_counter_;                           ///< Storage file count of current writing
+    size_t file_size_counter_;                             ///< Size of current storage file, in bytes
+    size_t total_file_size_counter_;                       ///< Size of all this storage, in bytes, if write mode
+                                                           ///, other wise read storage data size, if read mode
 
-    bool read_mode_;                ///< indicating if storage is in read mode
-    std::ofstream out_file_;        ///< Current output file, used in write mode
-    std::thread* thread_;           ///< Writing thread handler, used in write mode
-    volatile bool thread_running_;  ///< A volatile variable indicating if storage is operating,
-                                    /// used in write mode
+    bool read_mode_;                         ///< indicating if storage is in read mode
+    std::ofstream out_file_;                 ///< Current output file, used in write mode
+    std::thread* thread_;                    ///< Writing thread handler, used in write mode
+    volatile bool thread_running_;           ///< A volatile variable indicating if storage is operating,
+                                             /// used in write mode
     ThreadQueue<StorageData> thread_queue_;  ///< Thread-safe queue for buffering storage data,
                                              /// used in write mode
     std::ifstream in_file_;                  ///< Current input file, used in read mode

@@ -13,3 +13,5 @@ sudo dpkg -i ${NAME}
 
 sudo cp /opt/libjpeg-turbo/lib64/libturbojpeg.so /usr/lib/x86_64-linux-gnu/libturbojpeg.so
 sudo ln -s /opt/libjpeg-turbo/lib64/libturbojpeg.so /usr/lib/x86_64-linux-gnu/libturbojpeg.so.0
+
+rm $NAME

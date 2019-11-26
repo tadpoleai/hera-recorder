@@ -24,8 +24,8 @@ void Processer::process<SensorDataType::CompressedImage>(SensorDataPtr& data)
         ros_message->format = "png";
         break;
     default:
-        log::error << "Converter: Invalid Compress Format:"
-                   << static_cast<int>(data_impl->compress_format) << log::endl;
+        log::error << "Converter: Invalid Compress Format:" << static_cast<int>(data_impl->compress_format)
+                   << log::endl;
         return;
     }
 

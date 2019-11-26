@@ -15,8 +15,7 @@ SerialTransport* SerialTransport::instance_ = nullptr;
 int32_t SerialTransport::reference_count_ = 0;
 std::mutex SerialTransport::mutex_;
 
-SerialTransport* SerialTransport::create(const std::string& kernel,
-                                         const SerialConfig& serial_config)
+SerialTransport* SerialTransport::create(const std::string& kernel, const SerialConfig& serial_config)
 {
     mutex_.lock();
     if (instance_ == nullptr) {

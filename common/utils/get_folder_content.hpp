@@ -27,9 +27,7 @@ struct FileAttribute {
     std::string basename;
     std::string fullname;
     FileSize size;
-    FileAttribute(const std::string& basename,
-                  const std::string& fullname,
-                  const FileSize size = 0) :
+    FileAttribute(const std::string& basename, const std::string& fullname, const FileSize size = 0) :
         basename(basename),
         fullname(fullname),
         size(size)

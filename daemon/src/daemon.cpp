@@ -69,8 +69,7 @@ int main(int argc, char** argv)
     log::init(log_file);
 
     int port = 9090;
-    std::shared_ptr<daemon::AcquisitionManager> handler(
-            new daemon::AcquisitionManager(folder_prefix, json_file));
+    std::shared_ptr<daemon::AcquisitionManager> handler(new daemon::AcquisitionManager(folder_prefix, json_file));
     g_handler_ptr = handler.get();
     std::shared_ptr<TProcessor> processor(new AcquisitionManagerProcessor(handler));
     std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));

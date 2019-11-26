@@ -8,8 +8,7 @@ using namespace wayz::hera::convert;
 
 void print_help(char** argv)
 {
-    std::cout << "usage: " << argv[0] << " -i <source data folder> [-o <output bag file>] [-l] [-v]"
-              << std::endl;
+    std::cout << "usage: " << argv[0] << " -i <source data folder> [-o <output bag file>] [-l] [-v]" << std::endl;
 }
 
 int main(int argc, char** argv)
@@ -123,8 +122,8 @@ int main(int argc, char** argv)
         }
 
         Duration eta = rest / speed;
-        log::info << "Converter: " << converted << " / " << total << '\t'
-                  << "eta: " << eta.to_str_second() << log::endl;
+        log::info << "Converter: " << converted << " / " << total << '\t' << "eta: " << eta.to_str_second()
+                  << log::endl;
     } while (handler->running());
 
     log::debug << "Conversion End" << log::endl;

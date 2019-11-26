@@ -20,8 +20,8 @@ const timeval Velodyne::TimeOut_ = {0, 50000};
 /// then created a socket by IP and UDP Port
 HeraErrno Velodyne::connect()
 {
-    log::debug << "Velodyne:: Connecting to velodyne by binding port: "
-               << parameters_[DeviceParameterType::DataPort] << log::endl;
+    log::debug << "Velodyne:: Connecting to velodyne by binding port: " << parameters_[DeviceParameterType::DataPort]
+               << log::endl;
     try {
         addr_in_.sin_family = AF_INET;
         addr_in_.sin_port = htons(std::stoi(parameters_[DeviceParameterType::DataPort]));
@@ -37,18 +37,16 @@ HeraErrno Velodyne::connect()
     }
 
     try {
-        int ret = system(("curl --data \"laser=on\" http://" +
-                          parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
-                                 .c_str());
+        int ret = system(
+                ("curl --data \"laser=on\" http://" + parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
+                        .c_str());
         if (ret == 0) {
             log::info << "Velodyne::Succeeded to power on lidar " << get_name() << log::endl;
         } else {
-            return handle_error(HeraErrno::CanNotOpenEthernetDevice,
-                                "Failed to power on " + get_name());
+            return handle_error(HeraErrno::CanNotOpenEthernetDevice, "Failed to power on " + get_name());
         }
     } catch (...) {
-        return handle_error(HeraErrno::CanNotOpenEthernetDevice,
-                            "Failed to power on " + get_name());
+        return handle_error(HeraErrno::CanNotOpenEthernetDevice, "Failed to power on " + get_name());
     }
 
     log::debug << "Velodyne::Connection succeed: " << log::endl;
@@ -60,9 +58,9 @@ HeraErrno Velodyne::connect()
 void Velodyne::disconnect()
 {
     try {
-        int ret = system(("curl --data \"laser=off\" http://" +
-                          parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
-                                 .c_str());
+        int ret = system(
+                ("curl --data \"laser=off\" http://" + parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
+                        .c_str());
         if (ret == 0) {
             log::info << "Velodyne::Succeeded to power off lidar " << get_name() << log::endl;
         } else {
@@ -126,9 +124,9 @@ SensorDataPtr Velodyne::convert(StorageDataPtr&& storage_data)
 
     /// Get azimuth gap between data blocks
     /// @see @ref VLP-16C-Manual section: 9.5, Precision Azimuth Calculation, page: 65
-    double azimuth_gap = ((int32_t)(raw_data->data.data_blocks[1].azimuth) -
-                          (int32_t)(raw_data->data.data_blocks[0].azimuth)) *
-                         velodyne::AzimuthGranularity;
+    double azimuth_gap =
+            ((int32_t)(raw_data->data.data_blocks[1].azimuth) - (int32_t)(raw_data->data.data_blocks[0].azimuth)) *
+            velodyne::AzimuthGranularity;
     if (azimuth_gap < 0) {
         azimuth_gap += 2 * M_PI;
     }
@@ -137,8 +135,7 @@ SensorDataPtr Velodyne::convert(StorageDataPtr&& storage_data)
     std::vector<PointsXYZISensorData::PointXYZI> lidar_points;
     lidar_points.reserve(VelodyneStorageData::NumPointsPerPacket);
 
-    for (auto data_block_index = 0; data_block_index < VelodyneStorageData::NumDataBlockPerPacket;
-         ++data_block_index) {
+    for (auto data_block_index = 0; data_block_index < VelodyneStorageData::NumDataBlockPerPacket; ++data_block_index) {
         const auto* data_block = &raw_data->data.data_blocks[data_block_index];
 
         /// @note ROS axis definitions is used for Lidar's xyz,
@@ -151,8 +148,7 @@ SensorDataPtr Velodyne::convert(StorageDataPtr&& storage_data)
         /// target="_blank" rel="noopener noreferrer">Velodyne Coordinate System for VLP</a>
 
         double azimuth_base = velodyne::AzimuthGranularity * (data_block->azimuth);
-        for (auto channel_index = 0; channel_index < VelodyneStorageData::NumChannelPerDataBlock;
-             ++channel_index) {
+        for (auto channel_index = 0; channel_index < VelodyneStorageData::NumChannelPerDataBlock; ++channel_index) {
             const auto* channel = &data_block->channels[channel_index];
 
             /// Check if distance is 0, indicating invalid point
@@ -164,9 +160,7 @@ SensorDataPtr Velodyne::convert(StorageDataPtr&& storage_data)
 
             switch (raw_data->data.lidar_type) {
             case VelodyneStorageData::LidarType::VLP16C: {
-                double azimuth =
-                        azimuth_base +
-                        azimuth_gap * velodyne::vlp16c::GetRelativeAzimuthChange(channel_index);
+                double azimuth = azimuth_base + azimuth_gap * velodyne::vlp16c::GetRelativeAzimuthChange(channel_index);
                 double distance = channel->distance * velodyne::vlp16c::DistanceGranularity;
 
                 double pitch = velodyne::vlp16c::VerticalAngles[channel_index % 16];
@@ -175,15 +169,13 @@ SensorDataPtr Velodyne::convert(StorageDataPtr&& storage_data)
                 lidar_point.y = -distance_horizontal * sin(azimuth);
                 // Origin Y, ROS Definition X
                 lidar_point.x = distance_horizontal * cos(azimuth);
-                lidar_point.z =
-                        distance * sin(pitch) + velodyne::vlp16c::VerticalCorrection[channel_index];
+                lidar_point.z = distance * sin(pitch) + velodyne::vlp16c::VerticalCorrection[channel_index];
                 lidar_point.channel = channel_index % 16;
             } break;
 
             case VelodyneStorageData::LidarType::VLP32C: {
-                double azimuth =
-                        azimuth_base + velodyne::vlp32c::AzimuthOffset[channel_index] +
-                        azimuth_gap * velodyne::vlp32c::GetRelativeAzimuthChange(channel_index);
+                double azimuth = azimuth_base + velodyne::vlp32c::AzimuthOffset[channel_index] +
+                                 azimuth_gap * velodyne::vlp32c::GetRelativeAzimuthChange(channel_index);
                 double distance = channel->distance * velodyne::vlp32c::DistanceGranularity;
 
                 double pitch = velodyne::vlp32c::VerticalAngles[channel_index];
@@ -197,9 +189,7 @@ SensorDataPtr Velodyne::convert(StorageDataPtr&& storage_data)
             } break;
 
             case VelodyneStorageData::LidarType::HDL32E: {
-                double azimuth =
-                        azimuth_base +
-                        azimuth_gap * velodyne::hdl32e::GetRelativeAzimuthChange(channel_index);
+                double azimuth = azimuth_base + azimuth_gap * velodyne::hdl32e::GetRelativeAzimuthChange(channel_index);
                 double distance = channel->distance * velodyne::hdl32e::DistanceGranularity;
 
                 double pitch = velodyne::hdl32e::VerticalAngles[channel_index];
@@ -223,28 +213,24 @@ SensorDataPtr Velodyne::convert(StorageDataPtr&& storage_data)
 
     // Create a SensorData from StorageData
     auto point_number = lidar_points.size();
-    auto length =
-            sizeof(PointsXYZISensorData::PointXYZI) * point_number + sizeof(PointsXYZISensorData);
+    auto length = sizeof(PointsXYZISensorData::PointXYZI) * point_number + sizeof(PointsXYZISensorData);
     auto sensor_data = SensorData::create_from(storage_data, SensorDataType::PointsXYZI, length);
     auto lidar_sensor_data = static_cast<PointsXYZISensorData*>(sensor_data.get());
 
     // Memcpy from temp vector
-    memcpy(lidar_sensor_data->points,
-           lidar_points.data(),
-           sizeof(PointsXYZISensorData::PointXYZI) * point_number);
+    memcpy(lidar_sensor_data->points, lidar_points.data(), sizeof(PointsXYZISensorData::PointXYZI) * point_number);
     lidar_sensor_data->point_number = point_number;
 
     // Calculate laser firing timestamp of the first laser beam
     int64_t t_recv_us = (raw_data->get_timestamp_receive_ns()) / UsToNs_;
     int64_t t_packet_us = (int64_t)(raw_data->data.timestamp);
-    int64_t t_fire_us =
-            HourToUs_ * ((t_recv_us - t_packet_us + HalfHourToUs_) / HourToUs_) + t_packet_us;
+    int64_t t_fire_us = HourToUs_ * ((t_recv_us - t_packet_us + HalfHourToUs_) / HourToUs_) + t_packet_us;
     if (abs(t_fire_us - t_recv_us) > MaxDelayToleranceUs_) {
         // Synchronization lost
         /// @note If Synchronization is lost, i.e. t_recv is more than t_fire by MaxDelayTolerance,
         /// data will be abandon
-        log::warn << "Velodyne: Data with ts = " << t_fire_us << "us, received at " << t_recv_us
-                  << "us too far" << log::endl;
+        log::warn << "Velodyne: Data with ts = " << t_fire_us << "us, received at " << t_recv_us << "us too far"
+                  << log::endl;
         return SensorData::broken_data();
     }
     lidar_sensor_data->timestamp_intrinsic_ns = t_fire_us * UsToNs_;

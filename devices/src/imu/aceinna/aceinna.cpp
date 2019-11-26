@@ -29,8 +29,7 @@ HeraErrno Aceinna::connect()
 
     serial_port_ = SerialTransport::create(kernel_, SerialConfig(baud_rate_));
     if (!serial_port_->is_opened()) {
-        return handle_error(HeraErrno::CanNotOpenTtyDevice,
-                            "Can not open device '" + kernel_ + "'");
+        return handle_error(HeraErrno::CanNotOpenTtyDevice, "Can not open device '" + kernel_ + "'");
     }
 
     queue_ = serial_port_->get_queue_handler(serial_msg_type_);
@@ -67,10 +66,8 @@ StorageDataPtr Aceinna::fetch()
 
     // Total length of storage data
     auto length = sizeof(AceinnaStorageData);
-    auto data = StorageData::create(length,
-                                    DeviceVendorType::ImuAceinna,
-                                    StorageDataType::ImuAceinnaEmbedded,
-                                    sequence_++);
+    auto data =
+            StorageData::create(length, DeviceVendorType::ImuAceinna, StorageDataType::ImuAceinnaEmbedded, sequence_++);
     auto derived_data = static_cast<AceinnaStorageData*>(data.get());
 
     if (received_length != sizeof(derived_data->buf)) {
@@ -95,8 +92,7 @@ SensorDataPtr Aceinna::convert(StorageDataPtr&& storage_data)
 
     // Create a SensorData from StorageData
     auto length = sizeof(ImuMagneticFieldSensorData);
-    auto sensor_data =
-            SensorData::create_from(storage_data, SensorDataType::ImuMagneticField, length);
+    auto sensor_data = SensorData::create_from(storage_data, SensorDataType::ImuMagneticField, length);
     auto imu_sensor_data = static_cast<ImuMagneticFieldSensorData*>(sensor_data.get());
 
     // Parse Data

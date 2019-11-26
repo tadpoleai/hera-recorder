@@ -81,8 +81,7 @@ bool FlirTimestampCalculator::get_intrinsic_time(int64_t& out_ns,
     }
     last_embedded_timestamp_us_ = embedded_timestamp.get_us();
 
-    int64_t intrinsic_time_us_ =
-            accumulated_cycle_us_ + embedded_timestamp.get_us() - embedded_shutter.get_us();
+    int64_t intrinsic_time_us_ = accumulated_cycle_us_ + embedded_timestamp.get_us() - embedded_shutter.get_us();
     int64_t escaped_time_us = intrinsic_time_us_ - last_intrinsic_time_us_;
     last_intrinsic_time_us_ = intrinsic_time_us_;
 

@@ -86,10 +86,7 @@ public:
     /// Fill device vendor type, storage data type and sequece by arguments
     /// Fill receive timestamp automatically
     /// @note timestamp will be automatically filled
-    static inline auto create(uint32_t length,
-                              DeviceVendorType type,
-                              StorageDataType msgtype,
-                              uint32_t sequence)
+    static inline auto create(uint32_t length, DeviceVendorType type, StorageDataType msgtype, uint32_t sequence)
     {
         auto data = create(length);
         data->device_type = type;
@@ -209,9 +206,7 @@ public:
     /// @note This function is called by Device::convert()
     /// @see StorageData
     /// @see Device::convert()
-    static inline auto create_from(const StorageDataPtr& storage_data,
-                                   SensorDataType type,
-                                   uint32_t length)
+    static inline auto create_from(const StorageDataPtr& storage_data, SensorDataType type, uint32_t length)
     {
         auto* data = reinterpret_cast<SensorData*>(new uint8_t[length]);
         data->length = length;

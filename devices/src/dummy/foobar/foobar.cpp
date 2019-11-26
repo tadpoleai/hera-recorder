@@ -73,10 +73,7 @@ StorageDataPtr Foobar::fetch()
     auto string_length = string_message_.size();
     // Total length of storage data
     auto length = sizeof(FoobarStorageData) + string_length;
-    auto data = StorageData::create(length,
-                                    DeviceVendorType::DummyFoobar,
-                                    StorageDataType::Dummy,
-                                    sequence_++);
+    auto data = StorageData::create(length, DeviceVendorType::DummyFoobar, StorageDataType::Dummy, sequence_++);
     auto derived_data = static_cast<FoobarStorageData*>(data.get());
 
     // Set non-buf-typed fields

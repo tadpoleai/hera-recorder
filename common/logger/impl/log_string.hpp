@@ -33,11 +33,7 @@ using LogQueue = ThreadQueue<LogString, false>;
 
 class LogString final {
 public:
-    LogString(LogLevel level, const Timestamp& ts, std::string&& str) :
-        level(level),
-        ts(ts),
-        str(std::move(str))
-    {}
+    LogString(LogLevel level, const Timestamp& ts, std::string&& str) : level(level), ts(ts), str(std::move(str)) {}
     LogLevel level;
     Timestamp ts;
     std::string str;

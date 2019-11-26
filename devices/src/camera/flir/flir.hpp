@@ -95,11 +95,7 @@ public:
     ///
     /// @note pass IpAddress as essential parameters
     /// @see Device::Device()
-    Flir(DeviceIdType id,
-         const std::string& type,
-         const std::string& name,
-         const std::string& folder,
-         bool read_mode) :
+    Flir(DeviceIdType id, const std::string& type, const std::string& name, const std::string& folder, bool read_mode) :
         Device(id, type, name, folder, read_mode, {DeviceParameterType::IpAddress})
     {}
     Flir(const Flir&) = delete;
@@ -122,8 +118,7 @@ public:
 
     virtual SensorDataPtr convert(StorageDataPtr&& storage_data) override;
 
-    virtual HeraErrno adjust_parameter(DeviceParameterType type,
-                                          const std::string& value) override;
+    virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
 
 private:
     ///

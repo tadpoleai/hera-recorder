@@ -61,8 +61,7 @@ FolderContent get_folder_content(const std::string& parent)
 
         if (S_ISREG(stat_result.st_mode)) {
             content.total_size = content.total_size + stat_result.st_size;
-            content.files.emplace_back(
-                    FileAttribute(node->d_name, node_fullname, stat_result.st_size));
+            content.files.emplace_back(FileAttribute(node->d_name, node_fullname, stat_result.st_size));
         } else if (S_ISDIR(stat_result.st_mode)) {
             content.folders.emplace_back(FileAttribute(node->d_name, node_fullname));
         }

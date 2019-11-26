@@ -18,8 +18,7 @@ namespace daemon {
 
 class AcquisitionManager final : public AcquisitionManagerIf {
 public:
-    AcquisitionManager(const std::string& folder_prefix = "./",
-                       const std::string& json_file = "./profiles.json") :
+    AcquisitionManager(const std::string& folder_prefix = "./", const std::string& json_file = "./profiles.json") :
         record_(false),
         inited_(false),
         FolderPrefix_(folder_prefix),
@@ -39,9 +38,7 @@ public:
                const std::string& storage_folder) override;
     void stop(Result& result) override;
     void record(Result& result, const bool on) override;
-    void adjust(Result& result,
-                const int32_t id,
-                const std::map<std::string, std::string>& parameters) override;
+    void adjust(Result& result, const int32_t id, const std::map<std::string, std::string>& parameters) override;
 
     void reset();
 
@@ -50,10 +47,7 @@ public:
     void updateProfile(ProfileResult& result, const std::string& json_str) override;
 
 private:
-    void handle_error(Result& result,
-                      HeraErrno hera_errno,
-                      std::string&& reason = "",
-                      bool die = false);
+    void handle_error(Result& result, HeraErrno hera_errno, std::string&& reason = "", bool die = false);
     void handle_success(Result& result);
     void append_status(Result& result);
     void read_profiles();

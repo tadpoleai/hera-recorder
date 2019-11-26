@@ -38,12 +38,7 @@ public:
              const std::string& name,
              const std::string& folder,
              bool read_mode) :
-        Device(id,
-               type,
-               name,
-               folder,
-               read_mode,
-               {DeviceParameterType::IpAddress, DeviceParameterType::DataPort})
+        Device(id, type, name, folder, read_mode, {DeviceParameterType::IpAddress, DeviceParameterType::DataPort})
     {}
     Velodyne(const Velodyne&) = delete;
     Velodyne& operator=(const Velodyne&) = delete;
@@ -68,13 +63,11 @@ public:
     virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
 
 private:
-    static constexpr int64_t UsToNs_ = 1000ULL;                  ///< Multiplier from ns to us
-    static constexpr int64_t SecondToUs_ = 1'000'000ULL;         ///< Multiplier from second to us
-    static constexpr int64_t HourToUs_ = 3600ULL * SecondToUs_;  ///< Multiplier from hour to us
-    static constexpr int64_t HalfHourToUs_ =
-            1800ULL * SecondToUs_;  ///< Multiplier from half an hour to us
-    static constexpr int64_t MaxDelayToleranceUs_ =
-            30ULL * SecondToUs_;  ///< Max valid transmission delay, in us
+    static constexpr int64_t UsToNs_ = 1000ULL;                           ///< Multiplier from ns to us
+    static constexpr int64_t SecondToUs_ = 1'000'000ULL;                  ///< Multiplier from second to us
+    static constexpr int64_t HourToUs_ = 3600ULL * SecondToUs_;           ///< Multiplier from hour to us
+    static constexpr int64_t HalfHourToUs_ = 1800ULL * SecondToUs_;       ///< Multiplier from half an hour to us
+    static constexpr int64_t MaxDelayToleranceUs_ = 30ULL * SecondToUs_;  ///< Max valid transmission delay, in us
 
 private:
     static constexpr size_t EthernetMTU_ = 1500;  ///< MTU/PacketSize of ethernet interface

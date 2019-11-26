@@ -19,9 +19,7 @@ namespace convert {
 /// Scan the recorded data folder and construct processers.
 ///
 /// Open the bag file for writing, and init the writing thread
-AlignedConverter::AlignedConverter(const std::string& folder,
-                                   const std::string& bagfile,
-                                   RemapperPtr&& remapper) :
+AlignedConverter::AlignedConverter(const std::string& folder, const std::string& bagfile, RemapperPtr&& remapper) :
     total_size_(0),
     bag_(bagfile, false),
     remapper_(std::move(remapper))
@@ -44,13 +42,13 @@ AlignedConverter::AlignedConverter(const std::string& folder,
             }
 
             for (const auto& device : devices.folders) {
-                processers_.emplace_back(Processer::create(
-                        type.basename, vendor.basename, device.basename, folder, remapper_.get()));
+                processers_.emplace_back(
+                        Processer::create(type.basename, vendor.basename, device.basename, folder, remapper_.get()));
 
                 auto device_size = get_folder_content(device.fullname).total_size;
                 total_size_ = total_size_ + device_size;
-                log::debug << "Add device " << type.basename << "/" << vendor.basename << "/"
-                           << device.basename << ", sized " << device_size << log::endl;
+                log::debug << "Add device " << type.basename << "/" << vendor.basename << "/" << device.basename
+                           << ", sized " << device_size << log::endl;
             }
         }
     }

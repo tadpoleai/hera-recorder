@@ -29,18 +29,18 @@ target_link_libraries(${PROJECT_NAME}
     "/usr/local/lib/libthrift-0.12.0.so"
 )
 
-install(
-    FILES script/hera-daemon
-    PERMISSIONS OWNER_EXECUTE OWNER_READ
-    DESTINATION /etc/init.d
-)
-install(
-    FILES script/hera-daemon.service
-    PERMISSIONS OWNER_EXECUTE OWNER_READ
-    DESTINATION /lib/systemd/system
-)
-install(
-    TARGETS hera-daemon
-    PERMISSIONS OWNER_EXECUTE OWNER_READ
-    DESTINATION /usr/local/bin
-)
+# install(
+#     FILES script/hera-daemon
+#     PERMISSIONS OWNER_EXECUTE OWNER_READ
+#     DESTINATION /etc/init.d
+# )
+# install(
+#     FILES script/hera-daemon.service
+#     PERMISSIONS OWNER_EXECUTE OWNER_READ
+#     DESTINATION /lib/systemd/system
+# )
+# install(
+#     TARGETS hera-daemon
+#     PERMISSIONS OWNER_EXECUTE OWNER_READ
+#     DESTINATION /usr/local/bin
+# )

@@ -6,3 +6,5 @@ sudo mkdir -p /var/hera/data
 sudo mkdir -p /var/hera/logs
 
 sudo systemctl enable hera-daemon.service
+
+sudo cp 

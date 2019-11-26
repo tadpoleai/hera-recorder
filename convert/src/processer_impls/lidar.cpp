@@ -23,8 +23,7 @@ void Processer::process<SensorDataType::PointsXYZI>(SensorDataPtr& data)
     pcl_cloud.resize(data_impl->point_number);
     float* dst_ptr = reinterpret_cast<float*>(pcl_cloud.points.data());
     float* src_ptr = reinterpret_cast<float*>(data_impl->points);
-    const float* dst_ptr_end =
-            dst_ptr + (size_t)(data_impl->point_number) * (sizeof(pcl::PointXYZI) / sizeof(float));
+    const float* dst_ptr_end = dst_ptr + (size_t)(data_impl->point_number) * (sizeof(pcl::PointXYZI) / sizeof(float));
 
     for (; dst_ptr < dst_ptr_end;) {
         memcpy(dst_ptr, src_ptr, sizeof(Pts));

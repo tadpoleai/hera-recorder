@@ -16,9 +16,7 @@ void AcquisitionManager::get(Result& result)
 {
     append_status(result);
 }
-void AcquisitionManager::start(Result& result,
-                               const std::vector<DeviceInitializer>& devices,
-                               const std::string& folder)
+void AcquisitionManager::start(Result& result, const std::vector<DeviceInitializer>& devices, const std::string& folder)
 {
     log::info << "Acquisition::start called" << log::endl;
     // Check if already created
@@ -119,9 +117,7 @@ void AcquisitionManager::record(Result& result, const bool on)
     }
     return handle_success(result);
 }
-void AcquisitionManager::adjust(Result& result,
-                                const int32_t id,
-                                const std::map<std::string, std::string>& parameters)
+void AcquisitionManager::adjust(Result& result, const int32_t id, const std::map<std::string, std::string>& parameters)
 {
     log::info << "Acquisition::adjust called" << log::endl;
     if (!inited_) {
@@ -157,10 +153,7 @@ void AcquisitionManager::reset()
     record_ = false;
 }
 
-void AcquisitionManager::handle_error(Result& result,
-                                      HeraErrno hera_errno,
-                                      std::string&& reason,
-                                      bool die)
+void AcquisitionManager::handle_error(Result& result, HeraErrno hera_errno, std::string&& reason, bool die)
 {
     result.error = hera_errno;
     result.reason = std::forward<std::string>(reason);
