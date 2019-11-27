@@ -1,5 +1,3 @@
-set -e
-
 cd client
 npm i
 npm run thrift
