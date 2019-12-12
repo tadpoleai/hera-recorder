@@ -1,6 +1,6 @@
 import {
   TBufferedTransport,
-  TJSONProtocol,
+  TBinaryProtocol,
   createHttpClient,
   createHttpConnection,
 } from 'thrift';
@@ -10,6 +10,15 @@ import {
 } from './gen-ts';
 
 import config from './serverConfig';
+
+export interface IDisplayData {
+  valid: boolean;
+  isJpeg: number;
+  sequence: number;
+  timeSecond: number;
+  timeNanosecond: number;
+  data: Buffer;
+}
 
 export interface IParameter {
   type: string,
@@ -46,6 +55,8 @@ export interface IDeviceInfo {
   forward: boolean,
   volume: number,
   parameters: Array<IParameter>,
+  data: IDisplayData,
+  frequency: number;
   error: number,
   reason: string,
 }
@@ -73,7 +84,7 @@ const pendingResult: ISimpleResult = {
 
 const connectionOptions = {
   transport: TBufferedTransport,
-  protocol: TJSONProtocol,
+  protocol: TBinaryProtocol,
   https: config.useHttps,
   path: config.path,
   headers: {
@@ -108,7 +119,7 @@ function apiWrapper<T0, T1>(apiName: string) {
     console.log('Sending Request');
     switch (apiName) {
       case 'get':
-        result = await client.get();
+        result = await client.get(arg0 as unknown as boolean);
         daemonStatus.status = (result as Result).status;
         break;
       case 'start':
@@ -152,7 +163,7 @@ function apiWrapper<T0, T1>(apiName: string) {
         break;
       case 'updateProfile':
         result = await client.updateProfile(
-          JSON.stringify(daemonStatus.profiles)
+          JSON.stringify(daemonStatus.profiles),
         );
         break;
       default:
@@ -181,6 +192,8 @@ export function toDeviceInfo(deviceInfos: Array<DeviceInformation>): Array<IDevi
       status: rawInfo.status,
       forward: rawInfo.forward,
       volume: rawInfo.volume,
+      data: rawInfo.data,
+      frequency: rawInfo.frequency,
       error: rawInfo.error,
       reason: rawInfo.reason,
     };
@@ -193,7 +206,7 @@ export function formatResult(result: ISimpleResult) {
   return `Error: ${result.error.toString()}; Reason: ${result.reason}`;
 }
 
-const get = apiWrapper<void, void>('get');
+const get = apiWrapper<boolean, void>('get');
 const start = apiWrapper<Array<IDevice>, string>('start');
 const stop = apiWrapper<void, void>('stop');
 const record = apiWrapper<boolean, void>('record');
@@ -205,8 +218,9 @@ export {
 };
 
 async function sync() {
-  const status = await get();
+  const status = await get(false);
   console.log(status);
+  console.log(daemonStatus);
   setTimeout(sync, daemonStatus.status.inited ? config.activeSyncPeriodMs : config.syncPeriodMs);
 }
 

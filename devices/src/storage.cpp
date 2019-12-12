@@ -17,19 +17,19 @@ namespace hera {
 
 /// Construct a new Storage:: Storage object
 /// initialize the writing thread if not in read_mode
-Storage::Storage(std::string&& folder, bool read_mode) :
+Storage::Storage(std::string&& folder, const bool read_mode, const size_t history_depth) :
     folder_(std::forward<std::string>(folder)),
     file_number_counter_(0),
     file_size_counter_(0),
     total_file_size_counter_(0),
     read_mode_(read_mode),
     thread_(nullptr),
-    thread_running_(false)
+    thread_running_(false),
+    thread_queue_(0, history_depth)
 {
     if (!read_mode_) {
         thread_ = new std::thread(&Storage::write_thread_function, this);
         thread_running_ = true;
-    } else {
     }
 }
 
@@ -53,9 +53,9 @@ Storage::~Storage()
 
 /// This public interface push a storage data into thread-safe queue
 ///
-void Storage::write(StorageDataPtr&& data)
+void Storage::write(StorageDataPtr&& data, const bool only_history)
 {
-    thread_queue_.push(std::forward<StorageDataPtr>(data));
+    thread_queue_.push(std::forward<StorageDataPtr>(data), only_history);
 }
 
 /// Read data from in_file first,
@@ -77,6 +77,14 @@ StorageDataPtr Storage::read()
     }
     total_file_size_counter_ += data->get_length();
     return data;
+}
+
+std::vector<StorageDataPtr> Storage::history() {
+    if (!read_mode_) {
+        return thread_queue_.history();
+    } else {
+        return std::vector<StorageDataPtr>();
+    }
 }
 
 /// Use system call mkdir

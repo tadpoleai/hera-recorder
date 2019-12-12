@@ -171,7 +171,7 @@ StorageDataPtr Flir::fetch()
 
 /// For jpeg format, just copy
 ///
-SensorDataPtr Flir::convert(StorageDataPtr&& storage_data)
+SensorDataPtr Flir::convert(StorageDataPtr& storage_data)
 {
     if (storage_data->is_type(StorageDataType::CameraFlirCompressed)) {
         // Raw StorageData of Derived Type

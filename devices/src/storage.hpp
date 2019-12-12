@@ -39,7 +39,7 @@ public:
     ///
     /// @param folder folder of this storage
     /// @param read_mode true if to read out from storage, otherwise write
-    Storage(std::string&& folder, bool read_mode = false);
+    Storage(std::string&& folder, const bool read_mode, const size_t history_depth);
     Storage(const Storage&) = delete;
     Storage& operator=(const Storage&) = delete;
     ~Storage();
@@ -48,13 +48,21 @@ public:
     /// @brief Write storage data into storage
     ///
     /// @param data a shared pointer to storage data
-    void write(StorageDataPtr&& data);
+    /// @param only_history only push to history
+    void write(StorageDataPtr&& data, const bool only_history);
 
     ///
     /// @brief Read storage data from storage
     ///
     /// @return StorageDataPtr shared pointer to storage data, if read succeed, otherwise nullptr
     StorageDataPtr read();
+
+    ///
+    /// @brief Get history data (write mode)
+    ///
+    /// @return std::vector<StorageDataPtr> a vector of latest history data
+    ///
+    std::vector<StorageDataPtr> history();
 
     ///
     /// @brief Get total size of data written / read
@@ -90,11 +98,13 @@ private:
 private:
     static constexpr size_t FileMaxSize_ = 1'000'000'000;  ///< Max size a single storage file
     static constexpr size_t FileNameWidth_ = 4;            ///< Storage file name width
-    std::string folder_;                                   ///< Storage folder name
-    size_t file_number_counter_;                           ///< Storage file count of current writing
-    size_t file_size_counter_;                             ///< Size of current storage file, in bytes
-    size_t total_file_size_counter_;                       ///< Size of all this storage, in bytes, if write mode
-                                                           ///, other wise read storage data size, if read mode
+    static constexpr size_t HistoryDepth_ = 100;           ///< Storage history data depth
+
+    std::string folder_;              ///< Storage folder name
+    size_t file_number_counter_;      ///< Storage file count of current writing
+    size_t file_size_counter_;        ///< Size of current storage file, in bytes
+    size_t total_file_size_counter_;  ///< Size of all this storage, in bytes, if write mode
+                                      ///, other wise read storage data size, if read mode
 
     bool read_mode_;                         ///< indicating if storage is in read mode
     std::ofstream out_file_;                 ///< Current output file, used in write mode

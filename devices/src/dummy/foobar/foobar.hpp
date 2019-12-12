@@ -65,7 +65,13 @@ public:
            const std::string& name,
            const std::string& folder,
            bool read_mode) :
-        Device(id, type, name, folder, read_mode, {DeviceParameterType::DummyRate, DeviceParameterType::DummyValue})
+        Device(id,
+               type,
+               name,
+               folder,
+               read_mode,
+               HistoryDepth_,
+               {DeviceParameterType::DummyRate, DeviceParameterType::DummyValue})
     {}
     Foobar(const Foobar&) = delete;
     Foobar& operator=(const Foobar&) = delete;
@@ -86,11 +92,13 @@ public:
 
     virtual StorageDataPtr fetch() override;
 
-    virtual SensorDataPtr convert(StorageDataPtr&& storage_data) override;
+    virtual SensorDataPtr convert(StorageDataPtr& storage_data) override;
 
     virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
 
 private:
+    static constexpr size_t HistoryDepth_ = 10;  ///< History Depth, 10
+
     int64_t period_us_;           ///< period on which dummy device return a new data, in us
     int32_t int_value_;           ///< the int value to fill storage data
     std::string string_message_;  ///< the string message to fill storage data

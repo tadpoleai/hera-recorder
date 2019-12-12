@@ -18,6 +18,7 @@ Device::Device(DeviceIdType id,
                const std::string& name,
                const std::string& folder,
                bool read_mode,
+               const size_t history_depth,
                std::initializer_list<DeviceParameterType>&& essential_parameter_types) :
     sequence_(0),
     id_(id),
@@ -25,6 +26,7 @@ Device::Device(DeviceIdType id,
     name_(name),
     folder_(folder),
     read_mode_(read_mode),
+    history_depth_(history_depth),
     status_(DeviceStatus::BeforeConnect),
     hera_errno_(HeraErrno::OK),
     is_record_(false),
@@ -57,7 +59,7 @@ HeraErrno Device::start()
             return result;
         }
         status_ = DeviceStatus::Connected;
-        storage_ = new Storage(folder_ + "/" + type_ + "/" + name_);
+        storage_ = new Storage(folder_ + "/" + type_ + "/" + name_, false, history_depth_);
         thread_fetch_ = new std::thread(&Device::fetch_thread_function, this);
         return HeraErrno::OK;
     }
@@ -149,23 +151,39 @@ HeraErrno Device::parameter(const std::string& type, const std::string& value)
     }
 }
 
-/// Read a StorageData from storage object and then
+/// If in read mode, then
+/// read a StorageData from storage object and then
 /// calls convert() to convert it into SensorData
+///
 SensorDataPtr Device::read()
 {
-    if (!read_mode_) {
-        return nullptr;
+    if (read_mode_) {
+        if (storage_ == nullptr) {
+            storage_ = new Storage(folder_ + "/" + type_ + "/" + name_, true, 0);
+        }
+        auto storage_data = storage_->read();
+        return convert(storage_data);
     }
+    return nullptr;
+}
 
-    if (storage_ == nullptr) {
-        storage_ = new Storage(folder_ + "/" + type_ + "/" + name_, true);
-    }
-
-    auto storage_data = storage_->read();
-    if (storage_data == nullptr) {
-        return nullptr;
+/// Read history of storage data
+/// and then convert
+std::vector<SensorDataPtr> Device::history()
+{
+    auto sensor_datas = std::vector<SensorDataPtr>();
+    if (read_mode_) {
+        return sensor_datas;
     } else {
-        return convert(std::move(storage_data));
+        sensor_datas.reserve(history_depth_);
+        auto storage_datas = storage_->history();
+        for (auto&& storage_data : storage_datas) {
+            auto sensor_data = convert(storage_data);
+            if (sensor_data->sensor_data_type != SensorDataType::Broken) {
+                sensor_datas.emplace_back(std::move(sensor_data));
+            }
+        }
+        return sensor_datas;
     }
 }
 
@@ -209,9 +227,9 @@ bool Device::check_parameter()
 void Device::fetch_thread_function()
 {
     while (status_ == DeviceStatus::Connected) {
-        auto data = fetch();
-        if (data != nullptr && is_record_) {
-            storage_->write(std::move(data));
+        auto new_data = fetch();
+        if (new_data != nullptr) {
+            storage_->write(std::move(new_data), !is_record_);
         }
     }
 }

@@ -64,7 +64,7 @@ dist/
 runtime/
 tmp/
 temp/
-# deploy/
+deploy/
 
 # Thrift Generated
 gen-js/

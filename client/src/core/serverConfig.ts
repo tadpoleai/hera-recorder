@@ -7,7 +7,8 @@ if (process.env.NODE_ENV === 'production') {
   port = 80;
   useHttps = false;
 } else {
-  hostName = '127.0.0.1';
+  console.log(window.location.hostname);
+  hostName = window.location.hostname;
   port = 9090;
   useHttps = false;
 }

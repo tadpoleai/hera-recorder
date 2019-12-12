@@ -8,6 +8,15 @@ struct DeviceInitializer {
     3:required map<string, string> parameters;
 }
 
+struct DisplayData {
+    1: required bool valid;
+    10:required i32 isJpeg;
+    20:required i32 sequence;
+    30:required i32 timeSecond;
+    31:required i32 timeNanosecond;
+    40:required binary data;
+}
+
 struct DeviceInformation {
     1:required i32 id;
     2:required string type;
@@ -16,6 +25,8 @@ struct DeviceInformation {
     5:required bool forward;
     7:required i32 volume;
     8:required map<string, string> parameters;
+    9:required DisplayData data;
+    10:required double frequency;
     20:required i32 error;
     21:required string reason;
 }
@@ -41,7 +52,7 @@ struct ProfileResult {
 
 service AcquisitionManager
 {
-    Result get();
+    Result get(1:bool is_data);
     Result start(1:list<DeviceInitializer> devices, 2:string storage_folder);
     Result stop();
     Result record(1:bool on);

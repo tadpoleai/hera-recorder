@@ -65,7 +65,6 @@ StorageDataPtr Foobar::fetch()
     // Some devices randomly fails during fetching,
     // in case of that, return a nullptr
     if (std::rand() > RAND_MAX * 0.9) {
-
         return nullptr;
     }
 
@@ -93,7 +92,7 @@ StorageDataPtr Foobar::fetch()
 /// See source for a code sample of,
 /// how to create and return a valid converted data
 /// @note Check the type of storage data first,
-SensorDataPtr Foobar::convert(StorageDataPtr&& storage_data)
+SensorDataPtr Foobar::convert(StorageDataPtr& storage_data)
 {
     if (!storage_data->is_type(StorageDataType::Dummy)) {
         return SensorData::broken_data();

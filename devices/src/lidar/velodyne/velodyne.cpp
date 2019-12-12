@@ -98,7 +98,7 @@ StorageDataPtr Velodyne::fetch()
 
 /// Check the LidarType and ReturnMode first,
 /// if valid, do convertion by LidarType
-SensorDataPtr Velodyne::convert(StorageDataPtr&& storage_data)
+SensorDataPtr Velodyne::convert(StorageDataPtr& storage_data)
 {
     if (!storage_data->is_type(StorageDataType::LidarVelodynePacket)) {
         return SensorData::broken_data();

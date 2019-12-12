@@ -38,7 +38,13 @@ public:
              const std::string& name,
              const std::string& folder,
              bool read_mode) :
-        Device(id, type, name, folder, read_mode, {DeviceParameterType::IpAddress, DeviceParameterType::DataPort})
+        Device(id,
+               type,
+               name,
+               folder,
+               read_mode,
+               HistoryDepth_,
+               {DeviceParameterType::IpAddress, DeviceParameterType::DataPort})
     {}
     Velodyne(const Velodyne&) = delete;
     Velodyne& operator=(const Velodyne&) = delete;
@@ -58,11 +64,13 @@ public:
 
     virtual StorageDataPtr fetch() override;
 
-    virtual SensorDataPtr convert(StorageDataPtr&& storage_data) override;
+    virtual SensorDataPtr convert(StorageDataPtr& storage_data) override;
 
     virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
 
 private:
+    static constexpr size_t HistoryDepth_ = 160;  ///< History Depth, ~+1500packets, 600rpm, 160 = 1 circle
+
     static constexpr int64_t UsToNs_ = 1000ULL;                           ///< Multiplier from ns to us
     static constexpr int64_t SecondToUs_ = 1'000'000ULL;                  ///< Multiplier from second to us
     static constexpr int64_t HourToUs_ = 3600ULL * SecondToUs_;           ///< Multiplier from hour to us
