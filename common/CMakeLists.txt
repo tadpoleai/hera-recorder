@@ -4,11 +4,13 @@ cmake_minimum_required( VERSION 3.5.1 )
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-Werror -Wall -Wextra -Wno-unused-parameter")
-set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 set(PROJECT_NAME hera-common)
 project(${PROJECT_NAME})
+
+find_package(Threads REQUIRED)
 
 set(RPC_GEN_CPP "rpc/gen-cpp")
 add_custom_command(
@@ -38,5 +40,6 @@ add_library(${PROJECT_NAME}
     ${RPC_GEN_CPP}/AcquisitionManager.cpp
 )
 target_link_libraries(${PROJECT_NAME}
+    Threads::Threads
     "/usr/local/lib/libthrift.so"
 )

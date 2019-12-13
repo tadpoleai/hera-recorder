@@ -4,9 +4,14 @@
 
 #pragma once
 
+#include <exception>
+#include <execinfo.h>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
+#include <set>
+#include <signal.h>
 #include <sstream>
 #include <thread>
 
@@ -43,6 +48,10 @@ private:
     void write_thread_function();
     void write(const LogString& data);
     std::string format(const LogString& data);
+
+    void register_back_trace();
+    static void singal_handler(int signo);
+    static void back_trace();
 
 private:
     bool inited_;
