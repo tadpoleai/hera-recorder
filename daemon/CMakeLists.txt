@@ -4,7 +4,7 @@ cmake_minimum_required( VERSION 3.5.1 )
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-Werror -Wall -Wextra -Wno-unused-parameter")
-set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 set(PROJECT_NAME hera-daemon)

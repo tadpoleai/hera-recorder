@@ -64,7 +64,9 @@ Logger::Logger() :
     queue_(0, 80ms),
     running_(true),
     thread_(&Logger::write_thread_function, this)
-{}
+{
+    register_back_trace();
+}
 
 Logger::~Logger()
 {
