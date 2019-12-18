@@ -81,6 +81,7 @@ public:
            const std::string& name,
            const std::string& folder,
            bool read_mode,
+           const size_t history_depth,
            std::initializer_list<DeviceParameterType>&& essential_parameter_types);
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
@@ -132,11 +133,20 @@ public:
     HeraErrno parameter(const std::string& type, const std::string& value);
 
     ///
-    /// @brief Read a SensorData from storaged data
+    /// @brief Read a SensorData from device
     ///
     /// @return SensorDataPtr a shared pointer to sensor data, if succeed, otherwise nullptr
-    /// @note This operation is only allowed, and the only operation allowed in read mode
+    /// @note In read mode, this method is the only valid operation in read mode, it returns
+    /// data from storaged data
     SensorDataPtr read();
+
+    ///
+    /// @brief Get history Sensor from device
+    ///
+    /// @return std::vector<SensorDataPtr> a vector of history sensor data
+    ///
+    /// @note Only valid in normal (record) mode
+    std::vector<SensorDataPtr> history();
 
     ///
     /// @brief Get the vendor type
@@ -275,7 +285,7 @@ protected:
     /// @note This function should be implemented by derived class.
     /// @note Caller must check if return value is broken_data
     /// @note Do not return nullptr in derived implementions
-    virtual SensorDataPtr convert(StorageDataPtr&& storage_data) = 0;
+    virtual SensorDataPtr convert(StorageDataPtr& storage_data) = 0;
 
     ///
     /// @brief Adjust a single parameter after start()/connect()
@@ -305,10 +315,10 @@ private:
     // void forward_thread_function();
 
 private:
-    DeviceIdType id_;     ///< device id
-    std::string type_;    ///< device vendor type
-    std::string name_;    ///< device name
-    std::string folder_;  ///< parent folder for all devices
+    const DeviceIdType id_;     ///< device id
+    const std::string type_;    ///< device vendor type
+    const std::string name_;    ///< device name
+    const std::string folder_;  ///< parent folder for all devices
 
     ///
     /// @brief Device is in read mode
@@ -317,15 +327,17 @@ private:
     /// instead of fetching from physical device.
     /// And in this mode, only read() is allowed
     /// @see read()
-    bool read_mode_;
+    const bool read_mode_;
+
+    const size_t history_depth_;  ///< history depth of storage data
 
     volatile DeviceStatus status_;  ///< device status
     HeraErrno hera_errno_;          ///< device error code
     std::string reason_;            ///< extra error reason
 
-    volatile bool is_record_;    ///< if device is recording
-    Storage* storage_;           ///< storage for this device
-    std::thread* thread_fetch_;  ///< fetching thread
+    volatile bool is_record_;      ///< if device is recording
+    Storage* storage_;             ///< storage for this device
+    std::thread* thread_fetch_;    ///< fetching thread
 
     std::vector<DeviceParameterType> essential_parameter_types_;  ///< essential parameters types
 };

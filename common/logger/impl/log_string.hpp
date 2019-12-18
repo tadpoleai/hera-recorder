@@ -62,7 +62,7 @@ public:
     inline void operator<<(const LogEndl& endl)
     {
         if (valid_ && queue_ != nullptr) {
-            queue_->push(std::make_unique<LogString>(level_, ts_, str()));
+            queue_->emplace(std::make_unique<LogString>(level_, ts_, str()));
         }
     }
 

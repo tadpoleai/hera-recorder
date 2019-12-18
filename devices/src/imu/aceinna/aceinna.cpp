@@ -81,7 +81,7 @@ StorageDataPtr Aceinna::fetch()
 
 /// Multiple raw data by defined granularity
 ///
-SensorDataPtr Aceinna::convert(StorageDataPtr&& storage_data)
+SensorDataPtr Aceinna::convert(StorageDataPtr& storage_data)
 {
     if (!storage_data->is_type(StorageDataType::ImuAceinnaEmbedded)) {
         return SensorData::broken_data();

@@ -90,6 +90,7 @@ public:
                name,
                folder,
                read_mode,
+               HistoryDepth_,
                {DeviceParameterType::Kernel,
                 DeviceParameterType::KernelAuxiliary,
                 DeviceParameterType::BaudRate,
@@ -118,11 +119,13 @@ public:
 
     virtual StorageDataPtr fetch() override;
 
-    virtual SensorDataPtr convert(StorageDataPtr&& storage_data) override;
+    virtual SensorDataPtr convert(StorageDataPtr& storage_data) override;
 
     virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
 
 private:
+    static constexpr size_t HistoryDepth_ = 1;  ///< History Depth, 1
+
     std::string kernel_;            ///< kernel name of primary serial
     std::string kernel_auxiliary_;  ///< kernel name of auxiliary serial
     int32_t baud_rate_;             ///< baud rate of primary serial

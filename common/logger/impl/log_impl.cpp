@@ -61,7 +61,7 @@ LogStringStream Logger::create_string(LogLevel level)
 Logger::Logger() :
     inited_(false),
     level_(LogLevel::Debug),
-    queue_(0, 80ms),
+    queue_(0, 0, 80ms),
     running_(true),
     thread_(&Logger::write_thread_function, this)
 {

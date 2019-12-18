@@ -96,7 +96,7 @@ public:
     /// @note pass IpAddress as essential parameters
     /// @see Device::Device()
     Flir(DeviceIdType id, const std::string& type, const std::string& name, const std::string& folder, bool read_mode) :
-        Device(id, type, name, folder, read_mode, {DeviceParameterType::IpAddress})
+        Device(id, type, name, folder, read_mode, HistoryDepth_, {DeviceParameterType::IpAddress})
     {}
     Flir(const Flir&) = delete;
     Flir& operator=(const Flir&) = delete;
@@ -116,7 +116,7 @@ public:
 
     virtual StorageDataPtr fetch() override;
 
-    virtual SensorDataPtr convert(StorageDataPtr&& storage_data) override;
+    virtual SensorDataPtr convert(StorageDataPtr& storage_data) override;
 
     virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
 
@@ -133,6 +133,7 @@ private:
     HeraErrno handle_flir_error(const FlyCapture2::Error& error);
 
 private:
+    static constexpr size_t HistoryDepth_ = 1;      ///< History Depth, 1
     static constexpr int32_t GrabTimeoutMs_ = 200;  ///< Timeout for grabbing an image data
     static constexpr int32_t NumBuffers_ = 5;       ///< Size of image buffer in FLIR's SDK
 

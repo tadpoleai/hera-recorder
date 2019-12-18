@@ -73,6 +73,7 @@ public:
                name,
                folder,
                read_mode,
+               HistoryDepth_,
                {DeviceParameterType::Kernel, DeviceParameterType::BaudRate, DeviceParameterType::SerialMsgType})
     {}
     Aceinna(const Aceinna&) = delete;
@@ -93,27 +94,12 @@ public:
 
     virtual StorageDataPtr fetch() override;
 
-    virtual SensorDataPtr convert(StorageDataPtr&& storage_data) override;
+    virtual SensorDataPtr convert(StorageDataPtr& storage_data) override;
 
     virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
 
 private:
-    std::string kernel_;  ///< kernel name (aka device name)
-
-    ///
-    /// @brief baud rate of serial port
-    ///
-    /// @see SerialPort
-    int32_t baud_rate_;
-
-    /// @brief serial msg type of message
-    ///
-    /// For imu data, usually 0
-    /// @see SerialTransport
-    int32_t serial_msg_type_;
-
-    SerialTransport* serial_port_;    ///< pointer to SerialTransport object, for receiving data
-    ThreadQueue<SerialData>* queue_;  ///< queue of serial data
+    static constexpr size_t HistoryDepth_ = 1;  ///< History Depth, 1
 
     ///
     /// @brief Gravity scale constant, in m/s^2, defined by Aceinna
@@ -138,6 +124,24 @@ private:
     /// @note The granularity may change if Wayz Tron Sync Board send other parameters
     /// @todo Check the unit in Manual to confirm it is in Tesla
     static constexpr double MagneticGranularity_ = 1.0 / 16000.0;
+
+private:
+    std::string kernel_;  ///< kernel name (aka device name)
+
+    ///
+    /// @brief baud rate of serial port
+    ///
+    /// @see SerialPort
+    int32_t baud_rate_;
+
+    /// @brief serial msg type of message
+    ///
+    /// For imu data, usually 0
+    /// @see SerialTransport
+    int32_t serial_msg_type_;
+
+    SerialTransport* serial_port_;    ///< pointer to SerialTransport object, for receiving data
+    ThreadQueue<SerialData>* queue_;  ///< queue of serial data
 };
 
 }  // namespace imu

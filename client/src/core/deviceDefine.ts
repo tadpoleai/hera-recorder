@@ -31,7 +31,7 @@ const parameterTypes = {
     'BaudRate',
     'BaudRateAuxiliary',
     'SerialMsgType',
-  ]
+  ],
 };
 
 const parameterRules = {
@@ -61,5 +61,5 @@ export default {
   parameterTypes,
   parameterRules,
   maxDeviceNameLength,
-  deviceIconTypes
+  deviceIconTypes,
 };

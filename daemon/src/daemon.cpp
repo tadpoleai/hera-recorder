@@ -13,7 +13,6 @@
 
 #include <common/logger/logger.hpp>
 #include <thrift/protocol/TBinaryProtocol.h>
-#include <thrift/protocol/TJSONProtocol.h>
 #include <thrift/server/TSimpleServer.h>
 #include <thrift/transport/TBufferTransports.h>
 #include <thrift/transport/THttpServer.h>
@@ -74,7 +73,7 @@ int main(int argc, char** argv)
     std::shared_ptr<TProcessor> processor(new AcquisitionManagerProcessor(handler));
     std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     std::shared_ptr<TTransportFactory> transportFactory(new THttpServerTransportFactory());
-    std::shared_ptr<TProtocolFactory> protocolFactory(new TJSONProtocolFactory());
+    std::shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
 
     g_server_ptr = new TSimpleServer(processor, serverTransport, transportFactory, protocolFactory);
     log::info << "HeraMain: Daemon Started" << log::endl;

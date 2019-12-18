@@ -148,8 +148,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
-import inputRules from "@/core/inputRules";
+import { Component, Vue } from 'vue-property-decorator';
+import inputRules from '@/core/inputRules';
 import {
   daemonStatus,
   start,
@@ -162,15 +162,15 @@ import {
   IParameter,
   IDevice,
   IDeviceInfo,
-  ISimpleResult
-} from "@/core/daemonApi";
-import deviceDefine from "@/core/deviceDefine";
-import DeviceListEdit from "@/views/Acquisition/DeviceListEdit.vue";
+  ISimpleResult,
+} from '@/core/daemonApi';
+import deviceDefine from '@/core/deviceDefine';
+import DeviceListEdit from '@/views/Acquisition/DeviceListEdit.vue';
 
 @Component({
   components: {
-    DeviceListEdit
-  }
+    DeviceListEdit,
+  },
 })
 export default class Acquisition extends Vue {
   // Definition from other
@@ -181,14 +181,14 @@ export default class Acquisition extends Vue {
   deviceDefine = deviceDefine;
 
   // Storage path
-  storagePath = "";
+  storagePath = '';
 
   updateStoragePath() {
     let date = new Date();
     date = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
     this.storagePath = `${date
       .toISOString()
-      .replace(/[\D]/g, "")
+      .replace(/[\D]/g, '')
       .slice(0, 14)}_`;
   }
 
@@ -196,15 +196,15 @@ export default class Acquisition extends Vue {
     this.updateStoragePath();
   }
 
-  maxStoragePathLength = "64";
+  maxStoragePathLength = '64';
 
   // Snackbar from result displaying
   snackbar = {
     show: false,
-    text: "",
-    color: "success",
+    text: '',
+    color: 'success',
     multiLine: false,
-    vertical: false
+    vertical: false,
   };
 
   get acquisitionRunning(): boolean {
@@ -238,15 +238,15 @@ export default class Acquisition extends Vue {
   }
 
   get btnRecordText(): string {
-    return this.daemonStatus.status.record ? "Actions.pause" : "Actions.record";
+    return this.daemonStatus.status.record ? 'Actions.pause' : 'Actions.record';
   }
 
   get btnRecordIcon(): string {
-    return this.daemonStatus.status.record ? "mdi-pause" : "mdi-record";
+    return this.daemonStatus.status.record ? 'mdi-pause' : 'mdi-record';
   }
 
   btnStartHandler(devices: Array<IDevice>) {
-    console.log("start");
+    console.log('start');
     this.btnStartPending = true;
     start(devices, this.storagePath).then((result: ISimpleResult) => {
       this.resultHandler(result);
@@ -255,7 +255,7 @@ export default class Acquisition extends Vue {
   }
 
   btnStopHandler() {
-    console.log("stop");
+    console.log('stop');
     this.btnStopPending = true;
     stop().then((result: ISimpleResult) => {
       this.resultHandler(result);
@@ -265,7 +265,7 @@ export default class Acquisition extends Vue {
   }
 
   btnRecordHandler() {
-    console.log("record");
+    console.log('record');
     this.btnRecordPending = true;
     record(!this.daemonStatus.status.record).then((result: ISimpleResult) => {
       this.resultHandler(result);
@@ -275,8 +275,8 @@ export default class Acquisition extends Vue {
 
   btnAddProfileHandler() {
     daemonStatus.profiles.push({
-      name: "New Profile",
-      devices: []
+      name: 'New Profile',
+      devices: [],
     });
   }
 
@@ -285,7 +285,7 @@ export default class Acquisition extends Vue {
   }
 
   btnUpdateProfileHandler() {
-    console.log("updateProfile");
+    console.log('updateProfile');
     this.btnUpdateProfilePending = true;
     updateProfile().then((result: ISimpleResult) => {
       this.resultHandler(result);
@@ -298,12 +298,12 @@ export default class Acquisition extends Vue {
     this.snackbar.show = true;
     if (result.error !== 0) {
       this.snackbar.text = formatResult(result);
-      this.snackbar.color = "error";
+      this.snackbar.color = 'error';
       this.snackbar.multiLine = true;
       this.snackbar.vertical = true;
     } else {
-      this.snackbar.text = String(this.$t("Result.success"));
-      this.snackbar.color = "success";
+      this.snackbar.text = String(this.$t('Result.success'));
+      this.snackbar.color = 'success';
       this.snackbar.multiLine = false;
       this.snackbar.vertical = false;
     }

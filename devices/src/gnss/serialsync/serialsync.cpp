@@ -182,7 +182,7 @@ StorageDataPtr Serialsync::fetch()
     return data;
 }
 
-SensorDataPtr Serialsync::convert(StorageDataPtr&& storage_data)
+SensorDataPtr Serialsync::convert(StorageDataPtr& storage_data)
 {
     if (!storage_data->is_type(StorageDataType::GnssSerialsyncNmea)) {
         return SensorData::broken_data();
