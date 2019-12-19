@@ -103,7 +103,7 @@ void SerialTransport::fetch_thread_function()
             if (queue_registered[msg->msg_type]) {
                 auto data = std::make_shared<std::vector<uint8_t>>(msg->msg_length);
                 memcpy((data->data()), msg->msg_rawdata, msg->msg_length);
-                queue_[msg->msg_type].push(std::move(data));
+                queue_[msg->msg_type].emplace(std::move(data));
             }
         }
     }

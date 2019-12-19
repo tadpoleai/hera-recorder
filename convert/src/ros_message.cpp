@@ -9,6 +9,8 @@
 
 #include "ros_message.hpp"
 
+#include "common/logger/logger.hpp"
+
 namespace wayz {
 namespace hera {
 namespace convert {
@@ -93,7 +95,7 @@ ROSMessage::~ROSMessage()
             delete reinterpret_cast<sensor_msgs::NavSatFix*>(ptr);
             break;
         default:
-            std::cout << "Fatal: Unknown Message Type" << std::endl;
+            log::error << "Fatal: Unknown Message Type" << log::endl;
             break;
         }
     }

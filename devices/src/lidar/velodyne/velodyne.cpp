@@ -96,6 +96,18 @@ StorageDataPtr Velodyne::fetch()
     return data;
 }
 
+HeraErrno Velodyne::adjust_parameter(DeviceParameterType type, const std::string& value)
+{
+    switch (type) {
+    case DeviceParameterType::DataPort:
+    case DeviceParameterType::IpAddress:
+        return HeraErrno::ImmutableParameter;
+    default:
+        return HeraErrno::UnimplementedParameter;
+    }
+    return HeraErrno::Success;
+}
+
 /// Check the LidarType and ReturnMode first,
 /// if valid, do convertion by LidarType
 SensorDataPtr Velodyne::convert(StorageDataPtr& storage_data)
@@ -236,18 +248,6 @@ SensorDataPtr Velodyne::convert(StorageDataPtr& storage_data)
     lidar_sensor_data->timestamp_intrinsic_ns = t_fire_us * UsToNs_;
 
     return sensor_data;
-}
-
-HeraErrno Velodyne::adjust_parameter(DeviceParameterType type, const std::string& value)
-{
-    switch (type) {
-    case DeviceParameterType::DataPort:
-    case DeviceParameterType::IpAddress:
-        return HeraErrno::ImmutableParameter;
-    default:
-        return HeraErrno::UnimplementedParameter;
-    }
-    return HeraErrno::Success;
 }
 
 }  // namespace lidar

@@ -21,6 +21,11 @@ inline void onlyprint()
     return impl::Logger::onlyprint();
 }
 
+inline void ignore_signal(int signo)
+{
+    return impl::Logger::ignore_signal(signo);
+}
+
 inline bool init(const std::string& file)
 {
     return impl::Logger::init(file);

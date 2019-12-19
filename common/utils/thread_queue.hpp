@@ -85,7 +85,7 @@ public:
     /// @return false operation failed, due to capacity over
     /// Check the capacity first, and then
     /// push the data into underlying stl queue and notify waiter
-    bool push(DataType&& data, const bool only_history = false, typename std::enable_if<shared, bool>* _ = 0)
+    bool push(DataType& data, const bool only_history = false, typename std::enable_if<shared, bool>* _ = 0)
     {
         if (data == nullptr) {
             return false;
@@ -103,7 +103,7 @@ public:
             if (Capacity_ > 0 && queue_.size() >= Capacity_) {
                 return false;
             }
-            queue_.emplace(std::forward<DataType>(data));
+            queue_.push(data);
             lock.unlock();
             cond_.notify_one();
             return true;

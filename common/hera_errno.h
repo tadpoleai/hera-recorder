@@ -29,6 +29,7 @@ enum HeraErrno {
     InvalidControlCommand = 103,
     EmptyDeviceList = 104,
     DevicesAlreadyCreated = 105,
+    UnimplementedDriver = 106,
 
     CanNotConnectDevices = 202,
     CanNotOpenEthernetDevice = 203,

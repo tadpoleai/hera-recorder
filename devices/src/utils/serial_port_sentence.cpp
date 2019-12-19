@@ -9,8 +9,7 @@
 namespace wayz {
 namespace hera {
 
-SerialPortSentence::SerialPortSentence(const std::string& kernel,
-                                       const SerialConfig& serial_config) :
+SerialPortSentence::SerialPortSentence(const std::string& kernel, const SerialConfig& serial_config) :
     port_(nullptr),
     port_opened_(false),
     thread_run_(false),
@@ -66,7 +65,7 @@ void SerialPortSentence::fetch_thread_function()
                     auto sentence = std::make_shared<SerialData>(std::move(buffer_));
                     buffer_.clear();
                     buffer_.reserve(BufferReverseSize_);
-                    queue_.push(std::move(sentence));
+                    queue_.emplace(std::move(sentence));
                 }
             }
         }

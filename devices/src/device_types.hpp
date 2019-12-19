@@ -27,8 +27,8 @@ namespace hera {
 /// @see Device
 ///
 enum class DeviceVendorType : uint16_t {
-    DummyFoobar = 0x0101,  ///< A dummy category for testing, vendor is Wayz
-    ImuAceinna = 0x0201,   ///< An 9-axis Imu, vendor is Aceinna, embedded in Wayz Tron Sync Board
+    DummyFoobar = 0x0101,     ///< A dummy category for testing, vendor is Wayz
+    ImuAceinna = 0x0201,      ///< An 9-axis Imu, vendor is Aceinna, embedded in Wayz Tron Sync Board
     GnssSerialSync = 0x0301,  ///< RTK-GNSS, outputs NavSatFix, vendor is any that outpus NMEA
     CameraFlir = 0x0401,      ///< Camera, outputs RawImage or CompressedImage, vendor is FLIR
     LidarVelodyne = 0x0501,   ///< Lidar, outputs PointsXYZI, vendor is Velodyne
@@ -44,7 +44,7 @@ enum class DeviceVendorType : uint16_t {
 enum class StorageDataType : uint16_t {
     Dummy = 0x0101,                 ///< A dummy device's storage data
     ImuAceinnaEmbedded = 0x0201,    ///< For Wayz Tron Sync Board's serial output
-    GnssSerialsyncNmea = 0x0301,   ///< For Nmea Sentence
+    GnssSerialsyncNmea = 0x0301,    ///< For Nmea Sentence
     CameraFlirCompressed = 0x0401,  ///< For Flir's camera's compressed image
     CameraFlirRaw = 0x0402,         ///< For Flir's camera's raw image
     LidarVelodynePacket = 0x0501,   ///< For Velodyne's raw UDP packet
@@ -62,6 +62,7 @@ enum class StorageDataType : uint16_t {
 /// @see SensorData
 ///
 enum class SensorDataType : uint16_t {
+    EndOfFile = 0xFFFE,         ///< Mark as end of file
     Broken = 0xFFFF,            ///< Mark for a broken data
     Dummy = 0x0101,             ///< A dummy message, no correspond ROS Message
     ImuMagneticField = 0x0201,  ///< ROS Imu and MagneticField

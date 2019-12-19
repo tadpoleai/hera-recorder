@@ -1,5 +1,11 @@
 # Nginx 配置指南
 
+## 安装Nginx
+
+运行 `deploy/install-nginx.sh`
+
+## 配置Nginx
+
 1. 修改`/etc/nginx/nginx.conf`，确认`http`包含以下语句
 
     ```plain-text

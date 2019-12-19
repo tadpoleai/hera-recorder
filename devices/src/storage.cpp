@@ -53,9 +53,9 @@ Storage::~Storage()
 
 /// This public interface push a storage data into thread-safe queue
 ///
-void Storage::write(StorageDataPtr&& data, const bool only_history)
+void Storage::write(StorageDataPtr& data, const bool only_history)
 {
-    thread_queue_.push(std::forward<StorageDataPtr>(data), only_history);
+    thread_queue_.push(data, only_history);
 }
 
 /// Read data from in_file first,
@@ -79,7 +79,8 @@ StorageDataPtr Storage::read()
     return data;
 }
 
-std::vector<StorageDataPtr> Storage::history() {
+std::vector<StorageDataPtr> Storage::history()
+{
     if (!read_mode_) {
         return thread_queue_.history();
     } else {

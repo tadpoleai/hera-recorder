@@ -12,9 +12,16 @@ namespace hera {
 namespace log {
 namespace impl {
 
+std::set<int> Logger::signal_to_ignore_user_;
+
+void Logger::ignore_signal(int signo)
+{
+    signal_to_ignore_user_.insert(signo);
+}
+
 void Logger::register_back_trace()
 {
-    static std::set<int> SignalsToIgnore = {SIGCONT, SIGURG, SIGIO, SIGPOLL, SIGCHLD, SIGWINCH};
+    static const std::set<int> SignalsToIgnore = {SIGCONT, SIGURG, SIGIO, SIGPOLL, SIGCHLD, SIGWINCH};
     for (auto i = 0; i <= SIGRTMAX; i++) {
         if (SignalsToIgnore.count(i) == 0) {
             ::signal(i, &Logger::singal_handler);
@@ -116,10 +123,10 @@ void Logger::singal_handler(int signo)
         log::error << "FATAL: Received unknown signal " << signo << log::endl;
         break;
     }
-    back_trace();
+    back_trace(signo);
 }
 
-void Logger::back_trace()
+void Logger::back_trace(int signo)
 {
     if (instance_) {
         auto logger = log::error << "Backtrace:\e[0m\n";
@@ -158,9 +165,14 @@ void Logger::back_trace()
 
         logger << log::endl;
         free(trace_strings);
-        instance_.reset();
+        if (signal_to_ignore_user_.count(signo) == 0) {
+            instance_.reset();
+        }
     }
-    exit(-1);
+    if (signal_to_ignore_user_.count(signo) == 0) {
+        log::error << "EXITING" << log::endl;
+        exit(-1);
+    }
 }
 
 }  // namespace impl

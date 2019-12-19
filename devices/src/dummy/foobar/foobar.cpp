@@ -68,6 +68,8 @@ StorageDataPtr Foobar::fetch()
         return nullptr;
     }
 
+    log::debug << "Foobar: Generating dummy data" << log::endl;
+
     // Length of variable-lengthed-buf fields, in bytes
     auto string_length = string_message_.size();
     // Total length of storage data
@@ -87,33 +89,6 @@ StorageDataPtr Foobar::fetch()
     memcpy(derived_data->data.string_message, string_message_.data(), string_length);
 
     return data;
-}
-
-/// See source for a code sample of,
-/// how to create and return a valid converted data
-/// @note Check the type of storage data first,
-SensorDataPtr Foobar::convert(StorageDataPtr& storage_data)
-{
-    if (!storage_data->is_type(StorageDataType::Dummy)) {
-        return SensorData::broken_data();
-    }
-
-    // Raw StorageData of Derived Type
-    auto raw_data = static_cast<FoobarStorageData*>(storage_data.get());
-
-    // Create a SensorData from StorageData
-    uint32_t string_length = raw_data->data.string_message_length;
-    uint32_t length = sizeof(DummySensorData) + raw_data->data.string_message_length;
-    auto sensor_data = SensorData::create_from(storage_data, SensorDataType::Dummy, length);
-    auto dummy_sensor_data = static_cast<DummySensorData*>(sensor_data.get());
-
-    // Parse Data
-    dummy_sensor_data->timestamp_intrinsic_ns = raw_data->get_timestamp_receive_ns();
-    dummy_sensor_data->int_value = raw_data->data.int_value;
-    dummy_sensor_data->string_length = string_length;
-    memcpy(dummy_sensor_data->string_buf, &(raw_data->data.string_message), string_length);
-
-    return sensor_data;
 }
 
 /// See source for a code sample of,
@@ -150,6 +125,35 @@ HeraErrno Foobar::adjust_parameter(DeviceParameterType type, const std::string& 
     default:
         return HeraErrno::UnimplementedParameter;
     }
+}
+
+/// See source for a code sample of,
+/// how to create and return a valid converted data
+/// @note Check the type of storage data first,
+SensorDataPtr Foobar::convert(StorageDataPtr& storage_data)
+{
+    if (!storage_data->is_type(StorageDataType::Dummy)) {
+        return SensorData::broken_data();
+    }
+
+    log::debug << "Foobar: Converting dummy data" << log::endl;
+
+    // Raw StorageData of Derived Type
+    auto raw_data = static_cast<FoobarStorageData*>(storage_data.get());
+
+    // Create a SensorData from StorageData
+    uint32_t string_length = raw_data->data.string_message_length;
+    uint32_t length = sizeof(DummySensorData) + raw_data->data.string_message_length;
+    auto sensor_data = SensorData::create_from(storage_data, SensorDataType::Dummy, length);
+    auto dummy_sensor_data = static_cast<DummySensorData*>(sensor_data.get());
+
+    // Parse Data
+    dummy_sensor_data->timestamp_intrinsic_ns = raw_data->get_timestamp_receive_ns();
+    dummy_sensor_data->int_value = raw_data->data.int_value;
+    dummy_sensor_data->string_length = string_length;
+    memcpy(dummy_sensor_data->string_buf, &(raw_data->data.string_message), string_length);
+
+    return sensor_data;
 }
 
 }  // namespace dummy

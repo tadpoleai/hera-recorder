@@ -97,6 +97,9 @@ size_t StorageData::write_to(std::ofstream& ofs) const
 /// @see Device::convert()
 SensorDataPtr SensorData::create_from(const StorageDataPtr& storage_data, SensorDataType type, uint32_t length)
 {
+    if (!storage_data) {
+        return broken_data();
+    }
     auto* data = reinterpret_cast<SensorData*>(new uint8_t[length]);
     data->length = length;
     data->sensor_data_type = type;
@@ -118,6 +121,40 @@ SensorDataPtr SensorData::broken_data()
 }
 
 
+SensorDataPtr SensorData::end_of_file()
+{
+    auto length = sizeof(SensorData);
+    auto* data = reinterpret_cast<SensorData*>(new uint8_t[length]);
+    data->length = length;
+    data->sensor_data_type = SensorDataType::EndOfFile;
+    data->sequence = 0;
+    return SensorDataPtr(data, [](void* ptr) { delete[](uint8_t*)(ptr); });
+}
+
+/// Check max_size and then copy to destination
+///
+bool SensorData::serialize(void* dest, size_t max_size)
+{
+    if (length > max_size) {
+        return false;
+    }
+    memcpy(dest, this, length);
+    return true;
+}
+
+/// Read length and then new a data and copy from source
+///
+SensorDataPtr SensorData::deserialize(void* src, size_t max_size)
+{
+    uint32_t length = *(uint32_t*)(src);
+    if (length > max_size) {
+        return nullptr;
+    }
+    auto* data = reinterpret_cast<SensorData*>(new uint8_t[length]);
+    memcpy(data, src, length);
+    return SensorDataPtr(data, [](void* ptr) { delete[](uint8_t*)(ptr); });
+}
+
 DisplayDataPtr DisplayData::broken_data()
 {
 
@@ -133,7 +170,7 @@ DisplayDataPtr DisplayData::broken_data()
 DisplayDataPtr DisplayData::create_from(std::vector<SensorDataPtr>&& sensor_datas)
 {
     if (sensor_datas.size() == 0) {
-        log::warn << "NO DATA" << log::endl;
+        log::warn << "DisplayParser: Sensor data size is 0" << log::endl;
         return broken_data();
     }
 
