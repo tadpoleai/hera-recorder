@@ -30,8 +30,11 @@ Device::Device(DeviceIdType id,
     status_(DeviceStatus::BeforeConnect),
     hera_errno_(HeraErrno::OK),
     is_record_(false),
-    storage_(nullptr),
     thread_fetch_(nullptr),
+    storage_(nullptr),
+    is_forward_(true),  ///< @todo
+    thread_forward_(nullptr),
+    ipc_queue_(ipc::IPCQueue<SensorData>::create()),
     essential_parameter_types_(std::move(essential_parameter_types))
 {}
 
@@ -61,6 +64,9 @@ HeraErrno Device::start()
         status_ = DeviceStatus::Connected;
         storage_ = new Storage(folder_ + "/" + type_ + "/" + name_, false, history_depth_);
         thread_fetch_ = new std::thread(&Device::fetch_thread_function, this);
+        if (is_forward_) {
+            thread_forward_ = new std::thread(&Device::forward_thread_function, this);
+        }
         return HeraErrno::OK;
     }
 
@@ -94,6 +100,11 @@ void Device::stop()
         if (storage_ != nullptr) {
             delete storage_;
             storage_ = nullptr;
+        }
+        if (thread_forward_ != nullptr) {
+            thread_forward_->join();
+            delete thread_forward_;
+            thread_forward_ = nullptr;
         }
         if (!read_mode_) {
             disconnect();
@@ -162,9 +173,13 @@ SensorDataPtr Device::read()
             storage_ = new Storage(folder_ + "/" + type_ + "/" + name_, true, 0);
         }
         auto storage_data = storage_->read();
-        return convert(storage_data);
+        if (storage_data) {
+            return convert(storage_data);
+        } else {
+            return SensorData::end_of_file();
+        }
     }
-    return nullptr;
+    return SensorData::end_of_file();
 }
 
 /// Read history of storage data
@@ -178,9 +193,11 @@ std::vector<SensorDataPtr> Device::history()
         sensor_datas.reserve(history_depth_);
         auto storage_datas = storage_->history();
         for (auto&& storage_data : storage_datas) {
-            auto sensor_data = convert(storage_data);
-            if (sensor_data->sensor_data_type != SensorDataType::Broken) {
-                sensor_datas.emplace_back(std::move(sensor_data));
+            if (storage_data) {
+                auto sensor_data = convert(storage_data);
+                if (sensor_data->sensor_data_type != SensorDataType::Broken) {
+                    sensor_datas.emplace_back(std::move(sensor_data));
+                }
             }
         }
         return sensor_datas;
@@ -229,9 +246,30 @@ void Device::fetch_thread_function()
     while (status_ == DeviceStatus::Connected) {
         auto new_data = fetch();
         if (new_data != nullptr) {
-            storage_->write(std::move(new_data), !is_record_);
+            if (is_forward_) {
+                forward_queue_.push(new_data);
+            }
+            storage_->write(new_data, !is_record_);
         }
     }
+}
+
+/// Check the status, if in DeviceStatus::Connected
+/// repeatly pop data from storaged data
+/// if it returns a non-nullptr value, pass it to storage
+void Device::forward_thread_function()
+{
+    ipc_queue_->open(id_, ipc::OpenMode::Write);
+    while (status_ == DeviceStatus::Connected) {
+        auto storage_data = forward_queue_.wait_pop();
+        if (storage_data != nullptr) {
+            auto sensor_data = convert(storage_data);
+            if (sensor_data->sensor_data_type != SensorDataType::Broken) {
+                ipc_queue_->write(sensor_data);
+            }
+        }
+    }
+    ipc_queue_->close();
 }
 
 }  // namespace hera

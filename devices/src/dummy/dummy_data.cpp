@@ -19,9 +19,10 @@ template<>
 std::string DisplayData::parse<SensorDataType::Dummy>(std::vector<SensorDataPtr>&& sensor_datas, bool& is_jpeg)
 {
     is_jpeg = false;
-    std::string result;
+    std::string result = "";
     for (auto&& data : sensor_datas) {
         if (data->sensor_data_type == SensorDataType::Dummy) {
+            log::debug << "Display: Parsing Dummy Data" << log::endl;
             auto data_impl = reinterpret_cast<dummy::DummySensorData*>(data.get());
             result += std::to_string(data_impl->sequence);
             result += " ";

@@ -12,7 +12,7 @@
 #include <unistd.h>
 
 #include <common/logger/logger.hpp>
-#include <thrift/protocol/TBinaryProtocol.h>
+#include <thrift/protocol/TJSONProtocol.h>
 #include <thrift/server/TSimpleServer.h>
 #include <thrift/transport/TBufferTransports.h>
 #include <thrift/transport/THttpServer.h>
@@ -66,6 +66,7 @@ int main(int argc, char** argv)
     }
 
     log::init(log_file);
+    log::ignore_signal(SIGTERM);
 
     int port = 9090;
     std::shared_ptr<daemon::AcquisitionManager> handler(new daemon::AcquisitionManager(folder_prefix, json_file));
@@ -73,7 +74,8 @@ int main(int argc, char** argv)
     std::shared_ptr<TProcessor> processor(new AcquisitionManagerProcessor(handler));
     std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     std::shared_ptr<TTransportFactory> transportFactory(new THttpServerTransportFactory());
-    std::shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
+    std::shared_ptr<TProtocolFactory> protocolFactory(new TJSONProtocolFactory());
+
 
     g_server_ptr = new TSimpleServer(processor, serverTransport, transportFactory, protocolFactory);
     log::info << "HeraMain: Daemon Started" << log::endl;

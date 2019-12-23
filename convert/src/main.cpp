@@ -1,6 +1,7 @@
 #include <unistd.h>
 
 #include "aligned_converter.hpp"
+#include "common/logger/logger.hpp"
 #include "common/utils/remapper.hpp"
 
 using namespace wayz::hera;
@@ -126,8 +127,8 @@ int main(int argc, char** argv)
         }
 
         Duration eta = rest / speed;
-        log::info << "Converter: " << converted << " / " << total << '\t'
-                  << "eta: " << eta.to_str_second() << log::endl;
+        log::info << "Converter: " << converted << " / " << total << '\t' << "eta: " << eta.to_str_second()
+                  << log::endl;
     }
 
     log::debug << "Conversion End" << log::endl;

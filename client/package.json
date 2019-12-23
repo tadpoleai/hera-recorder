@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "thrift": "thrift-typescript --sourceDir ../common/rpc/ --outDir src/core/gen-ts hera.thrift",
+    "thrift": "thrift-typescript --sourceDir ../daemon/rpc/ --outDir src/core/gen-ts hera.thrift",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",

@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "common/hera_errno.h"
+#include "common/ipc/ipc_queue.hpp"
 #include "common/logger/logger.hpp"
 #include "device_data.hpp"
 #include "storage.hpp"
@@ -212,7 +213,7 @@ public:
     }
 
     ///
-    /// @brief Get the if device is recording
+    /// @brief Get if device is recording
     ///
     /// @return true device is recording
     /// @return false device is not recording
@@ -221,8 +222,16 @@ public:
         return is_record_;
     }
 
-    /// @todo To realize forwarding
-    // bool get_forward() const;
+    ///
+    /// @brief Get if device is forwarding sensor data (using IPC)
+    ///
+    /// @return true device is forwarding sensor data
+    /// @return false device is not forwarding sensor data
+    ///
+    inline bool get_forward() const noexcept
+    {
+        return is_forward_;
+    }
 
     ///
     /// @brief Get the parameters
@@ -252,7 +261,10 @@ protected:
     /// @note This function should be implemented by derived class.
     /// @note This function will called by start();
     /// @see start()
-    virtual HeraErrno connect() = 0;
+    virtual HeraErrno connect()
+    {
+        return HeraErrno::UnimplementedDriver;
+    }
 
     ///
     /// @brief Disconnect from derived device
@@ -260,7 +272,7 @@ protected:
     /// @return HeraErrno operation result
     /// @note This function should be implemented by derived class.
     /// @note This function will called by stop();
-    virtual void disconnect() = 0;
+    virtual void disconnect() {}
 
     ///
     /// @brief Fetch from d device
@@ -274,18 +286,10 @@ protected:
     /// If derived device only provides asynchronized interface, await it inside this function.
     /// @note This function must return within a certain timeout, even if no data comes,
     /// otherwise the main thread will be blocked during deconstruction of device.
-    virtual StorageDataPtr fetch() = 0;
-
-    ///
-    /// @brief Convert from storage data to sensor data
-    ///
-    /// @param storage_data storage data to convert
-    /// @return SensorDataPtr shared pointer to converted sensor data if convertion succeed,
-    /// otherwise return SensorData::broken_data()
-    /// @note This function should be implemented by derived class.
-    /// @note Caller must check if return value is broken_data
-    /// @note Do not return nullptr in derived implementions
-    virtual SensorDataPtr convert(StorageDataPtr& storage_data) = 0;
+    virtual StorageDataPtr fetch()
+    {
+        return nullptr;
+    }
 
     ///
     /// @brief Adjust a single parameter after start()/connect()
@@ -297,7 +301,24 @@ protected:
     /// @note Some parameter is immutable during operation
     /// @note This function should be implemented by derived class.
     /// @note This function will be called by parameter()
-    virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) = 0;
+    virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value)
+    {
+        return HeraErrno::UnimplementedDriver;
+    }
+
+    ///
+    /// @brief Convert from storage data to sensor data
+    ///
+    /// @param storage_data storage data to convert
+    /// @return SensorDataPtr shared pointer to converted sensor data if convertion succeed,
+    /// otherwise return SensorData::broken_data()
+    /// @note This function should be implemented by derived class.
+    /// @note Caller must check if return value is broken_data
+    /// @note Do not return nullptr in derived implementions
+    virtual SensorDataPtr convert(StorageDataPtr& storage_data)
+    {
+        return SensorData::broken_data();
+    }
 
 private:
     ///
@@ -312,7 +333,10 @@ private:
     ///
     void fetch_thread_function();
 
-    // void forward_thread_function();
+    ///
+    /// @brief function of forwarding thread
+    ///
+    void forward_thread_function();
 
 private:
     const DeviceIdType id_;     ///< device id
@@ -335,11 +359,16 @@ private:
     HeraErrno hera_errno_;          ///< device error code
     std::string reason_;            ///< extra error reason
 
-    volatile bool is_record_;      ///< if device is recording
-    Storage* storage_;             ///< storage for this device
-    std::thread* thread_fetch_;    ///< fetching thread
+    volatile bool is_record_;    ///< if device is recording
+    std::thread* thread_fetch_;  ///< fetching thread
+    Storage* storage_;           ///< storager for this device
 
-    std::vector<DeviceParameterType> essential_parameter_types_;  ///< essential parameters types
+    const bool is_forward_;                   ///< if device configured to forward
+    std::thread* thread_forward_;             ///< forwarding thread
+    ThreadQueue<StorageData> forward_queue_;  ///< StorageData(device raw data) queue, ready for forwarding
+    decltype(ipc::IPCQueue<SensorData>::create()) ipc_queue_;  ///< IPC queue for sensor data forwarding
+
+    const std::vector<DeviceParameterType> essential_parameter_types_;  ///< essential parameters types
 };
 
 }  // namespace hera

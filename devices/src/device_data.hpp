@@ -159,6 +159,34 @@ public:
     ///
     static SensorDataPtr broken_data();
 
+    ///
+    /// @brief Create an end of file sensor_data
+    ///
+    /// @return SensorDataPtr shared pointer to an end of file sensor_data
+    ///
+    static SensorDataPtr end_of_file();
+
+    ///
+    /// @brief Serialize to memory
+    ///
+    /// @param dest destination pointer
+    /// @param max_size max size of destination
+    /// @return true succeed
+    /// @return false failed
+    ///
+    /// @see ipc::IPCQueue
+    bool serialize(void* dest, size_t max_size);
+
+    ///
+    /// @brief Deserialize from memory
+    ///
+    /// @param src source pointer
+    /// @param max_size max size of source
+    /// @return SensorDataPtr a shared pointer to Deserialized SensorData, if succeed, otherwise nullptr
+    ///
+    /// @see ipc::IPCQueue
+    static SensorDataPtr deserialize(void* src, size_t max_size);
+
 public:
     uint32_t length;                  ///< Total length, in bytes
     SensorDataType sensor_data_type;  ///< Sensor data type

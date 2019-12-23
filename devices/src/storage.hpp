@@ -49,7 +49,7 @@ public:
     ///
     /// @param data a shared pointer to storage data
     /// @param only_history only push to history
-    void write(StorageDataPtr&& data, const bool only_history);
+    void write(StorageDataPtr& data, const bool only_history);
 
     ///
     /// @brief Read storage data from storage

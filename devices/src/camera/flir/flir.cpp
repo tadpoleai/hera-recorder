@@ -19,6 +19,8 @@ namespace wayz {
 namespace hera {
 namespace camera {
 
+#ifdef DEVICE_DRIVER_FLIR
+
 /// Convert IP address to uint32_t(little-endian),
 /// after that, use FLIR's SDK BusManager to connect.
 ///
@@ -169,6 +171,26 @@ StorageDataPtr Flir::fetch()
     return data;
 }
 
+/// @todo Add muttable parameter for EV, Shutter Range, Brightneess, etc.
+/// @todo Add immutable parameter for FPS (Need to pass parameter to Tron Sync Board)
+HeraErrno Flir::adjust_parameter(DeviceParameterType type, const std::string& value)
+{
+    switch (type) {
+    case DeviceParameterType::IpAddress: {
+        return HeraErrno::ImmutableParameter;
+        break;
+    }
+    default:
+        return HeraErrno::UnimplementedParameter;
+    }
+}
+
+HeraErrno Flir::handle_flir_error(const FlyCapture2::Error& error)
+{
+    return handle_error(HeraErrno::CanNotOpenCamera, error.GetDescription());
+}
+#endif
+
 /// For jpeg format, just copy
 ///
 SensorDataPtr Flir::convert(StorageDataPtr& storage_data)
@@ -196,25 +218,6 @@ SensorDataPtr Flir::convert(StorageDataPtr& storage_data)
         return SensorData::broken_data();
     }
     return SensorData::broken_data();
-}
-
-/// @todo Add muttable parameter for EV, Shutter Range, Brightneess, etc.
-/// @todo Add immutable parameter for FPS (Need to pass parameter to Tron Sync Board)
-HeraErrno Flir::adjust_parameter(DeviceParameterType type, const std::string& value)
-{
-    switch (type) {
-    case DeviceParameterType::IpAddress: {
-        return HeraErrno::ImmutableParameter;
-        break;
-    }
-    default:
-        return HeraErrno::UnimplementedParameter;
-    }
-}
-
-HeraErrno Flir::handle_flir_error(const FlyCapture2::Error& error)
-{
-    return handle_error(HeraErrno::CanNotOpenCamera, error.GetDescription());
 }
 
 }  // namespace camera

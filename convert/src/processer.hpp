@@ -16,6 +16,7 @@
 #include <string>
 #include <thread>
 
+#include "common/logger/logger.hpp"
 #include "common/utils/remapper.hpp"
 #include "devices/src/device_factory.hpp"
 #include "ros_message.hpp"

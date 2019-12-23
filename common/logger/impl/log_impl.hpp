@@ -28,6 +28,7 @@ class Logger;
 class Logger {
 public:
     static void onlyprint();
+    static void ignore_signal(int signo);
     static bool init(const std::string& file);
     static void set_level(LogLevel level);
     static void stop();
@@ -37,6 +38,7 @@ public:
 
 private:
     static std::unique_ptr<Logger> instance_;
+    static std::set<int> signal_to_ignore_user_;
 
 private:
     Logger();
@@ -51,7 +53,7 @@ private:
 
     void register_back_trace();
     static void singal_handler(int signo);
-    static void back_trace();
+    static void back_trace(int signo);
 
 private:
     bool inited_;

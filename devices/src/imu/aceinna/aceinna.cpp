@@ -79,6 +79,18 @@ StorageDataPtr Aceinna::fetch()
     return data;
 }
 
+HeraErrno Aceinna::adjust_parameter(DeviceParameterType type, const std::string& value)
+{
+    switch (type) {
+    case DeviceParameterType::Kernel:
+    case DeviceParameterType::SerialMsgType:
+        return HeraErrno::ImmutableParameter;
+    default:
+        return HeraErrno::UnimplementedParameter;
+    }
+    return HeraErrno::Success;
+}
+
 /// Multiple raw data by defined granularity
 ///
 SensorDataPtr Aceinna::convert(StorageDataPtr& storage_data)
@@ -104,18 +116,6 @@ SensorDataPtr Aceinna::convert(StorageDataPtr& storage_data)
     }
 
     return sensor_data;
-}
-
-HeraErrno Aceinna::adjust_parameter(DeviceParameterType type, const std::string& value)
-{
-    switch (type) {
-    case DeviceParameterType::Kernel:
-    case DeviceParameterType::SerialMsgType:
-        return HeraErrno::ImmutableParameter;
-    default:
-        return HeraErrno::UnimplementedParameter;
-    }
-    return HeraErrno::Success;
 }
 
 }  // namespace imu

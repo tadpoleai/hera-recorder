@@ -10,6 +10,7 @@
 
 #include "aligned_converter.hpp"
 
+#include "common/logger/logger.hpp"
 #include "common/utils/get_folder_content.hpp"
 
 namespace wayz {
@@ -18,9 +19,7 @@ namespace convert {
 
 /// Scan the recorded data folder and construct processers.
 /// Open the bag file for writing, and init the writing thread
-AlignedConverter::AlignedConverter(const std::string& folder,
-                                   const std::string& bagfile,
-                                   RemapperPtr&& remapper) :
+AlignedConverter::AlignedConverter(const std::string& folder, const std::string& bagfile, RemapperPtr&& remapper) :
     write_thread_(nullptr),
     running_(false),
     total_size_(0),
@@ -43,17 +42,14 @@ AlignedConverter::AlignedConverter(const std::string& folder,
             }
 
             for (const auto& device : devices.folders) {
-                auto processer = Processer::create(type.basename,
-                                                   vendor.basename,
-                                                   device.basename,
-                                                   folder,
-                                                   remapper_.get());
+                auto processer =
+                        Processer::create(type.basename, vendor.basename, device.basename, folder, remapper_.get());
                 if (processer->is_open()) {
                     processers_.emplace_back(std::move(processer));
                     auto device_size = get_folder_content(device.fullname).total_size;
                     total_size_ = total_size_ + device_size;
-                    log::debug << "Add device " << type.basename << "/" << vendor.basename << "/"
-                               << device.basename << ", sized " << device_size << log::endl;
+                    log::debug << "Add device " << type.basename << "/" << vendor.basename << "/" << device.basename
+                               << ", sized " << device_size << log::endl;
                 }
             }
         }

@@ -6,8 +6,8 @@
 
 #include "common/hera_errno.h"
 #include "common/logger/logger.hpp"
-#include "common/rpc/gen-cpp/AcquisitionManager.h"
 #include "common/third_party/json.hpp"
+#include "daemon/rpc/gen-cpp/AcquisitionManager.h"
 #include "devices/src/device_factory.hpp"
 
 using json = nlohmann::json;

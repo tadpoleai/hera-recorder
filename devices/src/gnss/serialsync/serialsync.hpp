@@ -119,9 +119,9 @@ public:
 
     virtual StorageDataPtr fetch() override;
 
-    virtual SensorDataPtr convert(StorageDataPtr& storage_data) override;
-
     virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
+
+    virtual SensorDataPtr convert(StorageDataPtr& storage_data) override;
 
 private:
     static constexpr size_t HistoryDepth_ = 1;  ///< History Depth, 1

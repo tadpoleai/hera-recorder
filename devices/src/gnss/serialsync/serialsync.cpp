@@ -32,13 +32,11 @@ HeraErrno Serialsync::connect()
 
     serial_port_ = new SerialPortSentence(kernel_, SerialConfig(baud_rate_));
     if (!serial_port_->is_opened()) {
-        return handle_error(HeraErrno::CanNotOpenTtyDevice,
-                            "Can not open primary device '" + kernel_ + "'");
+        return handle_error(HeraErrno::CanNotOpenTtyDevice, "Can not open primary device '" + kernel_ + "'");
     }
     queue_ = serial_port_->get_queue_handler();
 
-    serial_port_auxiliary_ =
-            SerialTransport::create(kernel_auxiliary_, SerialConfig(baud_rate_auxiliary_));
+    serial_port_auxiliary_ = SerialTransport::create(kernel_auxiliary_, SerialConfig(baud_rate_auxiliary_));
     if (!serial_port_auxiliary_->is_opened()) {
         return handle_error(HeraErrno::CanNotOpenTtyDevice,
                             "Can not open auxiliary device '" + kernel_auxiliary_ + "'");
@@ -182,6 +180,21 @@ StorageDataPtr Serialsync::fetch()
     return data;
 }
 
+HeraErrno Serialsync::adjust_parameter(DeviceParameterType type, const std::string& value)
+{
+    switch (type) {
+    case DeviceParameterType::Kernel:
+    case DeviceParameterType::KernelAuxiliary:
+    case DeviceParameterType::BaudRate:
+    case DeviceParameterType::BaudRateAuxiliary:
+    case DeviceParameterType::SerialMsgType:
+        return HeraErrno::ImmutableParameter;
+    default:
+        return HeraErrno::UnimplementedParameter;
+    }
+    return HeraErrno::Success;
+}
+
 SensorDataPtr Serialsync::convert(StorageDataPtr& storage_data)
 {
     if (!storage_data->is_type(StorageDataType::GnssSerialsyncNmea)) {
@@ -224,8 +237,8 @@ SensorDataPtr Serialsync::convert(StorageDataPtr& storage_data)
 
         // Tokenize nmea sentence
         std::string token;
-        std::string nmea_sentence_str = std::string((char*)raw_data->data.nmea_sentence,
-                                                    raw_data->data.nmea_sentence_length);
+        std::string nmea_sentence_str =
+                std::string((char*)raw_data->data.nmea_sentence, raw_data->data.nmea_sentence_length);
         std::stringstream nmea(nmea_sentence_str);
 
         // Sentence Identifier (Token 1)
@@ -377,8 +390,8 @@ SensorDataPtr Serialsync::convert(StorageDataPtr& storage_data)
                                                       std::bit_xor<uint8_t>());
 
         if (reported_checksum != calculated_checksum) {
-            throw std::runtime_error("Checksum failed with reported 0x" + token +
-                                     " and calculated " + std::to_string(calculated_checksum));
+            throw std::runtime_error("Checksum failed with reported 0x" + token + " and calculated " +
+                                     std::to_string(calculated_checksum));
         }
 
         // Copy data
@@ -391,21 +404,6 @@ SensorDataPtr Serialsync::convert(StorageDataPtr& storage_data)
     }
 
     return sensor_data;
-}
-
-HeraErrno Serialsync::adjust_parameter(DeviceParameterType type, const std::string& value)
-{
-    switch (type) {
-    case DeviceParameterType::Kernel:
-    case DeviceParameterType::KernelAuxiliary:
-    case DeviceParameterType::BaudRate:
-    case DeviceParameterType::BaudRateAuxiliary:
-    case DeviceParameterType::SerialMsgType:
-        return HeraErrno::ImmutableParameter;
-    default:
-        return HeraErrno::UnimplementedParameter;
-    }
-    return HeraErrno::Success;
 }
 
 }  // namespace gnss
