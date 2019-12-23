@@ -27,10 +27,6 @@ add_executable(
 target_link_libraries(${PROJECT_NAME} hera-common hera-devices ${THRIFT})
 
 install(
-  FILES script/hera-daemon
-  PERMISSIONS OWNER_EXECUTE OWNER_READ
-  DESTINATION /etc/init.d)
-install(
   FILES script/hera-daemon.service
   PERMISSIONS OWNER_EXECUTE OWNER_READ
   DESTINATION /lib/systemd/system)
@@ -38,3 +34,6 @@ install(
   TARGETS hera-daemon
   PERMISSIONS OWNER_EXECUTE OWNER_READ
   DESTINATION /usr/local/bin)
+install(
+  CODE "execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/script/install-extra.sh)"
+)
