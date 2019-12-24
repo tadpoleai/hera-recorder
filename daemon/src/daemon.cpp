@@ -12,7 +12,7 @@
 #include <unistd.h>
 
 #include <common/logger/logger.hpp>
-#include <thrift/protocol/TJSONProtocol.h>
+#include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/server/TSimpleServer.h>
 #include <thrift/transport/TBufferTransports.h>
 #include <thrift/transport/THttpServer.h>
@@ -53,29 +53,27 @@ int main(int argc, char** argv)
     sigaction(SIGINT, &sig_int_handler, NULL);
 
     std::string folder_prefix = "./";
-    std::string json_file = "./profiles.json";
+    std::string profile_json = "./profiles.json";
     std::string log_file = "hera-daemon";
     if (argc >= 2) {
         folder_prefix = argv[1];
     }
     if (argc >= 3) {
-        json_file = argv[2];
+        profile_json = argv[2];
     }
     if (argc >= 4) {
         log_file = argv[3];
     }
 
     log::init(log_file);
-    log::ignore_signal(SIGTERM);
 
     int port = 9090;
-    std::shared_ptr<daemon::AcquisitionManager> handler(new daemon::AcquisitionManager(folder_prefix, json_file));
+    std::shared_ptr<daemon::AcquisitionManager> handler(new daemon::AcquisitionManager(folder_prefix, profile_json));
     g_handler_ptr = handler.get();
     std::shared_ptr<TProcessor> processor(new AcquisitionManagerProcessor(handler));
     std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     std::shared_ptr<TTransportFactory> transportFactory(new THttpServerTransportFactory());
-    std::shared_ptr<TProtocolFactory> protocolFactory(new TJSONProtocolFactory());
-
+    std::shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
 
     g_server_ptr = new TSimpleServer(processor, serverTransport, transportFactory, protocolFactory);
     log::info << "HeraMain: Daemon Started" << log::endl;

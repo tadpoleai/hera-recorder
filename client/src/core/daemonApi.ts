@@ -1,6 +1,6 @@
 import {
   TBufferedTransport,
-  TJSONProtocol,
+  TBinaryProtocol,
   createHttpClient,
   createHttpConnection,
 } from 'thrift';
@@ -84,7 +84,7 @@ const pendingResult: ISimpleResult = {
 
 const connectionOptions = {
   transport: TBufferedTransport,
-  protocol: TJSONProtocol,
+  protocol: TBinaryProtocol,
   https: config.useHttps,
   path: config.path,
   headers: {

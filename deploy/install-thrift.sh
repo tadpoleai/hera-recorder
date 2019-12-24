@@ -7,8 +7,7 @@
 set -e
 set -v
 
-
-VERSION="0.12.0"
+VERSION="0.13.0"
 
 sudo apt-get update
 sudo apt-get install -y \
@@ -47,7 +46,9 @@ echo $(pwd)
     --without-python --without-py3 --without-perl --without-php --without-php_extension --without-ruby \
     --without-haskell --without-go --without-rs --without-cl --without-haxe --without-d \
     --disable-tests --disable-tutorial \
-    CFLAGS="-g0 -O3" CXXFLAGS="-g0 -O3"
+    CFLAGS="-g -O2" CXXFLAGS="-g -O2"
 
-make -j
+make -j 3
 sudo make install
+
+sudo cp /usr/local/lib/libthrift-0.13.0.so /usr/lib/libthrift-0.13.0.so
