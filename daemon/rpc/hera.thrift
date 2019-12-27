@@ -34,7 +34,7 @@ struct DeviceInformation {
 struct Status {
     1:required bool inited;
     2:required bool record;
-    3:required string folder;
+    3:required string filename;
     10:required list<DeviceInformation> devices;
 }
 

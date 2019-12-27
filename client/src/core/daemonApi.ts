@@ -66,7 +66,7 @@ const daemonStatus: IDaemonStatus = {
   status: {
     inited: false,
     record: false,
-    folder: '',
+    filename: '',
     devices: [],
   },
   profiles: [],

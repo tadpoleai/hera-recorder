@@ -12,7 +12,9 @@ namespace wayz {
 namespace hera {
 namespace daemon {
 
-void AcquisitionManager::start(Result& result, const std::vector<DeviceInitializer>& devices, const std::string& folder)
+void AcquisitionManager::start(Result& result,
+                               const std::vector<DeviceInitializer>& devices,
+                               const std::string& filename)
 {
     log::info << "Acquisition::start called" << log::endl;
     // Check if already created
@@ -25,18 +27,18 @@ void AcquisitionManager::start(Result& result, const std::vector<DeviceInitializ
         return handle_error(result, HeraErrno::EmptyDeviceList);
     }
 
-    // Check if storage_folder is valid
-    std::regex folder_regex("[a-zA-Z0-9_]{1,64}");
-    if (!std::regex_match(folder, folder_regex)) {
-        return handle_error(result, HeraErrno::InvalidStorageFolderName, folder + " is invalid");
+    // Check if storage filename is valid
+    std::regex filename_regex("[a-zA-Z0-9_]{1,64}");
+    if (!std::regex_match(filename, filename_regex)) {
+        return handle_error(result, HeraErrno::InvalidStorageFileName, filename + " is invalid");
     }
-    folder_ = folder;
+    filename_ = filename;
 
     // Precheck device list for type and name
     std::regex name_regex("[a-zA-Z0-9_]{1,32}");
     for (const auto& device : devices) {
         // Check Type
-        if (!DeviceFactory::check_type(device.type)) {
+        if (!device::DeviceFactory::check_type(device.type)) {
             return handle_error(result, HeraErrno::InvalidDeviceType, device.type + " is invalid");
         }
         // Check Name
@@ -47,9 +49,10 @@ void AcquisitionManager::start(Result& result, const std::vector<DeviceInitializ
 
     // Start calling factory function
     auto id = 0;
-    std::string full_folder = FolderPrefix_ + folder;
+    std::string full_file_name = FileNamePrefix_ + filename + FileNameSuffix_;
+    storage_ = storage::StorageManager::open(full_file_name, false);
     for (const auto& device : devices) {
-        devices_.emplace_back(DeviceFactory::create(id++, device.type, device.name, full_folder));
+        devices_.emplace_back(device::DeviceFactory::create(id++, device.type, device.name, storage_.get()));
         auto device_ptr = devices_.back().get();
 
         // Define parameters
@@ -60,19 +63,20 @@ void AcquisitionManager::start(Result& result, const std::vector<DeviceInitializ
             }
         }
     }
+    storage_->finish_add_device();
 
     // Async start
     bool failed = false;
     std::string reason = "";
-    std::vector<std::pair<Device*, std::future<HeraErrno>>> promise_pairs;
+    std::vector<std::pair<device::Device*, std::future<HeraErrno>>> promise_pairs;
     for (const auto& device : devices_) {
-        auto promise = std::async(std::launch::async, &Device::start, device.get());
+        auto promise = std::async(std::launch::async, &device::Device::start, device.get());
         promise_pairs.emplace_back(std::make_pair(device.get(), std::move(promise)));
     }
     for (auto& promise : promise_pairs) {  // Promise all
         if (promise.second.get() != HeraErrno::OK) {
             failed = true;
-            reason += promise.first->get_type() + "/" + promise.first->get_name();
+            reason += promise.first->get_vendor_type() + "/" + promise.first->get_name();
             reason += " errored " + promise.first->get_reason() + "; ";
         }
     }

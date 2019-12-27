@@ -1,16 +1,23 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <unordered_map>
 
 namespace wayz {
 namespace hera {
+namespace common {
 
 class Remapper;
 using RemapperPtr = std::unique_ptr<Remapper>;
 
 class Remapper {
 public:
+    static auto empty()
+    {
+        return RemapperPtr(new Remapper());
+    }
+
     static auto create(const std::string& json_filename)
     {
         return RemapperPtr(new Remapper(json_filename));
@@ -27,11 +34,14 @@ public:
     }
 
 private:
+    Remapper() = default;
+
     Remapper(const std::string& json_filename);
 
 private:
     std::unordered_map<std::string, std::string> remap_;
 };
 
+}  // namespace common
 }  // namespace hera
 }  // namespace wayz

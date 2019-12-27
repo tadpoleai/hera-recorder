@@ -11,3 +11,7 @@ file(GLOB_RECURSE ALL_SRC "**/*.cpp")
 include_directories("../" "/usr/local/include/")
 add_library(${PROJECT_NAME} STATIC ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} Threads::Threads)
+
+if(GIT_INFO_ENABLED)
+  target_link_libraries(${PROJECT_NAME} hera-common-git-info)
+endif()

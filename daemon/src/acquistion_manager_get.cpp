@@ -21,7 +21,7 @@ void AcquisitionManager::append_status(Result& result, const bool is_data)
 {
     result.status.inited = inited_;
     result.status.record = record_;
-    result.status.folder = folder_;
+    result.status.filename = filename_;
 
     std::vector<std::future<DeviceInformation>> promises;
     // clang-format off
@@ -29,7 +29,7 @@ void AcquisitionManager::append_status(Result& result, const bool is_data)
         promises.emplace_back(std::async(std::launch::async, [result, is_data](auto* device) {
             DeviceInformation info;
             info.id = device->get_id();
-            info.type = device->get_type();
+            info.type = device->get_vendor_type();
             info.name = device->get_name();
             info.status = static_cast<int32_t>(device->get_status());
             info.forward = false;
@@ -39,12 +39,12 @@ void AcquisitionManager::append_status(Result& result, const bool is_data)
 
             info.data.valid = false;
             if (is_data || true) {
-                auto disp_data = DisplayData::create_from(device->history());
+                auto disp_data = device::data::DisplayData::create_from(device->history());
                 info.data.valid = disp_data->is_valid;
                 info.data.isJpeg = disp_data->is_jpeg;
                 info.data.sequence = disp_data->sequence;
-                info.data.timeSecond = disp_data->timestamp_intrinsic_ns / OneSecond;
-                info.data.timeNanosecond = disp_data->timestamp_intrinsic_ns % OneSecond;
+                info.data.timeSecond = disp_data->timestamp_intrinsic_ns / time::OneSecond;
+                info.data.timeNanosecond = disp_data->timestamp_intrinsic_ns % time::OneSecond;
                 info.data.data = std::move(disp_data->data);
             }
             return info;

@@ -49,12 +49,12 @@ enum HeraErrno {
     CameraTimeShiftOutOfRange = 402,
     LidarTimeShiftOutOfRange = 403,
 
-    StorageFolderNoSet = 500,
-    StorageFolderAlreadySet = 501,
+    StorageFileNoSet = 500,
+    StorageFileAlreadySet = 501,
     CanNotCreateFolder = 502,
     CanNotOpenFile = 503,
     WriteError = 504,
-    InvalidStorageFolderName = 505,
+    InvalidStorageFileName = 505,
 
     DeviceNotReady = 600,
     DeviceAlreadyConnected = 601,

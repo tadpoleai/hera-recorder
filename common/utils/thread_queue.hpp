@@ -14,6 +14,7 @@ using namespace std::chrono_literals;
 
 namespace wayz {
 namespace hera {
+namespace common {
 
 ///
 /// @brief Multi-thread-safe queue of shared/unique pointer
@@ -51,9 +52,10 @@ public:
 
     ThreadQueue(const ThreadQueue&) = delete;
     ThreadQueue& operator=(const ThreadQueue&) = delete;
+    ThreadQueue(ThreadQueue&&) = default;
 
     ///
-    /// @brief Emplace a storage data into queue (for unique pointer)
+    /// @brief Emplace a device data into queue (for unique pointer)
     ///
     /// @param data data to push
     /// @return true operation succeed
@@ -77,7 +79,7 @@ public:
     }
 
     ///
-    /// @brief Push a storage data into queue (for shared pointer)
+    /// @brief Push a device data into queue (for shared pointer)
     ///
     /// @param data data to push
     /// @param only_history only push to history
@@ -152,7 +154,7 @@ public:
     ///
     /// @return std::vector<DataType> (in shared mode) a vector containing history data
     ///
-    std::vector<DataType> history(typename std::enable_if<shared, bool>* _ = 0)
+    std::vector<DataType> history(typename std::enable_if<shared, bool>* _ = 0) const
     {
         std::unique_lock<std::mutex> lock(mutex_);
         std::vector<DataType> datas;
@@ -174,5 +176,6 @@ private:
     std::condition_variable cond_;                                   ///< condition Variable for push/pop operations
 };
 
+}  // namespace common
 }  // namespace hera
 }  // namespace wayz
