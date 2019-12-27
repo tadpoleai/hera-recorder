@@ -1,18 +1,33 @@
-cd client
-npm i
-npm run thrift
-npm run build
-if [ $? -ne 0 ];then
-        echo "client error"
-fi
-
-cd ..
 mkdir -p build
 cd build
-cmake ..
-make -j
-if [ $? -ne 0 ];then
-        echo "build error"
+
+cmake .. -Dwith-all=1 -Dwith-driver-all=1
+if [ $? -ne 0 ]; then
+    echo "cmake error"
 fi
 
-tar -czvf install.tar.gz  convert/hera-convert daemon/hera-daemon ../daemon/script ../client/dist ../README.md ../INSTALLATION.md ../client/USAGE.md ../convert/USAGE.md ../deploy/*.md ../jenkins_deploy.sh
+make -j
+if [ $? -ne 0 ]; then
+    echo "build error"
+fi
+
+make client
+if [ $? -ne 0 ]; then
+    echo "build client error"
+fi
+
+echo "Packaging artifacts"
+tar -czvf \
+    install.tar.gz \
+    daemon/hera-daemon \
+    convert/hera-convert \
+    replay/hera-replay \
+    slam/hera-slam \
+    ../daemon/script \
+    ../client/dist \
+    ../README.md \
+    ../INSTALLATION.md \
+    ../client/USAGE.md \
+    ../convert/USAGE.md \
+    ../deploy/*.md \
+    ../jenkins_deploy.sh

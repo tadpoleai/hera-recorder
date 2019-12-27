@@ -6,9 +6,9 @@
 
 #include "common/hera_errno.h"
 #include "common/logger/logger.hpp"
-#include "common/rpc/gen-cpp/AcquisitionManager.h"
 #include "common/third_party/json.hpp"
-#include "devices/src/device_factory.hpp"
+#include "daemon/rpc/gen-cpp/AcquisitionManager.h"
+#include "device/include.hpp"
 
 using json = nlohmann::json;
 
@@ -18,10 +18,11 @@ namespace daemon {
 
 class AcquisitionManager final : public AcquisitionManagerIf {
 public:
-    AcquisitionManager(const std::string& folder_prefix = "./", const std::string& json_file = "./profiles.json") :
+    AcquisitionManager(const std::string& filename_prefix = "./", const std::string& json_file = "./profiles.json") :
         record_(false),
         inited_(false),
-        FolderPrefix_(folder_prefix),
+        FileNamePrefix_(filename_prefix),
+        FileNameSuffix_(".her"),
         JsonFile_(json_file)
     {
         read_profiles();
@@ -31,8 +32,7 @@ public:
         reset();
     }
 
-    // Implementation
-    void get(Result& result) override;
+    // Control
     void start(Result& result,
                const std::vector<DeviceInitializer>& devices,
                const std::string& storage_folder) override;
@@ -46,19 +46,27 @@ public:
     void getProfile(ProfileResult& result) override;
     void updateProfile(ProfileResult& result, const std::string& json_str) override;
 
+    // Data
+    void get(Result& result, const bool is_data) override;
+
 private:
     void handle_error(Result& result, HeraErrno hera_errno, std::string&& reason = "", bool die = false);
     void handle_success(Result& result);
-    void append_status(Result& result);
+
+    void append_status(Result& result, const bool is_data = false);
+
     void read_profiles();
+    void get_single_data();
 
 private:
-    std::vector<DevicePtr> devices_;
+    std::vector<device::DevicePtr> devices_;
     bool record_;
     bool inited_;
 
-    const std::string FolderPrefix_;
-    std::string folder_;
+    const std::string FileNamePrefix_;
+    const std::string FileNameSuffix_;
+    std::string filename_;
+    storage::StorageManagerPtr storage_;
 
     const std::string JsonFile_;
     json json_instance_;

@@ -10,7 +10,7 @@
 #include <string>
 
 #include "common/utils/thread_queue.hpp"
-#include "common/utils/timestamp.hpp"
+#include "common/utils/time.hpp"
 #include "log_level.hpp"
 
 namespace wayz {
@@ -29,23 +29,24 @@ public:
 };
 
 class LogString;
-using LogQueue = ThreadQueue<LogString, false>;
+using LogQueue = common::ThreadQueue<LogString, false>;
 
 class LogString final {
 public:
-    LogString(LogLevel level, const Timestamp& ts, std::string&& str) : level(level), ts(ts), str(std::move(str)) {}
+    LogString(LogLevel level, const time::Timestamp& ts, std::string&& str) : level(level), ts(ts), str(std::move(str))
+    {}
     LogLevel level;
-    Timestamp ts;
+    time::Timestamp ts;
     std::string str;
 };
 
 class LogStringStream final : public std::stringstream {
 public:
-    LogStringStream(LogQueue* queue, bool valid, LogLevel level, Timestamp&& ts) :
+    LogStringStream(LogQueue* queue, bool valid, LogLevel level, time::Timestamp&& ts) :
         std::stringstream(std::ios_base::out),
         valid_(valid),
         level_(level),
-        ts_(std::forward<Timestamp>(ts)),
+        ts_(std::forward<time::Timestamp>(ts)),
         queue_(queue)
     {}
 
@@ -62,7 +63,7 @@ public:
     inline void operator<<(const LogEndl& endl)
     {
         if (valid_ && queue_ != nullptr) {
-            queue_->push(std::make_unique<LogString>(level_, ts_, str()));
+            queue_->emplace(std::make_unique<LogString>(level_, ts_, str()));
         }
     }
 
@@ -80,7 +81,7 @@ public:
 private:
     bool valid_;
     LogLevel level_;
-    Timestamp ts_;
+    time::Timestamp ts_;
     LogQueue* queue_;
 };
 

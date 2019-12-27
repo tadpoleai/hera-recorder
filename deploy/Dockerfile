@@ -2,7 +2,7 @@
 # Copyright 2018 Wayz.ai. All Rights Reserved.
 #
 
-# TAG: v0.1
+# TAG: v0.2
 # Everytime this file is modified, please add TAG by 0.1
 
 FROM registry.newayz.com/autonomy/leta-localization_core:latest

@@ -140,10 +140,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop } from "vue-property-decorator";
-import { IParameter, IDevice, IDeviceInfo } from "@/core/daemonApi";
-import deviceDefine from "@/core/deviceDefine";
-import inputRules from "@/core/inputRules";
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import { IParameter, IDevice, IDeviceInfo } from '@/core/daemonApi';
+import deviceDefine from '@/core/deviceDefine';
+import inputRules from '@/core/inputRules';
 
 @Component
 export default class DeviceListEdit extends Vue {
@@ -177,7 +177,7 @@ export default class DeviceListEdit extends Vue {
 
   addParameter(indexDevice: number, ParamType: string) {
     const device = this.devices[indexDevice];
-    const newParam: IParameter = { type: ParamType, value: "" };
+    const newParam: IParameter = { type: ParamType, value: '' };
     device.parameters.push(newParam);
   }
 
@@ -188,8 +188,8 @@ export default class DeviceListEdit extends Vue {
   addDevice(deviceType: string) {
     this.devices.push({
       type: deviceType,
-      name: "",
-      parameters: []
+      name: '',
+      parameters: [],
     });
   }
 }

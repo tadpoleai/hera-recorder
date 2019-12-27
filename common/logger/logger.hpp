@@ -21,6 +21,21 @@ inline void onlyprint()
     return impl::Logger::onlyprint();
 }
 
+inline void ignore_signal(int signo)
+{
+    return impl::Logger::ignore_signal(signo);
+}
+
+inline void flush()
+{
+    return impl::Logger::flush();
+}
+
+inline auto get_commit_head()
+{
+    return impl::Logger::get_commit_head();
+}
+
 inline bool init(const std::string& file)
 {
     return impl::Logger::init(file);

@@ -4,14 +4,24 @@
 
 #pragma once
 
+#include <atomic>
+#include <exception>
+#include <execinfo.h>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
+#include <set>
+#include <signal.h>
 #include <sstream>
 #include <thread>
 
 #include "log_level.hpp"
 #include "log_string.hpp"
+
+#ifdef GIT_INFO_ENABLED
+extern const char* GIT_COMMIT_HEAD;
+#endif
 
 namespace wayz {
 namespace hera {
@@ -23,6 +33,9 @@ class Logger;
 class Logger {
 public:
     static void onlyprint();
+    static void ignore_signal(int signo);
+    static std::string get_commit_head();
+    static void flush();
     static bool init(const std::string& file);
     static void set_level(LogLevel level);
     static void stop();
@@ -32,6 +45,7 @@ public:
 
 private:
     static std::unique_ptr<Logger> instance_;
+    static std::set<int> signal_to_ignore_user_;
 
 private:
     Logger();
@@ -44,6 +58,10 @@ private:
     void write(const LogString& data);
     std::string format(const LogString& data);
 
+    void register_back_trace();
+    static void singal_handler(int signo);
+    static void back_trace(int signo);
+
 private:
     bool inited_;
 
@@ -53,7 +71,8 @@ private:
     LogLevel level_;
     LogQueue queue_;
 
-    volatile bool running_;
+    std::atomic<bool> running_;
+    std::atomic<bool> flushed_;
     std::thread thread_;
 };
 
