@@ -18,11 +18,26 @@ void Logger::onlyprint()
     instance_->inited_ = true;
 }
 
+void Logger::flush()
+{
+    while (!instance_->flushed_)
+        ;
+}
+
+std::string Logger::get_commit_head()
+{
+#ifdef GIT_INFO_ENABLED
+    return std::string(GIT_COMMIT_HEAD);
+#else
+    return "Unknown Commit Head";
+#endif
+}
+
 bool Logger::init(const std::string& file)
 {
     instance_->inited_ = true;
     char buffer[80];
-    auto t = Timestamp::now().tv_sec;
+    auto t = time::Timestamp::now().tv_sec;
     auto timeinfo = std::localtime(&t);
     std::strftime(buffer, 80, "%Y%m%d_%H%M%S", timeinfo);
     auto file_with_time = file + "_" + buffer + ".log";
@@ -52,7 +67,7 @@ void Logger::close_aux()
 LogStringStream Logger::create_string(LogLevel level)
 {
     if (level >= instance_->level_) {
-        auto result = LogStringStream(&instance_->queue_, true, level, Timestamp::now());
+        auto result = LogStringStream(&instance_->queue_, true, level, time::Timestamp::now());
         return result;
     }
     return LogStringStream(nullptr, false, level, 0);
@@ -61,8 +76,9 @@ LogStringStream Logger::create_string(LogLevel level)
 Logger::Logger() :
     inited_(false),
     level_(LogLevel::Debug),
-    queue_(0, 0, 80ms),
+    queue_(0, 0, 5ms),
     running_(true),
+    flushed_(true),
     thread_(&Logger::write_thread_function, this)
 {
     register_back_trace();
@@ -82,7 +98,10 @@ void Logger::write_thread_function()
     while (running_ || data) {
         data = queue_.wait_pop();
         if (data != nullptr) {
+            flushed_ = false;
             write(*data);
+        } else {
+            flushed_ = true;
         }
     };
 }

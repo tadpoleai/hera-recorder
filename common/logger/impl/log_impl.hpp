@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <exception>
 #include <execinfo.h>
 #include <fstream>
@@ -18,6 +19,10 @@
 #include "log_level.hpp"
 #include "log_string.hpp"
 
+#ifdef GIT_INFO_ENABLED
+extern const char* GIT_COMMIT_HEAD;
+#endif
+
 namespace wayz {
 namespace hera {
 namespace log {
@@ -29,6 +34,8 @@ class Logger {
 public:
     static void onlyprint();
     static void ignore_signal(int signo);
+    static std::string get_commit_head();
+    static void flush();
     static bool init(const std::string& file);
     static void set_level(LogLevel level);
     static void stop();
@@ -64,7 +71,8 @@ private:
     LogLevel level_;
     LogQueue queue_;
 
-    volatile bool running_;
+    std::atomic<bool> running_;
+    std::atomic<bool> flushed_;
     std::thread thread_;
 };
 

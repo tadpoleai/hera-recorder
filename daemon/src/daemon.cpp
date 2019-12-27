@@ -5,7 +5,7 @@
 /// @version 0.1
 /// @date 2019-11-08
 ///
-/// @copyright Copyright (c) 2019
+/// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
 #include <signal.h>
@@ -52,11 +52,11 @@ int main(int argc, char** argv)
     sig_int_handler.sa_flags = 0;
     sigaction(SIGINT, &sig_int_handler, NULL);
 
-    std::string folder_prefix = "./";
+    std::string filename_prefix = "./";
     std::string profile_json = "./profiles.json";
     std::string log_file = "hera-daemon";
     if (argc >= 2) {
-        folder_prefix = argv[1];
+        filename_prefix = argv[1];
     }
     if (argc >= 3) {
         profile_json = argv[2];
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
     log::init(log_file);
 
     int port = 9090;
-    std::shared_ptr<daemon::AcquisitionManager> handler(new daemon::AcquisitionManager(folder_prefix, profile_json));
+    std::shared_ptr<daemon::AcquisitionManager> handler(new daemon::AcquisitionManager(filename_prefix, profile_json));
     g_handler_ptr = handler.get();
     std::shared_ptr<TProcessor> processor(new AcquisitionManagerProcessor(handler));
     std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));

@@ -130,6 +130,7 @@ void Logger::back_trace(int signo)
 {
     if (instance_) {
         auto logger = log::error << "Backtrace:\e[0m\n";
+        logger << "    commit head = " << get_commit_head() << "\n";
 
         constexpr size_t MaxTraceDepth = 128;
         void* trace_ptrs[MaxTraceDepth] = {0};

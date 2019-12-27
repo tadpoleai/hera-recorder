@@ -9,7 +9,7 @@ include("../deploy/cmake/pcl_basic.cmake")
 include_directories("../" "/usr/local/include/")
 
 add_executable(${PROJECT_NAME} src/read_test.cpp)
-target_link_libraries(${PROJECT_NAME} hera-common hera-devices)
+target_link_libraries(${PROJECT_NAME} hera-common hera-device)
 
 install(
   TARGETS hera-slam

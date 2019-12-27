@@ -3,8 +3,18 @@ cmake_minimum_required(VERSION 3.5.1)
 set(PROJECT_NAME hera)
 project(${PROJECT_NAME})
 
+if(NOT without-git-info)
+  message(STATUS "Hera will build with git info")
+  include(deploy/cmake/git_info.cmake)
+else()
+  message(STATUS "Hera will build without git info")
+endif()
+
 message(STATUS "Hera adding common")
 add_subdirectory(common)
+
+message(STATUS "Hera adding storage")
+add_subdirectory(storage)
 
 # Whether to build lib-hera-devices with some external-library-required device
 # drivers, list them here to pass the definitions to all subdirectory. Devices
@@ -18,8 +28,8 @@ else()
   message(STATUS "Hera will build without device driver flir")
 endif()
 
-message(STATUS "Hera adding devices")
-add_subdirectory(devices)
+message(STATUS "Hera adding device")
+add_subdirectory(device)
 
 if(with-daemon
    OR with-all

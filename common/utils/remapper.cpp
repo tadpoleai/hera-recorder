@@ -7,6 +7,7 @@
 
 namespace wayz {
 namespace hera {
+namespace common {
 
 using json = nlohmann::json;
 
@@ -30,5 +31,6 @@ Remapper::Remapper(const std::string& json_filename)
     }
 }
 
+}  // namespace common
 }  // namespace hera
 }  // namespace wayz

@@ -70,13 +70,12 @@ public:
     ///
     /// @@param dest destination pointer
     /// @@param max_size max size of destination
-    /// @@return true succeed
-    /// @@return false failed
+    /// @@return size_t 0 if failed, otherwise size after serialization
     ///
-    static_assert(std::is_same<bool,
+    static_assert(std::is_same<size_t,
                                decltype(std::declval<DataType&>().serialize(std::declval<void*>(),
                                                                             std::declval<size_t>()))>::value,
-                  "DataType does not have member function, bool serialize(void* dest, size_t max_size)");
+                  "DataType does not have member function, size_t serialize(void* dest, size_t max_size)");
 
     ///
     /// @brief Check if DataType has static member function, DataPtr deserialize(void* src, size_t max_size)
@@ -291,7 +290,7 @@ public:
 
         // Write data
         void* dest = &shm_ptr_->data[head];
-        if (data->serialize(dest, ElementSize)) {
+        if (data->serialize(dest, ElementSize) != 0) {
             auto next_head = head + 1;
             next_head %= NumElement;
             shm_ptr_->header.head = next_head;

@@ -35,12 +35,13 @@ void AcquisitionManager::reset()
 {
     std::vector<std::future<void>> promises;
     for (const auto& device : devices_) {
-        promises.emplace_back(std::async(std::launch::async, &Device::stop, device.get()));
+        promises.emplace_back(std::async(std::launch::async, &device::Device::stop, device.get()));
     }
     for (auto& promise : promises) {
         promise.get();
     }
     devices_.clear();
+    storage_.reset();
     inited_ = false;
     record_ = false;
 }

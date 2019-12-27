@@ -5,20 +5,16 @@
 /// @version 0.1
 /// @date 2019-11-12
 ///
-/// @copyright Copyright (c) 2019
+/// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
 #pragma once
+
 #include <cstdint>
 #include <memory>
 
-#include <sensor_msgs/CompressedImage.h>
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/MagneticField.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <sensor_msgs/PointCloud2.h>
-
+#include "common/utils/remapper.hpp"
+#include "device/include.hpp"
 #include "direct_bag/direct_bag.h"
 
 namespace wayz {
@@ -33,14 +29,15 @@ namespace convert {
 /// @brief ROS message type enum
 ///
 enum class ROSMessageType : int32_t {
-    EndOfFile = -2,   ///< End of file, storage reading over
-    BrokenData = -1,  ///< Invalid data, or bad data;
-    Imu = 0,          ///< ROS sensor_msgs/Imu
-    MagneticField,    ///< ROS sensor_msgs/MagneticField
-    PointCloud2,      ///< ROS sensor_msgs/PointCloud2
-    CompressedImage,  ///< ROS sensor_msgs/CompressedImage
-    Image,            ///< ROS sensor_msgs/Image
-    NavSatFix,        ///< ROS sensor_msgs/NavSatFix
+    EndOfFile = -2,      ///< End of file, storage reading over
+    BrokenData = -1,     ///< Invalid data, or bad data;
+    Vector3Stamped = 0,  ///< geometry_msgs/Vector3
+    Imu,                 ///< ROS sensor_msgs/Imu
+    MagneticField,       ///< ROS sensor_msgs/MagneticField
+    PointCloud2,         ///< ROS sensor_msgs/PointCloud2
+    CompressedImage,     ///< ROS sensor_msgs/CompressedImage
+    Image,               ///< ROS sensor_msgs/Image
+    NavSatFix,           ///< ROS sensor_msgs/NavSatFix
 };
 
 class ROSMessage;
@@ -68,19 +65,34 @@ class ROSMessage {
 
 public:
     ///
+    /// @brief Destroy the ROSMessage object
+    ///
+    ~ROSMessage();
+
+    ///
     /// @brief Create a ROSMessage object
     ///
     /// @tparam T type of ROSMessage, from ROSMessageType
     /// @return ROSMessagePtr a unique pointer to created message
     ///
-    /// Call templated function by T in ros_message.cpp
+    /// Calls templated function by T in ros_message.cpp
     template<ROSMessageType T>
     static ROSMessagePtr create();
 
     ///
-    /// @brief Destroy the ROSMessage object
+    /// @brief Create a ROSMessage object from sensor data object
     ///
-    ~ROSMessage();
+    /// @param sensor_data SensorData
+    /// @param topic_prefix Topic prefix of sensor, i.e. "/lidar/top/"
+    /// @param frame_id Frame ID of sensor, already remapped
+    /// @param remapper Global remapper
+    /// @return std::vector<ROSMessagePtr> vector of unique pointer to created messages
+    ///
+    //// Calls template<device::SensorDataType T> convert()
+    static std::vector<ROSMessagePtr> convert(device::data::SensorDataPtr& sensor_data,
+                                              const std::string& topic_prefix,
+                                              const std::string& frame_id,
+                                              const common::Remapper* remapper);
 
 private:
     ///
@@ -89,11 +101,37 @@ private:
     /// @param t type of ROSMessage, from ROSMessageType
     ROSMessage(ROSMessageType t) : type(t) {}
 
+    ///
+    /// @brief Create a ROSMessage object from sensor data object
+    ///
+    /// @param sensor_data SensorData
+    /// @param topic_prefix Topic prefix of sensor, i.e. "/lidar/top/"
+    /// @param frame_id Frame ID of sensor, already remapped
+    /// @param remapper Global remapper
+    /// @return std::vector<ROSMessagePtr> vector of unique pointer to created messages
+    ///
+    //// Calls create()
+    template<device::SensorDataType T>
+    static std::vector<ROSMessagePtr> convert(device::data::SensorDataPtr& sensor_data,
+                                              const std::string& topic_prefix,
+                                              const std::string& frame_id,
+                                              const common::Remapper* remapper);
+
+    ///
+    /// @brief Cast a time::Timestamp to ros header
+    ///
+    /// @param ts time::Timestamp
+    /// @return ros::Time
+    static ros::Time to_ros_time(time::Timestamp ts)
+    {
+        return ros::Time(ts.tv_sec, ts.tv_nsec);
+    }
+
 public:
     ROSMessageType type;     ///< type of ros message
-    void* ptr;               ///< a void-typed pointer to ros message
+    void* ptr;               ///< pointer to ros message
     int64_t timestamp_ns;    ///< timestamp of message, in UTC, ns
-    std::string topic_name;  ///< topic name of message
+    std::string topic_name;  ///< topic name of ros message
 };
 
 }  // namespace convert

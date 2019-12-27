@@ -8,7 +8,7 @@
 #include "common/logger/logger.hpp"
 #include "common/third_party/json.hpp"
 #include "daemon/rpc/gen-cpp/AcquisitionManager.h"
-#include "devices/src/device_factory.hpp"
+#include "device/include.hpp"
 
 using json = nlohmann::json;
 
@@ -18,10 +18,11 @@ namespace daemon {
 
 class AcquisitionManager final : public AcquisitionManagerIf {
 public:
-    AcquisitionManager(const std::string& folder_prefix = "./", const std::string& json_file = "./profiles.json") :
+    AcquisitionManager(const std::string& filename_prefix = "./", const std::string& json_file = "./profiles.json") :
         record_(false),
         inited_(false),
-        FolderPrefix_(folder_prefix),
+        FileNamePrefix_(filename_prefix),
+        FileNameSuffix_(".her"),
         JsonFile_(json_file)
     {
         read_profiles();
@@ -58,12 +59,14 @@ private:
     void get_single_data();
 
 private:
-    std::vector<DevicePtr> devices_;
+    std::vector<device::DevicePtr> devices_;
     bool record_;
     bool inited_;
 
-    const std::string FolderPrefix_;
-    std::string folder_;
+    const std::string FileNamePrefix_;
+    const std::string FileNameSuffix_;
+    std::string filename_;
+    storage::StorageManagerPtr storage_;
 
     const std::string JsonFile_;
     json json_instance_;

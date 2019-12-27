@@ -1,27 +1,43 @@
 #include <unistd.h>
 
-#include "aligned_replayer.hpp"
+#include "replayer.hpp"
 
 using namespace wayz::hera;
 using namespace wayz::hera::replay;
 
 void print_help(char** argv)
 {
-    std::cout << "usage: " << argv[0] << " -i <source_data_folder> [-r <replay_rate>] [-l] [-v]" << std::endl;
+    std::cout << "usage:\t" << argv[0] << " -i <source_data> [-r <replay_rate>] [-pld] [-hv]" << std::endl;
+    std::cout << "\t-i\tSource Data File\n"
+              << "\t-r\tReplay Rate\n"
+              << "\t-p\tFlag to really play\n"
+              << "\t-l\tFlag to output log file\n"
+              << "\t-d\tFlag to debug output\n"
+              << "\t-h\tPrint this help and exit\n"
+              << "\t-v\tPrint version and exit\n"
+              << std::endl;
+}
+
+void print_version(char** argv)
+{
+    std::cout << argv[0] << std::endl;
+    std::cout << "Built " << log::get_commit_head() << std::endl;
+    std::cout << "Copyright 2018 Wayz.ai. All Rights Reserved." << std::endl;
 }
 
 int main(int argc, char** argv)
 {
-    std::string src_folder;
+    std::string filename;
     bool islog = false;
     bool isverbose = false;
+    bool isplay = false;
     double replay_rate = 1.0;
 
     // opterr = 0;
     while (true) {
-        switch (getopt(argc, argv, "i:o:r:hlv")) {
+        switch (getopt(argc, argv, "i:o:r:pldhv")) {
         case 'i':
-            src_folder = optarg;
+            filename = optarg;
             continue;
         case 'r':
             try {
@@ -31,16 +47,22 @@ int main(int argc, char** argv)
                 exit(1);
             }
             continue;
+        case 'p':
+            isplay = true;
+            continue;
         case 'l':
             islog = true;
             continue;
-        case 'v':
+        case 'd':
             isverbose = true;
             continue;
         case -1:
             break;
         case 'h':
             print_help(argv);
+            exit(0);
+        case 'v':
+            print_version(argv);
             exit(0);
         default:
             print_help(argv);
@@ -49,7 +71,7 @@ int main(int argc, char** argv)
         break;
     }
 
-    if (src_folder.size() == 0) {
+    if (filename.size() == 0) {
         std::cout << argv[0] << ": option requires an argument -- 'i'" << std::endl;
         print_help(argv);
         exit(1);
@@ -70,10 +92,19 @@ int main(int argc, char** argv)
     log::debug << "Replay rate = " << replay_rate << log::endl;
 
     log::debug << "Replayer Start" << log::endl;
-    auto handler = std::make_unique<AlignedReplayer>(src_folder, replay_rate);
+    auto handler = std::make_unique<Replayer>(filename, replay_rate, !isplay);
+
+    log::flush();
 
     while (handler->running()) {
+        usleep(1000);
+        time::Duration progress = handler->progress();
+        std::cout << "\r";
+        std::cout << "Replayer: " << progress << " of " << handler->total_duration();
+        std::cout << "             ";
+        std::cout.flush();
     }
+    std::cout << std::endl;
 
     log::debug << "Replayer End" << log::endl;
     return 0;
