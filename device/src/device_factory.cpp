@@ -35,6 +35,7 @@ bool DeviceFactory::check_type(const std::string& vendor_type)
     return false;
 }
 
+#ifdef WITH_DRIVER
 DevicePtr DeviceFactory::create(const uint32_t id,
                                 const std::string& vendor_type,
                                 const std::string& name,
@@ -55,6 +56,7 @@ DevicePtr DeviceFactory::create(const uint32_t id,
     log::warn << "DeviceFactory::create: Unknown vendor type : " << vendor_type << log::endl;
     return nullptr;
 }
+#endif
 
 data::SensorDataPtr DeviceFactory::convert(data::DeviceDataPtr& data)
 {

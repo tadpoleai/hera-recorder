@@ -40,7 +40,7 @@ public:
     std::string str;
 };
 
-class LogStringStream final : public std::stringstream {
+class LogStringStream final : private std::stringstream {
 public:
     LogStringStream(LogQueue* queue, bool valid, LogLevel level, time::Timestamp&& ts) :
         std::stringstream(std::ios_base::out),

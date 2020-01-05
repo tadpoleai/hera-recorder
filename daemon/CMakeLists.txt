@@ -24,7 +24,7 @@ add_executable(
   ${PROJECT_NAME}
   ${ALL_SRC} ${RPC_GEN_CPP}/hera_types.cpp ${RPC_GEN_CPP}/hera_constants.cpp
   ${RPC_GEN_CPP}/AcquisitionManager.cpp)
-target_link_libraries(${PROJECT_NAME} hera-common hera-device ${THRIFT})
+target_link_libraries(${PROJECT_NAME} hera-common hera-device-driver ${THRIFT})
 
 install(
   FILES script/hera-daemon.service
