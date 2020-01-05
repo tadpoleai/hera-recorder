@@ -10,8 +10,10 @@
 
 #pragma once
 
+#ifdef WITH_DRIVER
 #ifdef DEVICE_DRIVER_FLIR
 #include <flycapture/FlyCapture2.h>
+#endif
 #endif
 
 #include "../../device.hpp"
@@ -117,6 +119,7 @@ public:
         stop();
     }
 
+#ifdef WITH_DRIVER
 #ifdef DEVICE_DRIVER_FLIR
     virtual HeraErrno connect() override;
 
@@ -125,6 +128,7 @@ public:
     virtual data::DeviceDataPtr fetch() override;
 
     virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
+#endif
 #endif
 
     virtual data::SensorDataPtr convert(data::DeviceDataPtr& storage_data) override
@@ -138,6 +142,7 @@ public:
     static data::SensorDataPtr do_convert(data::DeviceDataPtr& storage_data);
 
 private:
+#ifdef WITH_DRIVER
 #ifdef DEVICE_DRIVER_FLIR
     ///
     /// @brief Flir error wrapper
@@ -150,6 +155,7 @@ private:
     /// @note Call this function will set the Device into DeviceStatus::Error
     HeraErrno handle_flir_error(const FlyCapture2::Error& error);
 #endif
+#endif
 
 private:
     static constexpr size_t HistoryDepth_ = 1;      ///< History Depth, 1
@@ -159,11 +165,13 @@ private:
 private:
     std::string ip_;  ///< IP address of camera
 
+#ifdef WITH_DRIVER
 #ifdef DEVICE_DRIVER_FLIR
     FlyCapture2::Camera camera_;                          ///< FLIR's SDK's Camera object
     FlyCapture2::PGRGuid guid_;                           ///< FLIR's SDK's G-UID object
     FlyCapture2::InterfaceType interface_type_;           ///< FLIR's SDK's InterfaceType object
     flir::FlirTimestampCalculator timestamp_calculator_;  ///< FLIR Camera's TimestampCalculator
+#endif
 #endif
 };
 

@@ -93,7 +93,7 @@ int main(int argc, char** argv)
 
     common::RemapperPtr remapper = nullptr;
     if (remap_file.size() != 0) {
-        auto remapper = common::Remapper::create(remap_file);
+        remapper = common::Remapper::create(remap_file);
     } else {
         remapper = common::Remapper::empty();
     }

@@ -119,6 +119,10 @@ private:
         volatile SharedMemoryHeader header;     ///< header information
         uint8_t data[NumElement][ElementSize];  ///< circular queue data
     };
+
+#define NullSharedPtr (reinterpret_cast<SharedMemory*>(-1))
+    ///< shmat() returns a nullptr valued -1, make it happy
+
 #pragma pack(pop)
 
 public:
@@ -350,9 +354,6 @@ public:
     };
 
 private:
-    static constexpr SharedMemory* NullSharedPtr =
-            reinterpret_cast<SharedMemory*>(-1);  ///< shmat() returns a nullptr valued -1, make it happy
-
     uint32_t key_;    // key of shared memory
     OpenMode mode_;   ///< open mode of IPC Queue
     bool is_closed_;  ///< is this queue already closed

@@ -21,6 +21,7 @@ namespace device {
 namespace camera {
 namespace flir {
 
+#ifdef WITH_DRIVER
 #ifdef DEVICE_DRIVER_FLIR
 
 /// Convert IP address to uint32_t(little-endian),
@@ -191,6 +192,8 @@ HeraErrno Flir::handle_flir_error(const FlyCapture2::Error& error)
 {
     return handle_error(HeraErrno::CanNotOpenCamera, error.GetDescription());
 }
+
+#endif
 #endif
 
 /// For jpeg format, just copy
