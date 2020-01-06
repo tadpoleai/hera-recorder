@@ -4,7 +4,7 @@ set(PROJECT_NAME hera-slam)
 project(${PROJECT_NAME})
 
 include("../deploy/cmake/cpp_common.cmake")
-include("../deploy/cmake/pcl_basic.cmake")
+include("../deploy/cmake/pcl_common.cmake")
 
 include_directories("../" "/usr/local/include/")
 

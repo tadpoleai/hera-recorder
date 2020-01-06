@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "../third_party/json.hpp"
+#include "common/logger/logger.hpp"
 
 namespace wayz {
 namespace hera {
@@ -22,11 +23,12 @@ Remapper::Remapper(const std::string& json_filename)
 
         for (const auto& el : json_instance.items()) {
             remap_[el.key()] = el.value().get<std::string>();
-            std::cout << el.key() << " > " << el.value().get<std::string>() << std::endl;
+            log::debug << "Remapper: remapping from '" << el.key() << "' to '" << el.value().get<std::string>() << "'"
+                       << log::endl;
         }
 
     } catch (...) {
-        std::cout << "Processer: Remapper can not read from " << json_filename << std::endl;
+        log::error << "Remapper: can not read from '" << json_filename << "'" << log::endl;
         remap_ = {};
     }
 }
