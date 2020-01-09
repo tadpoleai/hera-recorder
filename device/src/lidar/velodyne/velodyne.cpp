@@ -184,7 +184,7 @@ data::SensorDataPtr Velodyne::do_convert(data::DeviceDataPtr& storage_data)
                 lidar_point.y = -distance_horizontal * sin(azimuth);
                 // Origin Y, ROS Definition X
                 lidar_point.x = distance_horizontal * cos(azimuth);
-                lidar_point.z = distance * sin(pitch) + velodyne::vlp16c::VerticalCorrection[channel_index];
+                lidar_point.z = distance * sin(pitch) + velodyne::vlp16c::VerticalCorrection[channel_index % 16];
                 lidar_point.channel = channel_index % 16;
             } break;
 
