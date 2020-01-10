@@ -46,10 +46,10 @@ catkin_package(
   #  DEPENDS system_lib
 )
 
-# add_executable(packages_to_laserscan_node ros/packages_to_laserscan_node.cpp)
+add_executable(packages_to_laserscan_node ros/packages_to_laserscan_node.cpp)
 
 add_library(velodyne_accumulator SHARED ros/velodyne_accumulator.cpp)
 
 target_link_libraries(velodyne_accumulator ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES})
 
-# target_link_libraries(packages_to_laserscan_node  ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES} )
+target_link_libraries(packages_to_laserscan_node  velodyne_accumulator ${catkin_LIBRARIES} ${EIGEN3_LIBRARIES} )
