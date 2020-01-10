@@ -19,36 +19,57 @@ namespace hera {
 namespace device {
 namespace data {
 
-static inline void fill_pixel_color(uint8_t* pixel, float height, float intensity)
-{
-    static constexpr float HeightRangeMeter = 0.5f;
-
-    intensity = 180.0 + 0.5 * intensity;
-    float nor_height = std::max(-1.0f, std::min(1.0f, height / HeightRangeMeter));
-    if (nor_height > 0) {
-        pixel[0] = std::min(255.0f, nor_height * intensity);
-        pixel[1] = std::min(255.0f, (1.0f - nor_height) * intensity);
-    } else {
-        pixel[1] = std::min(255.0f, (1.0f + nor_height) * intensity);
-        pixel[2] = std::min(255.0f, -nor_height * intensity);
+class ColorProfileType {
+public:
+    constexpr ColorProfileType() : data()
+    {
+        for (auto i = 0; i != LUTSize; ++i) {
+            double hue = 2.0 * double(i) / double(MaxIntensity);
+            if (hue < 1.0) {
+                data[3 * i + 0] = std::min(255.0, (255 - Saturation) + Saturation * (1.0 - hue));
+                data[3 * i + 1] = std::min(255.0, (255 - Saturation) + Saturation * (0.0 + hue));
+                data[3 * i + 2] = std::min(255.0, (255 - Saturation));
+            } else {
+                data[3 * i + 0] = std::min(255.0, (255 - Saturation));
+                data[3 * i + 1] = std::min(255.0, (255 - Saturation) + Saturation * (2.0 - hue));
+                data[3 * i + 2] = std::min(255.0, (255 - Saturation) + Saturation * (hue - 1.0));
+            }
+        }
     }
-}
+
+    inline void fill_pixel(uint8_t* pixel, float intensity) const
+    {
+        uint8_t intensity_uint8 = static_cast<uint8_t>(intensity);
+        if (intensity_uint8 > MaxIntensity) {
+            intensity_uint8 = MaxIntensity;
+        }
+        memcpy(pixel, &data[3 * intensity_uint8], 3);
+    }
+
+private:
+    static constexpr double Saturation = 180;
+    static constexpr auto MaxIntensity = 80;
+    static constexpr auto LUTSize = MaxIntensity + 1;
+    uint8_t data[3 * LUTSize];
+};
 
 template<>
 std::string DisplayData::parse<SensorDataType::PointsXYZI>(std::vector<SensorDataPtr>&& sensor_datas, bool& is_jpeg)
 {
     static constexpr auto NoData = "No data";
-    static constexpr auto CanvasPixelSize = 320;
+    static constexpr auto CanvasPixelSize = 480;
     static constexpr auto CanvasPixelCenter = CanvasPixelSize / 2;
     static constexpr auto CanvasPixelNum = CanvasPixelSize * CanvasPixelSize;
     static constexpr auto CanvasDataSize = 3 * CanvasPixelNum;
     static constexpr float GranularityMeter = 0.05;
     static constexpr auto JpegQuality = 90;
+    static constexpr auto BgBrightness = 64;
+    static constexpr ColorProfileType ColorProfile;
 
     is_jpeg = true;
     auto canvas = std::unique_ptr<uint8_t[]>(new uint8_t[CanvasDataSize]);
     auto render_history = std::unique_ptr<float[]>(new float[CanvasPixelNum]);
-    memset(canvas.get(), 64, CanvasDataSize);
+    memset(canvas.get(), BgBrightness, CanvasDataSize);
     for (auto&& data : sensor_datas) {
         if (data->sensor_data_type != SensorDataType::PointsXYZI) {
             continue;
@@ -61,7 +82,7 @@ std::string DisplayData::parse<SensorDataType::PointsXYZI>(std::vector<SensorDat
             int pixel_y = CanvasPixelCenter - pt->x / GranularityMeter;
             if (pixel_x >= 0 && pixel_x < CanvasPixelSize && pixel_y >= 0 && pixel_y < CanvasPixelSize) {
                 auto offset = pixel_y * CanvasPixelSize + pixel_x;
-                fill_pixel_color(&canvas[3 * offset], pt->z, pt->intensity);
+                ColorProfile.fill_pixel(&canvas[3 * offset], pt->intensity);
             }
         }
     }
