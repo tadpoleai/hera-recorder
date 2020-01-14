@@ -4,13 +4,11 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <pcl_ros/point_cloud.h>
-#include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <pcl_ros/point_cloud.h>
 #include <nav_msgs/Odometry.h>
 #include <boost/circular_buffer.hpp>
+#include <pcl_ros/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/common/transforms.h>
 #include <tf_conversions/tf_eigen.h>
@@ -26,12 +24,12 @@ using PointT = pcl::PointXYZI;
 using PointCloudPtr = pcl::PointCloud<PointT>::Ptr;
 using Laser_Packet_Buffer = boost::circular_buffer<sensor_msgs::PointCloud2::ConstPtr>;
 
-class VelodyneAccumulator //: public PointcloudAccumulatorInterface
+class AccumulatorVelodyne //: public PointcloudAccumulatorInterface
 {
 public:
-    VelodyneAccumulator(ros::NodeHandle& node, ros::NodeHandle& privateNode);
+    AccumulatorVelodyne(ros::NodeHandle& node, ros::NodeHandle& privateNode);
 
-    ~VelodyneAccumulator();
+    ~AccumulatorVelodyne();
 
     void original_points_callback(const sensor_msgs::PointCloud2::ConstPtr& points_msg);
 
@@ -39,24 +37,29 @@ public:
 
 protected:
     // ros handle
-    ros::NodeHandle node_;
-    ros::NodeHandle mt_nh;
-    ros::NodeHandle private_node_;
+    ros::NodeHandle nh_;
+    // ros::NodeHandle mt_nh;
+    ros::NodeHandle private_nh_;
 
-    // ros topic handler
-    ros::Subscriber original_points_sub;
-    ros::Publisher corrected_points_pub;
+    // publisher
+    ros::Publisher accumulated_points_pub_;
 
     // circular buffer to store laser packets
     Laser_Packet_Buffer packet_buffer_;
 
     // thread
-    std::thread cloud_correct_thread_;
+    std::thread cloud_accumulate_thread_;
 
     // metux
-    std::mutex cloud_correct_mutex_;
+    std::mutex cloud_accumulate_mutex_;
     std::condition_variable fill_buffer_cv_;
 
     // num packet to accumulate
-    size_t num_packet_accumulate_;
+    uint32_t num_packet_accumulate_;
+
+    // accumulated points topic
+    std::string accumulated_topic_;
+
+    // trarget frame
+    std::string target_frame_;
 };
