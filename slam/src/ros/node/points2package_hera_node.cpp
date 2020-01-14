@@ -1,16 +1,15 @@
-#include <ros/ros.h>
-
 #include <iostream>
-#include "message_filters/subscriber.h"
-#include "sensor_msgs/PointCloud2.h"
-#include "common/logger/logger.hpp"
-#include <pcl_ros/point_cloud.h>
-#include <pcl_conversions/pcl_conversions.h>
+
 #include <pcl/common/transforms.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+#include <ros/ros.h>
 
 #include "common/ipc/ipc_queue.hpp"
 #include "common/logger/logger.hpp"
 #include "device/include.hpp"
+#include "message_filters/subscriber.h"
+#include "sensor_msgs/PointCloud2.h"
 
 using namespace wayz::hera;
 
@@ -43,15 +42,16 @@ int main(int argc, char** argv)
 
     ros::Publisher points_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(points_topic_, 10, false);
 
-    //TODO:read from recorder later
+    // TODO:read from recorder later
     constexpr uint32_t HorizontalLidarId = 1;
     while (true) {
         auto data = ipc_queue->read();
-        if (data && data->sensor_data_type == device::SensorDataType::PointsXYZI && data->sensor_id == HorizontalLidarId ) {
+        if (data && data->sensor_data_type == device::SensorDataType::PointsXYZI &&
+            data->sensor_id == HorizontalLidarId) {
             auto data_impl = reinterpret_cast<device::data::PointsXYZI*>(data.get());
 
             // copy points
-            pcl::PointCloud<PointT>::Ptr points( new pcl::PointCloud<PointT>());
+            pcl::PointCloud<PointT>::Ptr points(new pcl::PointCloud<PointT>());
             points->resize(data_impl->point_number);
             float* dst_ptr = reinterpret_cast<float*>(points->points.data());
             float* src_ptr = reinterpret_cast<float*>(data_impl->points);
@@ -64,14 +64,14 @@ int main(int argc, char** argv)
                 src_ptr += sizeof(Pt) / sizeof(float);
             }
 
-            //construct sensor msg
+            // construct sensor msg
             sensor_msgs::PointCloud2::Ptr q_msg(new sensor_msgs::PointCloud2());
             pcl::toROSMsg(*points, *q_msg);
             q_msg->header.seq = data_impl->sequence;
             q_msg->header.stamp = to_ros_time(data_impl->timestamp_intrinsic_ns);
             q_msg->header.frame_id = target_frame;
 
-            //publish ros msg
+            // publish ros msg
             points_pub_.publish(q_msg);
         }
     }

@@ -2,29 +2,29 @@
 
 // #include "pointcloud_accumulator_api.hpp"
 
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+
+#include <boost/circular_buffer.hpp>
+#include <eigen_conversions/eigen_msg.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
-#include <boost/circular_buffer.hpp>
-#include <pcl_ros/point_cloud.h>
-#include <pcl_conversions/pcl_conversions.h>
 #include <pcl/common/transforms.h>
-#include <tf_conversions/tf_eigen.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-
-#include <eigen_conversions/eigen_msg.h>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
+#include <tf_conversions/tf_eigen.h>
 
 using PointT = pcl::PointXYZI;
 using PointCloudPtr = pcl::PointCloud<PointT>::Ptr;
 using Laser_Packet_Buffer = boost::circular_buffer<sensor_msgs::PointCloud2::ConstPtr>;
 
-class AccumulatorVelodyne //: public PointcloudAccumulatorInterface
+class AccumulatorVelodyne  //: public PointcloudAccumulatorInterface
 {
 public:
     AccumulatorVelodyne(ros::NodeHandle& node, ros::NodeHandle& privateNode);

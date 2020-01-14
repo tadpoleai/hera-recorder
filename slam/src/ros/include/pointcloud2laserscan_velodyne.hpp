@@ -4,17 +4,16 @@
 #include "message_filters/subscriber.h"
 #include "sensor_msgs/PointCloud2.h"
 
-class Pointcloud2LaserScanVelodyne //:Pointcloud2LaserscanInterface
+class Pointcloud2LaserScanVelodyne  //:Pointcloud2LaserscanInterface
 {
 public:
     Pointcloud2LaserScanVelodyne(ros::NodeHandle& node, ros::NodeHandle& privateNode);
 
     ~Pointcloud2LaserScanVelodyne();
 
-    void pointcloud_callback(const sensor_msgs::PointCloud2ConstPtr &cloud_msg);
+    void pointcloud_callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg);
 
 protected:
-
     // ros handle
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
