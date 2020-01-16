@@ -1,0 +1,37 @@
+<!-- <?xml version="1.0"?> -->
+<launch>
+    <arg name="rviz" default="true"/>
+    <param name="/use_sim_time" value="true" />
+    <param name="package_topic" value="/velodyne_points" />
+    <param name="target_frame" value="velodyne" />
+
+    <node pkg="points2package_hera_node" type="points2package_hera_node" name="points2package_hera_node">
+
+    </node>
+
+    <node pkg="packages_to_laserscan_node" type="packages_to_laserscan_node" name="packages_to_laserscan_node">
+        <!-- packages accumulate to pointcloud -->
+        <param name="laser_type" value="velodyne" />  <!--only:velodyne, hesai will be supported-->
+        <param name="num_accumulated_packet" value="151"/>  <!--options:151(most velodyne) 1(Pandor-40) -->
+        <param name="accumulated_topic" value="/accumulated_points" />
+
+        <!-- pointcloud to laserscan -->
+        <param name="target_frame" value="velodyne" />
+        <param name="min_height" value="-1.0" />
+        <param name="max_height" value="1.0" />
+        <param name="horizontal_angle_min" value="-3.1415926" />
+        <param name="horizontal_angle_max" value="3.1415926" />
+        <!-- 0.2/360 -->
+        <param name="horizontal_angle_increment" value="0.0005555" />
+        <!-- -0.1/57.3 -->
+        <param name="vertical_angle_min" value="-0.001745" />
+        <param name="vertical_angle_max" value="0.001745" />
+        <param name="range_min" value="0.2" />
+        <param name="range_max" value="100.0" />
+        <param name="output_topic" value="laserscan" />
+    </node>
+
+   <group if="$(arg rviz)"> 
+    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find packages_to_laserscan_node)/rviz/packages_to_laserscan_node.rviz" />
+  </group>
+</launch>
