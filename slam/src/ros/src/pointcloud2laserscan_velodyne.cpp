@@ -1,7 +1,9 @@
 #include "pointcloud2laserscan_velodyne.hpp"
 
 #include <sensor_msgs/LaserScan.h>
-#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
+#include <tf2_eigen/tf2_eigen.h>
+#include <tf2_ros/buffer.h>
 
 Pointcloud2LaserScanVelodyne::Pointcloud2LaserScanVelodyne(ros::NodeHandle& node, ros::NodeHandle& privateNode)
 {
