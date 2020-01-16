@@ -28,7 +28,6 @@ tar -czvf \
     daemon/hera-daemon \
     convert/hera-convert \
     replay/hera-replay \
-    # slam/hera-slam \
     slam/packages_to_laserscan_node \
     slam/points2package_hera_node \
     ../daemon/script \
