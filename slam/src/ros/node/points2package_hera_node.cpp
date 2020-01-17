@@ -4,6 +4,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
 #include <ros/ros.h>
+#include <sensor_msgs/Imu.h>
 
 #include "common/ipc/ipc_queue.hpp"
 #include "common/logger/logger.hpp"
@@ -41,10 +42,12 @@ int main(int argc, char** argv)
     logger << "target_frame = " << target_frame << log::endl;
 
     ros::Publisher points_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(points_topic_, 10, false);
+    ros::Publisher imu_pub_ = nh_.advertise<sensor_msgs::Imu>("imu/raw_data", 10, false);
 
+    ros::Rate sleep_rate(1e4);
     // TODO:read from recorder later
     constexpr uint32_t HorizontalLidarId = 1;
-    while (true) {
+    while (ros::ok()) {
         auto data = ipc_queue->read();
         if (data && data->sensor_data_type == device::SensorDataType::PointsXYZI &&
             data->sensor_id == HorizontalLidarId) {
@@ -73,6 +76,24 @@ int main(int argc, char** argv)
 
             // publish ros msg
             points_pub_.publish(q_msg);
+        } else if (data && device::SensorDataType::ImuMagneticField == data->sensor_data_type) {
+            auto data_impl = reinterpret_cast<device::data::ImuMagneticField*>(data.get());
+            sensor_msgs::Imu imu_message;
+            imu_message.header.frame_id = "imu_link";
+            imu_message.header.stamp = to_ros_time(data_impl->timestamp_intrinsic_ns);
+            imu_message.linear_acceleration.x = data_impl->linear_acceleration[0];
+            imu_message.linear_acceleration.y = data_impl->linear_acceleration[1];
+            imu_message.linear_acceleration.z = data_impl->linear_acceleration[2];
+            imu_message.angular_velocity.x = data_impl->angular_velocity[0];
+            imu_message.angular_velocity.y = data_impl->angular_velocity[1];
+            imu_message.angular_velocity.z = data_impl->angular_velocity[2];
+
+            imu_pub_.publish(imu_message);
+        }
+
+        else {
+            ros::spinOnce();
+            sleep_rate.sleep();
         }
     }
 }
