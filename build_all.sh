@@ -30,6 +30,9 @@ tar -czvf \
     replay/hera-replay \
     slam/packages_to_laserscan_node \
     slam/points2package_hera_node \
+    ../slam/carto \
+    ../slam/launch_realtime_slam_2d.sh \
+    ../slam/setup.bash \
     ../daemon/script \
     ../client/dist \
     ../convert/config \
