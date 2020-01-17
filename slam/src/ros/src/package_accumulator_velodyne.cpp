@@ -1,5 +1,7 @@
 #include "package_accumulator_velodyne.hpp"
 
+#include <signal.h>
+
 AccumulatorVelodyne::AccumulatorVelodyne(ros::NodeHandle& node, ros::NodeHandle& privateNode)
 {
     ROS_INFO("Constructation");
@@ -22,7 +24,9 @@ AccumulatorVelodyne::AccumulatorVelodyne(ros::NodeHandle& node, ros::NodeHandle&
 
 AccumulatorVelodyne::~AccumulatorVelodyne()
 {
-    cloud_accumulate_thread_.join();
+    pthread_t thread_id = cloud_accumulate_thread_.native_handle();
+    pthread_kill(thread_id, SIGTERM);
+    // cloud_accumulate_thread_.join();
 }
 
 void AccumulatorVelodyne::original_points_callback(const sensor_msgs::PointCloud2::ConstPtr& points_msg)

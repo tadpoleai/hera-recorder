@@ -48,8 +48,10 @@ int main(int argc, char** argv)
         return -1;
     }
 
+    ros::Rate sleep_rate(1e4);
     while (ros::ok()) {
-        ros::spin();
+        ros::spinOnce();
+        sleep_rate.sleep();
     }
 
     return 0;
