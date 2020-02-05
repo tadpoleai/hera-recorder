@@ -153,68 +153,67 @@ data::SensorDataPtr Velodyne::do_convert(data::DeviceDataPtr& storage_data)
     for (auto data_block_index = 0; data_block_index < VelodynePacket::NumDataBlockPerPacket; ++data_block_index) {
         const auto* data_block = &raw_data->data.data_blocks[data_block_index];
 
-        /// @note ROS axis definitions is used for Lidar's xyz,
-        /// in which X = forward, Y = left, Z = up, right-handed,
-        /// regardless of velodyne's original axes definitions.
-        /// We use ROS axis definitions
-        /// @see <a href="https://www.ros.org/reps/rep-0103.html#axis-orientation" target="_blank"
-        /// rel="noopener noreferrer">Axis-orientation</a>
-        /// @see <a href="https://blog.csdn.net/chengde6896383/article/details/86682882"
-        /// target="_blank" rel="noopener noreferrer">Velodyne Coordinate System for VLP</a>
-
         double azimuth_base = velodyne::AzimuthGranularity * (data_block->azimuth);
         for (auto channel_index = 0; channel_index < VelodynePacket::NumChannelPerDataBlock; ++channel_index) {
             const auto* channel = &data_block->channels[channel_index];
 
-            /// Check if distance is 0, indicating invalid point
-            if (channel->distance == 0) {
-                continue;
-            }
             data::PointsXYZI::PointXYZI lidar_point;
             lidar_point.intensity = channel->reflectivity;
 
             switch (raw_data->data.lidar_type) {
             case VelodynePacket::LidarType::VLP16C: {
-                double azimuth = azimuth_base + azimuth_gap * velodyne::vlp16c::GetRelativeAzimuthChange(channel_index);
+                double azimuth =
+                        std::remainder(-(azimuth_base +
+                                         azimuth_gap * velodyne::vlp16c::GetRelativeAzimuthChange(channel_index)),
+                                       2 * M_PI);
                 double distance = channel->distance * velodyne::vlp16c::DistanceGranularity;
 
                 double pitch = velodyne::vlp16c::VerticalAngles[channel_index % 16];
-                double distance_horizontal = distance * cos(pitch);
-                // Origin X, ROS Definition -Y
-                lidar_point.y = -distance_horizontal * sin(azimuth);
-                // Origin Y, ROS Definition X
-                lidar_point.x = distance_horizontal * cos(azimuth);
+                double horizontal_distance = distance * cos(pitch);
+                lidar_point.x = horizontal_distance * cos(azimuth);
+                lidar_point.y = horizontal_distance * sin(azimuth);
                 lidar_point.z = distance * sin(pitch) + velodyne::vlp16c::VerticalCorrection[channel_index % 16];
                 lidar_point.channel = channel_index % 16;
+                lidar_point.horizontal_distance = horizontal_distance;
+                lidar_point.azimuth = azimuth;
+                lidar_point.pitch = pitch;
             } break;
 
             case VelodynePacket::LidarType::VLP32C: {
-                double azimuth = azimuth_base + velodyne::vlp32c::AzimuthOffset[channel_index] +
-                                 azimuth_gap * velodyne::vlp32c::GetRelativeAzimuthChange(channel_index);
+                double azimuth =
+                        std::remainder(-(azimuth_base + velodyne::vlp32c::AzimuthOffset[channel_index] +
+                                         azimuth_gap * velodyne::vlp32c::GetRelativeAzimuthChange(channel_index)),
+                                       2 * M_PI);
                 double distance = channel->distance * velodyne::vlp32c::DistanceGranularity;
 
                 double pitch = velodyne::vlp32c::VerticalAngles[channel_index];
-                double distance_horizontal = distance * cos(pitch);
-                // Origin X, ROS Definition -Y
-                lidar_point.y = -distance_horizontal * sin(azimuth);
-                // Origin Y, ROS Definition X
-                lidar_point.x = distance_horizontal * cos(azimuth);
+                double horizontal_distance = distance * cos(pitch);
+                lidar_point.x = horizontal_distance * cos(azimuth);
+                lidar_point.y = horizontal_distance * sin(azimuth);
                 lidar_point.z = distance * sin(pitch);
                 lidar_point.channel = channel_index;
+                lidar_point.horizontal_distance = horizontal_distance;
+                lidar_point.azimuth = azimuth;
+                lidar_point.pitch = pitch;
             } break;
 
             case VelodynePacket::LidarType::HDL32E: {
-                double azimuth = azimuth_base + azimuth_gap * velodyne::hdl32e::GetRelativeAzimuthChange(channel_index);
+                double azimuth =
+                        std::remainder(-(azimuth_base +
+                                         azimuth_gap * velodyne::hdl32e::GetRelativeAzimuthChange(channel_index)) +
+                                               velodyne::hdl32e::AzimuthCorrection,
+                                       2 * M_PI);
                 double distance = channel->distance * velodyne::hdl32e::DistanceGranularity;
 
                 double pitch = velodyne::hdl32e::VerticalAngles[channel_index];
-                double distance_horizontal = distance * cos(pitch);
-                // Origin X, ROS Definition -X
-                lidar_point.x = -distance_horizontal * sin(azimuth);
-                // Origin Y, ROS Definition -Y
-                lidar_point.y = -distance_horizontal * cos(azimuth);
+                double horizontal_distance = distance * cos(pitch);
+                lidar_point.x = horizontal_distance * cos(azimuth);
+                lidar_point.y = horizontal_distance * sin(azimuth);
                 lidar_point.z = distance * sin(pitch);
                 lidar_point.channel = channel_index;
+                lidar_point.horizontal_distance = horizontal_distance;
+                lidar_point.azimuth = azimuth;
+                lidar_point.pitch = pitch;
             } break;
 
             default:
@@ -249,6 +248,60 @@ data::SensorDataPtr Velodyne::do_convert(data::DeviceDataPtr& storage_data)
         return data::SensorData::broken_data();
     }
     lidar_sensor_data->timestamp_intrinsic_ns = t_fire_us * UsToNs_;
+
+    // Fill Metadata
+    switch (raw_data->data.lidar_type) {
+    case VelodynePacket::LidarType::VLP16C:
+        lidar_sensor_data->meta.vendor = data::PointsXYZI::LidarVendor::VelodyneVLP16C;
+
+        lidar_sensor_data->meta.rotation_direction = -1;
+
+        lidar_sensor_data->meta.num_channel = 16;
+        lidar_sensor_data->meta.nominal_pitch_increment = velodyne::vlp16c::VerticalAngleIncrement;
+
+        lidar_sensor_data->meta.time_increment = velodyne::vlp16c::TimePerPoint / time::OneSecond;
+        lidar_sensor_data->meta.time_increment_horizontal = velodyne::vlp16c::TimeHorizontal / time::OneSecond;
+        lidar_sensor_data->meta.total_time =
+                velodyne::vlp16c::TimeHorizontal / time::OneSecond * 2 * VelodynePacket::NumDataBlockPerPacket;
+
+        lidar_sensor_data->meta.nominal_min_range = velodyne::vlp16c::MinNominalRange;
+        lidar_sensor_data->meta.nominal_max_range = velodyne::vlp16c::MaxNominalRange;
+        break;
+
+    case VelodynePacket::LidarType::VLP32C:
+        lidar_sensor_data->meta.vendor = data::PointsXYZI::LidarVendor::VelodyneVLP32C;
+
+        lidar_sensor_data->meta.rotation_direction = -1;
+
+        lidar_sensor_data->meta.num_channel = 32;
+        lidar_sensor_data->meta.nominal_pitch_increment = velodyne::vlp32c::VerticalAngleIncrement;
+
+        lidar_sensor_data->meta.time_increment = velodyne::vlp32c::TimePerPoint / time::OneSecond;
+        lidar_sensor_data->meta.time_increment_horizontal = velodyne::vlp32c::TimeHorizontal / time::OneSecond;
+        lidar_sensor_data->meta.total_time =
+                velodyne::vlp32c::TimeHorizontal / time::OneSecond * VelodynePacket::NumDataBlockPerPacket;
+
+        lidar_sensor_data->meta.nominal_min_range = velodyne::vlp32c::MinNominalRange;
+        lidar_sensor_data->meta.nominal_max_range = velodyne::vlp32c::MaxNominalRange;
+        break;
+
+    case VelodynePacket::LidarType::HDL32E:
+        lidar_sensor_data->meta.vendor = data::PointsXYZI::LidarVendor::VelodyneHDL32E;
+
+        lidar_sensor_data->meta.rotation_direction = -1;
+
+        lidar_sensor_data->meta.num_channel = 32;
+        lidar_sensor_data->meta.nominal_pitch_increment = velodyne::hdl32e::VerticalAngleIncrement;
+
+        lidar_sensor_data->meta.time_increment = velodyne::hdl32e::TimePerPoint / time::OneSecond;
+        lidar_sensor_data->meta.time_increment_horizontal = velodyne::hdl32e::TimeHorizontal / time::OneSecond;
+        lidar_sensor_data->meta.total_time =
+                velodyne::hdl32e::TimeHorizontal / time::OneSecond * VelodynePacket::NumDataBlockPerPacket;
+
+        lidar_sensor_data->meta.nominal_min_range = velodyne::hdl32e::MinNominalRange;
+        lidar_sensor_data->meta.nominal_max_range = velodyne::hdl32e::MaxNominalRange;
+        break;
+    }
 
     return sensor_data;
 }
