@@ -31,4 +31,15 @@ sudo mkdir -p /var/hera/logs
 # Enable boot-up hera-daemon
 sudo systemctl enable hera-daemon.service
 
+# Make directory for hera-slam
+sudo mkdir -p /usr/local/share/hera/slam/carto
+
+# Install hera-slam
+sudo cp -r slam/carto/share /usr/local/share/hera/slam/carto/
+sudo chmod 755 slam/carto/bin/*
+sudo cp slam/carto/bin/* /usr/local/bin
+sudo cp slam/hera-slam-bridge /usr/local/bin
+sudo cp slam/hera-slam-caller-start /usr/local/bin
+sudo cp slam/hera-slam-caller-stop /usr/local/bin
+
 echo "Installation Succeed"

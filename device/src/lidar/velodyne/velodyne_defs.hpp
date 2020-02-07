@@ -43,6 +43,12 @@ namespace vlp16c {
 /// @see @ref VLP-16C-Manual section: 9.3.1.3, Data Point, Page 55
 static constexpr double DistanceGranularity = 0.002;
 
+static constexpr double MinNominalRange = 0.4;
+static constexpr double MaxNominalRange = 100;
+
+static constexpr double TimePerPoint = 2304;
+static constexpr double TimeHorizontal = 55296;
+
 ///
 /// @brief Get the Azimuth Change
 ///
@@ -52,9 +58,9 @@ static constexpr double DistanceGranularity = 0.002;
 static constexpr double GetRelativeAzimuthChange(size_t index) noexcept
 {
     if (index < 16) {
-        return 2.304 / 110.592 * index;
+        return TimePerPoint / (2 * TimeHorizontal) * index;
     } else {
-        return 55.296 / 110.592 + 2.304 / 110.592 * index;
+        return 0.5 + TimePerPoint / (2 * TimeHorizontal) * index;
     }
 }
 
@@ -80,6 +86,8 @@ static constexpr double VerticalAngles[16] = {
         -01.000000000000000 * DegreeToRad,  // 14
         +15.000000000000000 * DegreeToRad,  // 15
 };
+
+static constexpr double VerticalAngleIncrement = +02.000000000000000 * DegreeToRad;
 
 ///
 /// @brief Vertical correction (aka height) of every channel, in meter
@@ -119,6 +127,12 @@ namespace vlp32c {
 /// @see @ref VLP-32C-Manual section: 9.3.1.3, Data Point, Page 54
 static constexpr double DistanceGranularity = 0.004;
 
+static constexpr double MinNominalRange = 0.4;
+static constexpr double MaxNominalRange = 200;
+
+static constexpr double TimePerPoint = 2304;
+static constexpr double TimeHorizontal = 55296;
+
 ///
 /// @brief Get the Azimuth Change
 ///
@@ -127,7 +141,7 @@ static constexpr double DistanceGranularity = 0.004;
 /// @see @ref VLP-32C-Manual figure: 9-7, Single Return Mode Timing Offsets (in μs), page: 64
 static constexpr double GetRelativeAzimuthChange(size_t index) noexcept
 {
-    return 2.304 / 55.296 * (index / 2);
+    return TimePerPoint / TimeHorizontal * (index / 2);
 }
 
 ///
@@ -167,8 +181,9 @@ static constexpr double VerticalAngles[32] = {
         +15.000000000000000 * DegreeToRad,  // 29
         +10.333333333333333 * DegreeToRad,  // 30
         -01.333333333333333 * DegreeToRad,  // 31
-
 };
+
+static constexpr double VerticalAngleIncrement = 00.333333333333333 * DegreeToRad;
 
 ///
 /// @brief Horizontal azimuth offset of every channel, in rad
@@ -224,6 +239,12 @@ namespace hdl32e {
 /// @see @ref HDL-32E-Manual section: 9.3.1.3, Data Point, Page 59
 static constexpr double DistanceGranularity = 0.002;
 
+static constexpr double MinNominalRange = 0.4;
+static constexpr double MaxNominalRange = 100;
+
+static constexpr double TimePerPoint = 1152;
+static constexpr double TimeHorizontal = 46080;
+
 ///
 /// @brief Get the Azimuth Change
 ///
@@ -232,8 +253,10 @@ static constexpr double DistanceGranularity = 0.002;
 /// @see @ref HDL-32E-Manual figure: 9-6, Single Return Mode Timing Offsets (in μs), page: 67
 static constexpr double GetRelativeAzimuthChange(size_t index) noexcept
 {
-    return 1.152 / 46.080 * index;
+    return TimePerPoint / TimeHorizontal * index;
 }
+
+static constexpr double AzimuthCorrection = M_PI_2;
 
 ///
 /// @brief Vertical angle (aka pitch) of every channel, in rad
@@ -273,6 +296,9 @@ static constexpr double VerticalAngles[32] = {
         -10.666666666666666 * DegreeToRad,  // 31
         +10.666666666666666 * DegreeToRad,  // 32
 };
+
+static constexpr double VerticalAngleIncrement = 01.333333333333333 * DegreeToRad;
+
 }  // namespace hdl32e
 
 }  // namespace velodyne

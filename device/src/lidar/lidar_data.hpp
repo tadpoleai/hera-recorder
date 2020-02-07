@@ -24,19 +24,51 @@ namespace data {
 ///
 class PointsXYZI final : public SensorData {
 public:
+
+    enum class LidarVendor : uint32_t {
+        VendorVelodyne = 0x100,
+        VelodyneVLP16C = 0x101,
+        VelodyneVLP32C = 0x102,
+        VelodyneHDL32E = 0x103,
+        VendorHesai = 0x200,
+        VendorSick = 0x400,
+        VendorLeishen = 0x800
+    };
+
+    struct MetaType {
+        LidarVendor vendor;
+
+        int32_t rotation_direction;
+
+        int32_t num_channel;
+        double nominal_pitch_increment;
+
+        double time_increment;
+        double time_increment_horizontal;
+        double total_time;
+
+        double nominal_min_range;
+        double nominal_max_range;
+    };
+
     ///
     /// @brief Structure for lidar point in 3D with intensity
     ///
     struct PointXYZI {
-        float x;          ///< Distance on X-axis, in meter
-        float y;          ///< Distance on Y-axis, in meter
-        float z;          ///< Distance on Z-axis, in meter
-        int32_t channel;  ///< Channel number, if multi-channel lidar, from 0
-        float intensity;  ///< Intensity aka reflectivity
+        float x;                    ///< Distance on X-axis, in meter
+        float y;                    ///< Distance on Y-axis, in meter
+        float z;                    ///< Distance on Z-axis, in meter
+        int32_t channel;            ///< Channel number, if multi-channel lidar, from 0
+        float intensity;            ///< Intensity aka reflectivity
+        float horizontal_distance;  ///< Hypot distance on XY-plane, in meter
+        float pitch;                ///< Pitch, in rad
+        float azimuth;              ///< Azimuth, in rad
     };
+
+    MetaType meta;
     uint32_t point_number;  ///< Number of points
     PointXYZI points[0];    ///< Array of points, variable-lengthed
-};
+};                          // namespace data
 
 #pragma pack(pop)
 

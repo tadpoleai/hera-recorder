@@ -28,11 +28,10 @@ tar -czvf \
     daemon/hera-daemon \
     convert/hera-convert \
     replay/hera-replay \
-    slam/packages_to_laserscan_node \
-    slam/points2package_hera_node \
+    slam/bridge/hera-slam-bridge \
+    slam/caller/hera-slam-caller-start \
+    slam/caller/hera-slam-caller-stop \
     ../slam/carto \
-    ../slam/launch_realtime_slam_2d.sh \
-    ../slam/setup.bash \
     ../daemon/script \
     ../client/dist \
     ../convert/config \
@@ -40,5 +39,6 @@ tar -czvf \
     ../INSTALLATION.md \
     ../client/USAGE.md \
     ../convert/USAGE.md \
+    ../slam/USAGE.md \
     ../deploy/*.md \
     ../jenkins_deploy.sh
