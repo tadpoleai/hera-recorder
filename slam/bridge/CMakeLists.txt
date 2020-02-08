@@ -9,7 +9,7 @@ include_directories(../.. include ${roscpp_INCLUDE_DIRS}
                     ${JPEG_TURBO_INCLUDE_DIR})
 
 add_executable(${PROJECT_NAME} src/bridge_node.cpp src/bridge.cpp)
-target_link_libraries(${PROJECT_NAME} hera-common hera-device
+target_link_libraries(${PROJECT_NAME} hera-common hera-device hera-slam-result
                       ${roscpp_LIBRARIES} ${JPEG_TURBO_LIBS})
 
 install(

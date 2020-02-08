@@ -31,6 +31,7 @@ tar -czvf \
     slam/bridge/hera-slam-bridge \
     slam/caller/hera-slam-caller-start \
     slam/caller/hera-slam-caller-stop \
+    slam/result/hera-slam-result-test \
     ../slam/carto \
     ../daemon/script \
     ../client/dist \

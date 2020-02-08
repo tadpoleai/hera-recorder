@@ -143,7 +143,7 @@ public:
 
 private:
     uint32_t length;                      ///< Total length, in bytes
-    uint32_t device_id;               ///< ID of device
+    uint32_t device_id;                   ///< ID of device
     DeviceVendorType device_vendor_type;  ///< Device vendor type
     DeviceDataType message_type;          ///< Device data type
     uint32_t sequence;                    ///< Sequence, increased by 1 every time
@@ -192,7 +192,7 @@ public:
     /// @return size_t 0 if failed, otherwise size after serialization
     ///
     /// @see ipc::IPCQueue
-    size_t serialize(void* dest, size_t max_size);
+    size_t serialize(void* dest, size_t max_size) const;
 
     ///
     /// @brief Deserialize from memory
@@ -206,7 +206,7 @@ public:
 
 public:
     uint32_t length;                  ///< Total length, in bytes
-    uint32_t sensor_id;           ///< ID of sensor
+    uint32_t sensor_id;               ///< ID of sensor
     SensorDataType sensor_data_type;  ///< Sensor data type
     uint32_t sequence;                ///< Sequence, copied from DeviceData::sequence
     uint64_t timestamp_intrinsic_ns;  ///< Timstamp of device intrinsic, i.e. with synchronization,

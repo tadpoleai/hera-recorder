@@ -1,5 +1,5 @@
 ///
-/// @file ros_bridge.hpp
+/// @file bridge.hpp
 /// @author zheming.lyu (zheming.lyu@wayz.ai)
 /// @brief Header of Node to bridge between ROS and Hera
 /// @version 0.2
@@ -19,6 +19,7 @@
 
 #include "common/ipc/ipc_queue.hpp"
 #include "device/include.hpp"
+#include "slam/result/include/result.hpp"
 
 namespace wayz {
 namespace hera {
@@ -103,6 +104,7 @@ private:
     ros::Rate rate_;                        ///< rate for waiting data from hera
 
     std::unique_ptr<ipc::IPCQueue<device::data::SensorData>> ipc_queue_;  ///< ipc queue interface from hera
+    decltype(slam::Result::handler()) ipc_result_;                          ///< ipc queue interface to hera
 
 private:
     /// Hera goes ROS Parameters

@@ -23,7 +23,9 @@
         - script 启动/停止建图模块的脚本文件
         - urdf Tron等设备的描述文件
 - caller
-  - 包含调用建图模块的C++库文件
+  - 包含调用建图模块的C++库文件以及样例程序
+- result
+  - 包含接收建图结果的C++库文件以及样例程序
 
 ## 使用说明
 
@@ -60,8 +62,6 @@
 
 ### 获取结果
 
-hera-slam-bridge的Bridge::map_handler()会生成jpeg格式的二进制流，并将其通过文件保存到当前目录，文件名为map.jpg
+可输入`hera-slam-result-test`来从共享内存中读取数据，该程序会将结果保存到当前文件夹的`map.jpg`下
 
 在调试时，也使用rviz查看，可加入topic: map以及trajectory_node_list来查看
-
-TODO：hera-slam-bridge会将jpeg数据通过ipcBuffer发布，可使用程序读取内容并通过可视化查看

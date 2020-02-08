@@ -63,7 +63,7 @@ public:
     using DataPtr = std::shared_ptr<DataType>;
 
     ///
-    /// @brief Check if class DataType has member function, bool serialize(void* dest, size_t max_size)
+    /// @brief Check if class DataType has member function, size_t serialize(void* dest, size_t max_size)
     ///
     /// where, serialize() is a class member function of DataType that
     /// @@brief Serialize to memory
@@ -175,7 +175,7 @@ public:
         // Create or open shared memory
         mode_ = mode;
         key_ = key;
-        auto ipc_mode = (mode == OpenMode::Write) ? (0666 | IPC_CREAT) : IPC_CREAT;
+        auto ipc_mode = 0777 | IPC_CREAT;
         shm_id_ = shmget((key_t)(key + MagicKey), sizeof(SharedMemory), ipc_mode);
         if (shm_id_ == -1) {
             log::error << "IPCQueue: Can not open key = '" << key << "', mode = '"
@@ -267,6 +267,34 @@ public:
     }
 
     ///
+    /// @brief Get if shared memory is writable
+    ///
+    /// @return true shared memory is writable
+    /// @return false otherwise
+    ///
+    bool writable() const noexcept
+    {
+        if (!is_open() || (mode_ == OpenMode::Read) || is_closed_) {
+            return false;
+        }
+
+        // No reader
+        if (shm_ptr_->header.read_magic != magic_) {
+            return false;
+        }
+
+        auto tail = shm_ptr_->header.tail;
+        auto head = shm_ptr_->header.head;
+
+        // Queue full
+        if ((tail - head) % NumElement == 1) {
+            return false;
+        }
+
+        return true;
+    }
+
+    ///
     /// @brief Insert a data to circular queue
     ///
     /// @param data a shared pointer of a serializable data
@@ -295,6 +323,44 @@ public:
         // Write data
         void* dest = &shm_ptr_->data[head];
         if (data->serialize(dest, ElementSize) != 0) {
+            auto next_head = head + 1;
+            next_head %= NumElement;
+            shm_ptr_->header.head = next_head;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    ///
+    /// @brief Insert a data to circular queue
+    ///
+    /// @param data a serializable data
+    /// @return true succeed
+    /// @return false failed
+    ///
+    bool write(const DataType& data)
+    {
+        if (!is_open() || (mode_ == OpenMode::Read) || is_closed_) {
+            return false;
+        }
+
+        // No reader
+        if (shm_ptr_->header.read_magic != magic_) {
+            return false;
+        }
+
+        auto tail = shm_ptr_->header.tail;
+        auto head = shm_ptr_->header.head;
+
+        // Queue full
+        if ((tail - head) % NumElement == 1) {
+            return false;
+        }
+
+        // Write data
+        void* dest = &shm_ptr_->data[head];
+        if (data.serialize(dest, ElementSize) != 0) {
             auto next_head = head + 1;
             next_head %= NumElement;
             shm_ptr_->header.head = next_head;
