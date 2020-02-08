@@ -7,5 +7,6 @@ add_definitions(-DSLAM_CARTO_ROOT="${SLAM_CARTO_ROOT}")
 add_definitions(-DSLAM_ROS_ROOT="${ROS_ROOT_DIR}")
 
 add_subdirectory(carto)
+add_subdirectory(result)
 add_subdirectory(bridge)
 add_subdirectory(caller)

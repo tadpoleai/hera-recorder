@@ -16,21 +16,25 @@
   必须，构建输出为静态库文件libhera-devices  
   其中，某些传感器的实际物理连接需要第三方依赖库，该部分为可选编译。若不编译，则该传感器仅支持离线数据转换。
 
+- **storage**  
+  用于储存，重播传感器数据的代码库  
+  必须，构建输出为静态库文件libhera-storage  
+
 - daemon  
   采集服务端，在线采集用守护进程  
   可选，构建输出为可执行文件hera-daemon  
 
 - convert  
   将储存数据转换为ROSBag的工具  
-  可选，构建输出为可执行文件hera-convert
+  可选，构建输出为可执行文件hera-convert  
 
 - replay  
   将储存数据重新在线播放(通过IPC)的工具，可供slam调试  
-  可选，构建输出为可执行文件hera-replay
+  可选，构建输出为可执行文件hera-replay  
 
 - slam  
   在线建图，接收IPC传输的传感器数据来生成地图  
-  可选，构建输出为可执行文件hera-slam
+  可选，构建输出为可执行文件hera-slam-caller，hera-slam-brige以及hera-slam-result，具体请参考slam文件夹下说明  
 
 - client  
   采集客户端，由Vue + ts编写  

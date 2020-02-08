@@ -9,37 +9,77 @@ if [ ! -d "client" ] || [ ! -d "convert" ] || [ ! -d "daemon" ] || [ -d ".git" ]
     exit 1
 fi
 
-# Install client (web dist)
-sudo rm -rf /var/www/hera-client
-sudo cp -r client/dist /var/www/hera-client
+echo
+read -n1 -p "Install convert (y/N): " ans
+echo
+if [[ $ans = [yY] ]]; then
+    echo "Installating convert"
 
-# Install hera-daemon
-sudo cp daemon/hera-daemon /usr/local/bin
+    # Install hera-daemon
+    sudo cp convert/hera-convert /usr/local/bin
+fi
 
-# Install hera-client
-sudo cp convert/hera-convert /usr/local/bin
+echo
+read -n1 -p "Install replay (y/N): " ans
+echo
+if [[ $ans = [yY] ]]; then
+    echo "Installating replay"
 
-# Install hera-daemon's service
-sudo cp daemon/script/hera-daemon /etc/init.d
-sudo cp daemon/script/hera-daemon.service /lib/systemd/system
+    # Install hera-replay
+    sudo cp replay/hera-replay /usr/local/bin
+fi
 
-# Make directory for hera-daemon
-sudo mkdir -p /var/hera/
-sudo mkdir -p /var/hera/data
-sudo mkdir -p /var/hera/logs
+echo
+read -n1 -p "Install slam (y/N): " ans
+echo
+if [[ $ans = [yY] ]]; then
+    echo "Installating slam"
 
-# Enable boot-up hera-daemon
-sudo systemctl enable hera-daemon.service
+    # Make directory for hera-slam
+    sudo mkdir -p /usr/local/share/hera/slam/carto
 
-# Make directory for hera-slam
-sudo mkdir -p /usr/local/share/hera/slam/carto
+    # Install hera-slam
+    sudo cp -r slam/carto/share /usr/local/share/hera/slam/carto/
+    sudo chmod 755 slam/carto/bin/*
+    sudo cp slam/carto/bin/* /usr/local/bin
+    sudo cp slam/bridge/hera-slam-bridge /usr/local/bin
+    sudo cp slam/caller/hera-slam-caller-start /usr/local/bin
+    sudo cp slam/caller/hera-slam-caller-stop /usr/local/bin
+    sudo cp slam/result/hera-slam-result-test /usr/local/bin
+fi
 
-# Install hera-slam
-sudo cp -r slam/carto/share /usr/local/share/hera/slam/carto/
-sudo chmod 755 slam/carto/bin/*
-sudo cp slam/carto/bin/* /usr/local/bin
-sudo cp slam/hera-slam-bridge /usr/local/bin
-sudo cp slam/hera-slam-caller-start /usr/local/bin
-sudo cp slam/hera-slam-caller-stop /usr/local/bin
+echo
+read -n1 -p "Install client (y/N): " ans
+echo
+if [[ $ans = [yY] ]]; then
+    echo "Installating client"
 
-echo "Installation Succeed"
+    # Install client (web dist)
+    sudo rm -rf /var/www/hera-client
+    sudo mkdir -p /var/www/hera-client
+    sudo cp -r client/dist /var/www/hera-client
+fi
+
+echo
+read -n1 -p "Install daemon (y/N): " ans
+echo
+if [[ $ans = [yY] ]]; then
+    echo "Installating daemon"
+
+    # Install hera-daemon
+    sudo cp daemon/hera-daemon /usr/local/bin
+
+    # Install hera-daemon's service
+    sudo cp daemon/script/hera-daemon.service /lib/systemd/system
+
+    # Make directory for hera-daemon
+    sudo mkdir -p /var/hera/
+    sudo mkdir -p /var/hera/data
+    sudo mkdir -p /var/hera/logs
+
+    # Enable boot-up hera-daemon
+    sudo systemctl enable hera-daemon.service
+fi
+
+echo
+echo "Installation Completed"

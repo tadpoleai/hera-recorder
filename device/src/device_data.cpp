@@ -140,7 +140,7 @@ SensorDataPtr SensorData::end_of_file()
 
 /// Check max_size and then copy to destination
 ///
-size_t SensorData::serialize(void* dest, size_t max_size)
+size_t SensorData::serialize(void* dest, size_t max_size) const
 {
     if (length > max_size) {
         return 0;

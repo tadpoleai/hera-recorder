@@ -1,5 +1,5 @@
 ///
-/// @file ros_bridge.cpp
+/// @file bridge.cpp
 /// @author zheming.lyu (zheming.lyu@wayz.ai)
 /// @brief Implementation of Node to bridge between ROS and Hera
 /// @version 0.1
@@ -31,6 +31,7 @@ Bridge::Bridge(ros::NodeHandle& nh, ros::NodeHandle& private_nh) :
     private_nh_(private_nh),
     rate_(SleepRate),
     ipc_queue_(ipc::IPCQueue<device::data::SensorData>::create()),
+    ipc_result_(slam::Result::handler(ipc::OpenMode::Write)),
     scan_msg_inited_(false),
     last_azimuth_(-0.0f)
 {
@@ -74,6 +75,7 @@ Bridge::Bridge(ros::NodeHandle& nh, ros::NodeHandle& private_nh) :
 Bridge::~Bridge()
 {
     ipc_queue_->close();
+    ipc_result_->close();
 }
 
 void Bridge::spin()
@@ -183,6 +185,10 @@ void Bridge::imu_handler(const device::data::ImuMagneticField* const data)
 
 void Bridge::map_handler(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
+    if (!ipc_result_->writable()) {
+        return;
+    }
+
     const size_t canvas_size = msg->data.size() * 3;
     auto canvas = std::unique_ptr<uint8_t[]>(new uint8_t[canvas_size]);
 
@@ -275,9 +281,12 @@ void Bridge::map_handler(const nav_msgs::OccupancyGrid::ConstPtr& msg)
         return;
     }
 
-    std::ofstream out_file("map.jpg", std::ios::out | std::ios::binary);
-    out_file.write((char*)dst_image, dst_size);
-    out_file.close();
+    Result result;
+    result.height = ceil_height;
+    result.width = ceil_width;
+    result.data.resize(dst_size);
+    memcpy(result.data.data(), dst_image, dst_size);
+    ipc_result_->write(result);
 
     tjDestroy(tj_instance);
     tjFree(dst_image);

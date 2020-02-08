@@ -18,8 +18,6 @@ namespace slam {
 
 bool Caller::start()
 {
-    stop();
-
     pid_t pid = fork();
     if (pid > 0) {
         return true;
