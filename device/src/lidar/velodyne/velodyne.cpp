@@ -16,6 +16,11 @@ namespace device {
 namespace lidar {
 namespace velodyne {
 
+const std::vector<DeviceParameterType> Velodyne::EssentialParameterTypes = {DeviceParameterType::IpAddress,
+                                                                            DeviceParameterType::DataPort};
+
+const std::vector<DeviceParameterType> Velodyne::OptionalParameterTypes = {};
+
 const timeval Velodyne::TimeOut_ = {0, 50000};
 
 /// Turn on Lidar's Laser by Remote Control (curl),

@@ -38,13 +38,9 @@ public:
     Velodyne(const uint32_t id,
              const std::string& vendor_type,
              const std::string& name,
+             const bool forward,
              storage::StorageManager* const storage) :
-        Device(id,
-               vendor_type,
-               name,
-               storage,
-               HistoryDepth_,
-               {DeviceParameterType::IpAddress, DeviceParameterType::DataPort})
+        Device(id, vendor_type, name, forward, storage, HistoryDepth_, EssentialParameterTypes)
     {}
     Velodyne(const Velodyne&) = delete;
     Velodyne& operator=(const Velodyne&) = delete;
@@ -75,6 +71,11 @@ public:
     /// @brief Static convert function for read / convert / replay
     ///
     static data::SensorDataPtr do_convert(data::DeviceDataPtr& storage_data);
+
+public:
+    static const std::vector<DeviceParameterType> EssentialParameterTypes;  ///< Essential Parameters for device
+
+    static const std::vector<DeviceParameterType> OptionalParameterTypes;  ///< Optional Parameters for device
 
 private:
     static constexpr size_t HistoryDepth_ = 160;  ///< History Depth, ~+1500packets, 600rpm, 160 = 1 circle

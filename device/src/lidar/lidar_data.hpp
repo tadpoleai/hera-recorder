@@ -24,7 +24,6 @@ namespace data {
 ///
 class PointsXYZI final : public SensorData {
 public:
-
     enum class LidarVendor : uint32_t {
         VendorVelodyne = 0x100,
         VelodyneVLP16C = 0x101,

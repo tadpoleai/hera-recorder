@@ -21,6 +21,13 @@ namespace device {
 namespace camera {
 namespace flir {
 
+const std::vector<DeviceParameterType> Flir::EssentialParameterTypes = {DeviceParameterType::IpAddress};
+
+const std::vector<DeviceParameterType> Flir::OptionalParameterTypes = {DeviceParameterType::Exposure,
+                                                                       DeviceParameterType::WhiteBalanceRed,
+                                                                       DeviceParameterType::WhiteBalanceBlue,
+                                                                       DeviceParameterType::FrameRate};
+
 #ifdef WITH_DRIVER
 #ifdef DEVICE_DRIVER_FLIR
 

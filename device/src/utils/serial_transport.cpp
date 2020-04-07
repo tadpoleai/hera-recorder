@@ -56,11 +56,15 @@ SerialTransport::SerialTransport(const std::string& kernel, const SerialConfig& 
         decoder_ = new SerialTransportDecoder();
         thread_run_ = true;
         thread_fetch_ = new std::thread(&SerialTransport::fetch_thread_function, this);
+
+        log::debug << "SerialTransport: Start thread" << log::endl;
     }
 }
 
 SerialTransport::~SerialTransport()
 {
+    log::debug << "SerialTransport: Stop thread" << log::endl;
+
     thread_run_ = false;
     if (thread_fetch_ != nullptr) {
         thread_fetch_->join();

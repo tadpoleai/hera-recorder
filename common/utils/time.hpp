@@ -50,6 +50,8 @@ public:
 
     operator uint64_t() const noexcept;
     Duration operator-(const Timestamp& rhs) const noexcept;
+
+    std::string to_datetime() const;
 };
 
 }  // namespace time

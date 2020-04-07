@@ -74,13 +74,15 @@ public:
     /// e.g., lidar/velodyne, camera/flir
     /// @param name device name,
     /// @param storage pointer to global storage for all devices
+    /// @param forward whether to realtime forward data by ipc
     /// @param essential_parameter_types essential parameter types for a specific vendor_type
     Device(const uint32_t id,
            const std::string& vendor_type,
            const std::string& name,
+           const bool forward,
            storage::StorageManager* const storage,
            const size_t history_depth,
-           std::initializer_list<DeviceParameterType>&& essential_parameter_types);
+           const std::vector<DeviceParameterType>& essential_parameter_types);
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
 

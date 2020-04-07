@@ -9,6 +9,8 @@
 
 #include "device_factory.hpp"
 
+#include <algorithm>
+
 #include "common/logger/logger.hpp"
 
 // Device Vendors
@@ -22,35 +24,73 @@ namespace wayz {
 namespace hera {
 namespace device {
 
+std::vector<std::string> DeviceFactory::types()
+{
+    return {"dummy/foobar", "imu/aceinna", "lidar/velodyne", "camera/flir", "gnss/serialsync"};
+}
+
 bool DeviceFactory::check_type(const std::string& vendor_type)
 {
-    if (vendor_type.compare("dummy/foobar") == 0 ||    // Foobar
-        vendor_type.compare("imu/aceinna") == 0 ||     // Aceinna
-        vendor_type.compare("lidar/velodyne") == 0 ||  // Velodyne
-        vendor_type.compare("camera/flir") == 0 ||     // Flir
-        vendor_type.compare("gnss/serialsync") == 0    // SerialSync
-    ) {
-        return true;
+    const auto Types = types();
+    return std::find(Types.begin(), Types.end(), vendor_type) != Types.end();
+}
+
+std::pair<std::vector<std::string>, std::vector<std::string>> DeviceFactory::parameter_types(
+        const std::string& vendor_type)
+{
+    if (!check_type(vendor_type)) {
+        return {};
+        log::warn << "DeviceFactory::type_parameters: Unknown vendor type: " << vendor_type << log::endl;
     }
-    return false;
+
+    std::vector<DeviceParameterType> essential;
+    std::vector<DeviceParameterType> optional;
+
+    decltype(parameter_types(std::string())) ret;
+
+    if (vendor_type.compare("dummy/foobar") == 0) {
+        essential = dummy::foobar::Foobar::EssentialParameterTypes;
+        optional = dummy::foobar::Foobar::OptionalParameterTypes;
+    } else if (vendor_type.compare("imu/aceinna") == 0) {
+        essential = imu::aceinna::Aceinna::EssentialParameterTypes;
+        optional = imu::aceinna::Aceinna::OptionalParameterTypes;
+    } else if (vendor_type.compare("lidar/velodyne") == 0) {
+        essential = lidar::velodyne::Velodyne::EssentialParameterTypes;
+        optional = lidar::velodyne::Velodyne::OptionalParameterTypes;
+    } else if (vendor_type.compare("camera/flir") == 0) {
+        essential = camera::flir::Flir::EssentialParameterTypes;
+        optional = camera::flir::Flir::OptionalParameterTypes;
+    } else if (vendor_type.compare("gnss/serialsync") == 0) {
+        essential = gnss::serialsync::Serialsync::EssentialParameterTypes;
+        optional = gnss::serialsync::Serialsync::OptionalParameterTypes;
+    }
+
+    for (const auto& type : essential) {
+        ret.first.emplace_back(type._to_string());
+    }
+    for (const auto& type : optional) {
+        ret.second.emplace_back(type._to_string());
+    }
+    return ret;
 }
 
 #ifdef WITH_DRIVER
 DevicePtr DeviceFactory::create(const uint32_t id,
                                 const std::string& vendor_type,
                                 const std::string& name,
+                                const bool forward,
                                 storage::StorageManager* const storage)
 {
     if (vendor_type.compare("dummy/foobar") == 0) {
-        return std::make_unique<dummy::foobar::Foobar>(id, vendor_type, name, storage);
+        return std::make_unique<dummy::foobar::Foobar>(id, vendor_type, name, forward, storage);
     } else if (vendor_type.compare("imu/aceinna") == 0) {
-        return std::make_unique<imu::aceinna::Aceinna>(id, vendor_type, name, storage);
+        return std::make_unique<imu::aceinna::Aceinna>(id, vendor_type, name, forward, storage);
     } else if (vendor_type.compare("lidar/velodyne") == 0) {
-        return std::make_unique<lidar::velodyne::Velodyne>(id, vendor_type, name, storage);
+        return std::make_unique<lidar::velodyne::Velodyne>(id, vendor_type, name, forward, storage);
     } else if (vendor_type.compare("camera/flir") == 0) {
-        return std::make_unique<camera::flir::Flir>(id, vendor_type, name, storage);
+        return std::make_unique<camera::flir::Flir>(id, vendor_type, name, forward, storage);
     } else if (vendor_type.compare("gnss/serialsync") == 0) {
-        return std::make_unique<gnss::serialsync::Serialsync>(id, vendor_type, name, storage);
+        return std::make_unique<gnss::serialsync::Serialsync>(id, vendor_type, name, forward, storage);
     }
 
     log::warn << "DeviceFactory::create: Unknown vendor type : " << vendor_type << log::endl;
@@ -82,7 +122,6 @@ data::SensorDataPtr DeviceFactory::convert(data::DeviceDataPtr& data)
         return data::SensorData::broken_data();
     }
 }
-
 
 }  // namespace device
 }  // namespace hera

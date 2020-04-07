@@ -20,6 +20,11 @@ namespace device {
 namespace dummy {
 namespace foobar {
 
+const std::vector<DeviceParameterType> Foobar::EssentialParameterTypes = {DeviceParameterType::DummyRate,
+                                                                          DeviceParameterType::DummyValue};
+
+const std::vector<DeviceParameterType> Foobar::OptionalParameterTypes = {};
+
 const std::string Foobar::DefaultMessage_ = "This is a default message from dummy sensor";
 
 /// Parse parameters first

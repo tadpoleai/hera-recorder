@@ -128,6 +128,8 @@ bool SerialPort::open_port(const std::string& kernel, const SerialConfig& serial
         return die("Error setting low latency mode");
     }
 
+    log::info << "Serial: Port " << kernel << " opened" << log::endl;
+
     return true;
 }
 

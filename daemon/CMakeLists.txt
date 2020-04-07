@@ -11,7 +11,7 @@ set(RPC_GEN_CPP "${CMAKE_CURRENT_SOURCE_DIR}/rpc/gen-cpp")
 add_custom_command(
   OUTPUT ${RPC_GEN_CPP}/hera_types.cpp
   OUTPUT ${RPC_GEN_CPP}/hera_constants.cpp
-  OUTPUT ${RPC_GEN_CPP}/AcquisitionManager.cpp
+  OUTPUT ${RPC_GEN_CPP}/Service.cpp
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/rpc/hera.thrift"
   COMMAND "mkdir" "-p" "${RPC_GEN_CPP}"
   COMMAND "thrift" "-out" "${RPC_GEN_CPP}" "--gen" "cpp:no_skeleton"
@@ -23,7 +23,7 @@ include_directories("../" "/usr/local/include/" ${CMAKE_BINARY_DIR})
 add_executable(
   ${PROJECT_NAME}
   ${ALL_SRC} ${RPC_GEN_CPP}/hera_types.cpp ${RPC_GEN_CPP}/hera_constants.cpp
-  ${RPC_GEN_CPP}/AcquisitionManager.cpp)
+  ${RPC_GEN_CPP}/Service.cpp)
 target_link_libraries(${PROJECT_NAME} hera-common hera-device-driver ${THRIFT})
 
 install(

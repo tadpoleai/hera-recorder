@@ -13,13 +13,13 @@
 
 #include <common/logger/logger.hpp>
 #include <thrift/protocol/TBinaryProtocol.h>
-#include <thrift/server/TSimpleServer.h>
+#include <thrift/server/TThreadedServer.h>
 #include <thrift/transport/TBufferTransports.h>
 #include <thrift/transport/THttpServer.h>
 #include <thrift/transport/THttpTransport.h>
 #include <thrift/transport/TServerSocket.h>
 
-#include "acquisition_manager.hpp"
+#include "service.hpp"
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
@@ -27,8 +27,8 @@ using namespace ::apache::thrift::transport;
 using namespace ::apache::thrift::server;
 using namespace ::wayz::hera;
 
-TSimpleServer* g_server_ptr = nullptr;                ///< global pointer to TSimpleServer
-daemon::AcquisitionManager* g_handler_ptr = nullptr;  ///< global pointer to AcquisitionManager
+TThreadedServer* g_server_ptr = nullptr;   ///< global pointer to TSimpleServer
+daemon::Service* g_handler_ptr = nullptr;  ///< global pointer to Service
 
 ///
 /// @brief Handler Ctrl+C(SIGINT)
@@ -68,14 +68,14 @@ int main(int argc, char** argv)
     log::init(log_file);
 
     int port = 9090;
-    std::shared_ptr<daemon::AcquisitionManager> handler(new daemon::AcquisitionManager(filename_prefix, profile_json));
+    std::shared_ptr<daemon::Service> handler(new daemon::Service(filename_prefix, profile_json));
     g_handler_ptr = handler.get();
-    std::shared_ptr<TProcessor> processor(new AcquisitionManagerProcessor(handler));
+    std::shared_ptr<TProcessor> processor(new daemon::ServiceProcessor(handler));
     std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     std::shared_ptr<TTransportFactory> transportFactory(new THttpServerTransportFactory());
     std::shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
 
-    g_server_ptr = new TSimpleServer(processor, serverTransport, transportFactory, protocolFactory);
+    g_server_ptr = new TThreadedServer(processor, serverTransport, transportFactory, protocolFactory);
     log::info << "HeraMain: Daemon Started" << log::endl;
     g_server_ptr->serve();
     log::info << "HeraMain: Daemon Stoped" << log::endl;

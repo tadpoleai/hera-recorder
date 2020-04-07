@@ -30,9 +30,6 @@ namespace ipc {
 ///
 enum class OpenMode : bool { Read = false, Write = true };
 
-static constexpr size_t DefaultNumElement = 4096UL;    ///< Default quantity of memory slot
-static constexpr size_t DefaultElementSize = 16384UL;  ///< Default size of every memory slot
-
 extern std::set<key_t> g_opened_keys;   ///< process-global set for opened keys
 extern std::mutex g_mutex_opened_keys;  ///< make mutex for operation on opened_keys_
 
@@ -40,8 +37,6 @@ extern std::mutex g_mutex_opened_keys;  ///< make mutex for operation on opened_
 /// @brief Inter process lock-free circular queue
 ///
 /// @tparam DataType data type of element
-/// @tparam NumElement quantity of memory slot (element)
-/// @tparam ElementSize size of every memory slot (element)
 ///
 /// This is for inter process message communication.
 ///
@@ -56,7 +51,7 @@ extern std::mutex g_mutex_opened_keys;  ///< make mutex for operation on opened_
 /// After both side opened, data can be inserted from producer side with write(),
 /// and data can be read from consumer side with read().
 ///
-template<class DataType, size_t NumElement = DefaultNumElement, size_t ElementSize = DefaultElementSize>
+template<class DataType>
 class IPCQueue final {
 public:
     using IPCQueuePtr = std::unique_ptr<IPCQueue>;
@@ -91,17 +86,14 @@ public:
                                decltype(DataType::deserialize(std::declval<void*>(), std::declval<size_t>()))>::value,
                   "DataType does not have static member function, DataPtr deserialize(void* src, size_t max_size)");
 
-    static_assert(ElementSize != 0, "ElementSize must must not be 0");
-    static_assert(ElementSize % 256 == 0, "ElementSize must be multiple of 256");
-    static_assert(NumElement >= 2, "NumElement must be larger than 2");
-    static_assert(NumElement * ElementSize <= 256 * (1 << 20),
-                  "Size of shared memory data segment should be smaller than 256MiB");
-
 private:
-#pragma pack(push, 1)
+    static constexpr size_t DefaultNumElement = 4096UL;    ///< Default quantity of memory slot
+    static constexpr size_t DefaultElementSize = 16384UL;  ///< Default size of every memory slot
+
     static constexpr uint32_t MagicBase = 0x4441'7A9F;  ///< Magic number flag
     static constexpr uint32_t MagicKey = 0x0001'BF52;   /// Magic number of key
 
+#pragma pack(push, 1)
     ///
     /// @brief Header information of shared memory
     ///
@@ -116,14 +108,17 @@ private:
     /// @brief Data structure of shared memory
     ///
     struct SharedMemory {
-        volatile SharedMemoryHeader header;     ///< header information
-        uint8_t data[NumElement][ElementSize];  ///< circular queue data
+        volatile SharedMemoryHeader header;  ///< header information
+        uint8_t data[0];                     ///< circular queue data
     };
 
 #define NullSharedPtr (reinterpret_cast<SharedMemory*>(-1))
     ///< shmat() returns a nullptr valued -1, make it happy
 
 #pragma pack(pop)
+
+    /// @tparam NumElement quantity of memory slot (element)
+    /// @tparam ElementSize size of every memory slot (element)
 
 public:
     ///
@@ -144,10 +139,17 @@ public:
     ///
     /// @param key key of shared memory
     /// @param mode write mode or read mode
+    /// @param shared if this ipc_queue is shared by multiple threads
+    /// @param num_element quantity of memory slot (element)
+    /// @param element_size size of every memory slot (element)
     /// @return true succeed
     /// @return false failed
     ///
-    bool open(const uint32_t key, const OpenMode mode)
+    bool open(const uint32_t key,
+              const OpenMode mode,
+              const bool shared = false,
+              const size_t num_element = DefaultNumElement,
+              const size_t element_size = DefaultElementSize)
     {
         // Check if opened by this instance
         if (is_open() || is_closed_) {
@@ -172,11 +174,33 @@ public:
             return false;
         }
 
+        // Check size
+        if (num_element == 0) {
+            log::error << "ElementSize must must not be 0" << log::endl;
+            return false;
+        }
+        if (num_element % 256 != 0) {
+            log::error << "ElementSize must be multiple of 256" << log::endl;
+            return false;
+        }
+        if (element_size < 2) {
+            log::error << "NumElement must be larger than 2" << log::endl;
+            return false;
+        }
+        if (num_element * element_size > (256 << 10)) {
+            log::error << "Size of shared memory data segment should be smaller than 256MiB" << log::endl;
+            return false;
+        }
+
+        num_element_ = num_element;
+        element_size_ = element_size;
+        shared_ = shared;
+
         // Create or open shared memory
         mode_ = mode;
         key_ = key;
         auto ipc_mode = 0777 | IPC_CREAT;
-        shm_id_ = shmget((key_t)(key + MagicKey), sizeof(SharedMemory), ipc_mode);
+        shm_id_ = shmget((key_t)(key + MagicKey), sizeof(SharedMemory) + num_element * element_size, ipc_mode);
         if (shm_id_ == -1) {
             log::error << "IPCQueue: Can not open key = '" << key << "', mode = '"
                        << (mode == OpenMode::Write ? "w" : "r") << "', can not create" << log::endl;
@@ -278,6 +302,10 @@ public:
             return false;
         }
 
+        if (shared_) {
+            std::unique_lock<std::mutex> _(mutex_);
+        }
+
         // No reader
         if (shm_ptr_->header.read_magic != magic_) {
             return false;
@@ -287,7 +315,7 @@ public:
         auto head = shm_ptr_->header.head;
 
         // Queue full
-        if ((tail - head) % NumElement == 1) {
+        if ((tail - head) % num_element_ == 1) {
             return false;
         }
 
@@ -307,6 +335,10 @@ public:
             return false;
         }
 
+        if (shared_) {
+            std::unique_lock<std::mutex> _(mutex_);
+        }
+
         // No reader
         if (shm_ptr_->header.read_magic != magic_) {
             return false;
@@ -316,15 +348,15 @@ public:
         auto head = shm_ptr_->header.head;
 
         // Queue full
-        if ((tail - head) % NumElement == 1) {
+        if ((tail - head) % num_element_ == 1) {
             return false;
         }
 
         // Write data
-        void* dest = &shm_ptr_->data[head];
-        if (data->serialize(dest, ElementSize) != 0) {
+        void* dest = &shm_ptr_->data[head * element_size_];
+        if (data->serialize(dest, element_size_) != 0) {
             auto next_head = head + 1;
-            next_head %= NumElement;
+            next_head %= num_element_;
             shm_ptr_->header.head = next_head;
             return true;
         } else {
@@ -345,6 +377,10 @@ public:
             return false;
         }
 
+        if (shared_) {
+            std::unique_lock<std::mutex> _(mutex_);
+        }
+
         // No reader
         if (shm_ptr_->header.read_magic != magic_) {
             return false;
@@ -354,15 +390,15 @@ public:
         auto head = shm_ptr_->header.head;
 
         // Queue full
-        if ((tail - head) % NumElement == 1) {
+        if ((tail - head) % num_element_ == 1) {
             return false;
         }
 
         // Write data
-        void* dest = &shm_ptr_->data[head];
-        if (data.serialize(dest, ElementSize) != 0) {
+        void* dest = &shm_ptr_->data[head * element_size_];
+        if (data.serialize(dest, element_size_) != 0) {
             auto next_head = head + 1;
-            next_head %= NumElement;
+            next_head %= num_element_;
             shm_ptr_->header.head = next_head;
             return true;
         } else {
@@ -381,6 +417,10 @@ public:
             return nullptr;
         }
 
+        if (shared_) {
+            std::unique_lock<std::mutex> _(mutex_);
+        }
+
         // No writer
         if (shm_ptr_->header.write_magic != magic_) {
             return nullptr;
@@ -395,10 +435,10 @@ public:
         }
 
         // Read data
-        void* src = &shm_ptr_->data[tail];
-        auto data = DataType::deserialize(src, ElementSize);
+        void* src = &shm_ptr_->data[tail * element_size_];
+        auto data = DataType::deserialize(src, element_size_);
         auto next_tail = tail + 1;
-        next_tail %= NumElement;
+        next_tail %= num_element_;
         shm_ptr_->header.tail = next_tail;
 
         return data;
@@ -420,13 +460,19 @@ public:
     };
 
 private:
-    uint32_t key_;    // key of shared memory
+    uint32_t key_;    ///< key of shared memory
     OpenMode mode_;   ///< open mode of IPC Queue
     bool is_closed_;  ///< is this queue already closed
 
     uint64_t magic_;         ///< magic number of this queue / key
     int shm_id_;             ///< shared memory id, -1 indicates invalid
     SharedMemory* shm_ptr_;  ///< pointer to attached shared memory, -1 indicates nullptr
+
+    size_t num_element_;   ///< quantity of memory slot
+    size_t element_size_;  ///< size of every memory slot
+
+    std::mutex mutex_;  ///< mutex of write/read operation, only used if shared_ is true
+    bool shared_;       ///< if this ipc_queue is shared by multiple threads
 };
 
 }  // namespace ipc

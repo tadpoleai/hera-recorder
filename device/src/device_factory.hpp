@@ -25,6 +25,23 @@ public:
     DeviceFactory() = delete;
 
     ///
+    /// @brief Get meta info of valid types
+    ///
+    /// @return std::vector<std::string> const name of valid device types
+    ///
+    static std::vector<std::string> types();
+
+    ///
+    /// @brief Get meta info of specific type's parameters
+    ///
+    /// @param vendor_type vendor_type in string
+    /// @return std::pair<std::vector<std::string>, std::vector<std::string>> pair of essential parameters and valid
+    /// parameters
+    ///
+    static std::pair<std::vector<std::string>, std::vector<std::string>> parameter_types(
+            const std::string& vendor_type);
+
+    ///
     /// @brief Check vendor_type
     ///
     /// @param vendor_type vendor_type in string
@@ -43,6 +60,7 @@ public:
     /// @param vendor_type vendor_type in string
     /// @see DeviceVendorType
     /// @param name device name
+    /// @param forward whether to realtime forward data by ipc
     /// @param storage pointer to global storage for all devices
     /// @param read_mode operate in read mode or not
     /// @return DevicePtr an unique pointer to Device
@@ -52,6 +70,7 @@ public:
     static DevicePtr create(const uint32_t id,
                             const std::string& vendor_type,
                             const std::string& name,
+                            const bool forward,
                             storage::StorageManager* const storage);
 
     ///

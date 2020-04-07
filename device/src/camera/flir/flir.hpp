@@ -104,8 +104,9 @@ public:
     Flir(const uint32_t id,
          const std::string& vendor_type,
          const std::string& name,
+         const bool forward,
          storage::StorageManager* const storage) :
-        Device(id, vendor_type, name, storage, HistoryDepth_, {DeviceParameterType::IpAddress})
+        Device(id, vendor_type, name, forward, storage, HistoryDepth_, EssentialParameterTypes)
     {}
     Flir(const Flir&) = delete;
     Flir& operator=(const Flir&) = delete;
@@ -156,6 +157,11 @@ private:
     HeraErrno handle_flir_error(const FlyCapture2::Error& error);
 #endif
 #endif
+
+public:
+    static const std::vector<DeviceParameterType> EssentialParameterTypes;  ///< Essential Parameters for device
+
+    static const std::vector<DeviceParameterType> OptionalParameterTypes;  ///< Optional Parameters for device
 
 private:
     static constexpr size_t HistoryDepth_ = 1;      ///< History Depth, 1

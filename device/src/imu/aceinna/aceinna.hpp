@@ -68,13 +68,9 @@ public:
     Aceinna(const uint32_t id,
             const std::string& vendor_type,
             const std::string& name,
+            const bool forward,
             storage::StorageManager* const storage) :
-        Device(id,
-               vendor_type,
-               name,
-               storage,
-               HistoryDepth_,
-               {DeviceParameterType::Kernel, DeviceParameterType::BaudRate, DeviceParameterType::SerialMsgType})
+        Device(id, vendor_type, name, forward, storage, HistoryDepth_, EssentialParameterTypes)
     {}
     Aceinna(const Aceinna&) = delete;
     Aceinna& operator=(const Aceinna&) = delete;
@@ -105,6 +101,11 @@ public:
     /// @brief Static convert function for read / convert / replay
     ///
     static data::SensorDataPtr do_convert(data::DeviceDataPtr& storage_data);
+
+public:
+    static const std::vector<DeviceParameterType> EssentialParameterTypes;  ///< Essential Parameters for device
+
+    static const std::vector<DeviceParameterType> OptionalParameterTypes;  ///< Optional Parameters for device
 
 private:
     static constexpr size_t HistoryDepth_ = 1;  ///< History Depth, 1
@@ -148,7 +149,7 @@ private:
     /// @see SerialTransport
     int32_t serial_msg_type_;
 
-    utils::SerialTransport* serial_port_;    ///< pointer to SerialTransport object, for receiving data
+    utils::SerialTransport* serial_port_;            ///< pointer to SerialTransport object, for receiving data
     common::ThreadQueue<utils::SerialData>* queue_;  ///< queue of serial data
 };
 

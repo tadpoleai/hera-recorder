@@ -61,7 +61,10 @@ endif()
 if(with-slam
    OR with-all
    AND NOT without-slam)
+  set(WITH_SLAM 1)
+  add_definitions(-DWITH_SLAM)
   message(STATUS "Hera will build with slam")
+
   add_subdirectory(slam)
 else()
   message(STATUS "Hera will build without slam")

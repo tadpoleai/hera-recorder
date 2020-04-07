@@ -34,6 +34,15 @@ Duration Timestamp::operator-(const Timestamp& rhs) const noexcept
     return Duration(int64_t(*this) - int64_t(rhs));
 }
 
+std::string Timestamp::to_datetime() const
+{
+    std::tm* timeinfo;
+    char buffer[80];
+    timeinfo = std::localtime(&tv_sec);
+    std::strftime(buffer, 80, "%Y%m%d%H%M%S", timeinfo);
+    return std::string(buffer);
+}
+
 std::ostream& operator<<(std::ostream& os, const Timestamp& ts)
 {
     std::tm* timeinfo;

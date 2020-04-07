@@ -65,13 +65,9 @@ public:
     Foobar(const uint32_t id,
            const std::string& vendor_type,
            const std::string& name,
+           const bool forward,
            storage::StorageManager* const storage) :
-        Device(id,
-               vendor_type,
-               name,
-               storage,
-               HistoryDepth_,
-               {DeviceParameterType::DummyRate, DeviceParameterType::DummyValue})
+        Device(id, vendor_type, name, forward, storage, HistoryDepth_, EssentialParameterTypes)
     {}
     Foobar(const Foobar&) = delete;
     Foobar& operator=(const Foobar&) = delete;
@@ -102,6 +98,11 @@ public:
     /// @brief Static convert function for read / convert / replay
     ///
     static data::SensorDataPtr do_convert(data::DeviceDataPtr& storage_data);
+
+public:
+    static const std::vector<DeviceParameterType> EssentialParameterTypes;  ///< Essential Parameters for device
+
+    static const std::vector<DeviceParameterType> OptionalParameterTypes;  ///< Optional Parameters for device
 
 private:
     static constexpr size_t HistoryDepth_ = 10;  ///< History Depth, 10

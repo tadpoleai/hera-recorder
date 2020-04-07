@@ -85,17 +85,9 @@ public:
     Serialsync(const uint32_t id,
                const std::string& vendor_type,
                const std::string& name,
+               const bool forward,
                storage::StorageManager* const storage) :
-        Device(id,
-               vendor_type,
-               name,
-               storage,
-               HistoryDepth_,
-               {DeviceParameterType::Kernel,
-                DeviceParameterType::KernelAuxiliary,
-                DeviceParameterType::BaudRate,
-                DeviceParameterType::BaudRateAuxiliary,
-                DeviceParameterType::SerialMsgType}),
+        Device(id, vendor_type, name, forward, storage, HistoryDepth_, EssentialParameterTypes),
         serial_port_(nullptr),
         serial_port_auxiliary_(nullptr),
         queue_(nullptr),
@@ -131,6 +123,11 @@ public:
     ///
     static data::SensorDataPtr do_convert(data::DeviceDataPtr& storage_data);
 
+public:
+    static const std::vector<DeviceParameterType> EssentialParameterTypes;  ///< Essential Parameters for device
+
+    static const std::vector<DeviceParameterType> OptionalParameterTypes;  ///< Optional Parameters for device
+
 private:
     static constexpr size_t HistoryDepth_ = 1;  ///< History Depth, 1
 
@@ -145,8 +142,8 @@ private:
     /// @see SerialTransport
     int32_t serial_msg_type_;
 
-    utils::SerialPortSentence* serial_port_;           ///< for receiving nmea data
-    utils::SerialTransport* serial_port_auxiliary_;    ///< for receiving time shiftation data
+    utils::SerialPortSentence* serial_port_;                   ///< for receiving nmea data
+    utils::SerialTransport* serial_port_auxiliary_;            ///< for receiving time shiftation data
     common::ThreadQueue<utils::SerialData>* queue_;            ///< queue of nmea data
     common::ThreadQueue<utils::SerialData>* queue_auxiliary_;  ///< queue of serial time shiftation data
 

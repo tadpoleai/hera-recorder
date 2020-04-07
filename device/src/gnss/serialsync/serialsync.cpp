@@ -20,6 +20,14 @@ namespace device {
 namespace gnss {
 namespace serialsync {
 
+const std::vector<DeviceParameterType> Serialsync::EssentialParameterTypes = {DeviceParameterType::Kernel,
+                                                                              DeviceParameterType::KernelAuxiliary,
+                                                                              DeviceParameterType::BaudRate,
+                                                                              DeviceParameterType::BaudRateAuxiliary,
+                                                                              DeviceParameterType::SerialMsgType};
+
+const std::vector<DeviceParameterType> Serialsync::OptionalParameterTypes = {};
+
 HeraErrno Serialsync::connect()
 {
     try {

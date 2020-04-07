@@ -17,9 +17,10 @@ namespace device {
 Device::Device(const uint32_t id,
                const std::string& vendor_type,
                const std::string& name,
+               const bool forward,
                storage::StorageManager* const storage,
                const size_t history_depth,
-               std::initializer_list<DeviceParameterType>&& essential_parameter_types) :
+               const std::vector<DeviceParameterType>& essential_parameter_types) :
     id_(id),
     vendor_type_(vendor_type),
     name_(name),
@@ -30,10 +31,10 @@ Device::Device(const uint32_t id,
     is_record_(false),
     thread_fetch_(nullptr),
     storage_(storage),
-    is_forward_(true),  ///< @todo
+    is_forward_(forward),
     thread_forward_(nullptr),
     ipc_queue_(ipc::IPCQueue<data::SensorData>::create()),
-    essential_parameter_types_(std::move(essential_parameter_types))
+    essential_parameter_types_(essential_parameter_types)
 {
     storage_->add_device(vendor_type_ + "/" + name_, history_depth_);
 }
@@ -180,7 +181,6 @@ OutParametersMap Device::get_parameters() const
     return parameters;
 }
 
-
 /// Set status to DeviceStatus::Error, and set reason
 ///
 HeraErrno Device::handle_error(HeraErrno e, std::string&& reason)
@@ -210,6 +210,7 @@ void Device::fetch_thread_function()
 {
     while (status_ == DeviceStatus::Connected) {
         auto new_data = fetch();
+
         if (new_data != nullptr) {
             if (is_forward_) {
                 forward_queue_.push(new_data);

@@ -5,7 +5,7 @@ using namespace wayz::hera;
 
 int main()
 {
-    auto device0 = DeviceFactory::create(0, "dummy/foobar", "dum0", "record");
+    auto device0 = device::DeviceFactory::create(0, "dummy/foobar", "dum0", "record");
     device0->define_parameter("DummyValue", "256");
     device0->define_parameter("DummyRate", "10");
     device0->start();

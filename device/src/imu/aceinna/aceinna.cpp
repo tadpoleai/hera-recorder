@@ -17,6 +17,12 @@ namespace device {
 namespace imu {
 namespace aceinna {
 
+const std::vector<DeviceParameterType> Aceinna::EssentialParameterTypes = {DeviceParameterType::Kernel,
+                                                                           DeviceParameterType::BaudRate,
+                                                                           DeviceParameterType::SerialMsgType};
+
+const std::vector<DeviceParameterType> Aceinna::OptionalParameterTypes = {};
+
 /// Open serial port by kernel, baud rate, serial msg type,
 /// and get a thread-safe queue
 HeraErrno Aceinna::connect()
@@ -56,6 +62,7 @@ void Aceinna::disconnect()
 data::DeviceDataPtr Aceinna::fetch()
 {
     if (!queue_) {
+        log::warn << "Aceinna: Queue not registered by SerialTransport" << log::endl;
         return nullptr;
     }
 
@@ -76,6 +83,7 @@ data::DeviceDataPtr Aceinna::fetch()
     auto derived_data = static_cast<AceinnaData*>(data.get());
 
     if (received_length != sizeof(derived_data->buf)) {
+        log::warn << "Aceinna: Received size does not match" << log::endl;
         return nullptr;
     }
     // Use Memcpy to directly fill buf
