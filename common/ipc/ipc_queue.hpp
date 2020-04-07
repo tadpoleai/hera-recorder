@@ -304,11 +304,14 @@ public:
         }
 
         if (shared_) {
-            std::unique_lock<std::mutex> _(mutex_);
+            mutex_.lock();
         }
 
         // No reader
         if (shm_ptr_->header.read_magic != magic_) {
+            if (shared_) {
+                mutex_.unlock();
+            }
             return false;
         }
 
@@ -317,9 +320,15 @@ public:
 
         // Queue full
         if ((tail - head) % num_element_ == 1) {
+            if (shared_) {
+                mutex_.unlock();
+            }
             return false;
         }
 
+        if (shared_) {
+            mutex_.unlock();
+        }
         return true;
     }
 
@@ -338,12 +347,15 @@ public:
         }
 
         if (shared_) {
-            std::unique_lock<std::mutex> _(mutex_);
+            mutex_.lock();
         }
 
         // No reader
         if (shm_ptr_->header.read_magic != magic_) {
             log::debug << "IPC: No Reader" << log::endl;
+            if (shared_) {
+                mutex_.unlock();
+            }
             return false;
         }
 
@@ -352,6 +364,9 @@ public:
 
         // Queue full
         if ((tail - head) % num_element_ == 1) {
+            if (shared_) {
+                mutex_.unlock();
+            }
             return false;
         }
 
@@ -361,8 +376,14 @@ public:
             auto next_head = head + 1;
             next_head %= num_element_;
             shm_ptr_->header.head = next_head;
+            if (shared_) {
+                mutex_.unlock();
+            }
             return true;
         } else {
+            if (shared_) {
+                mutex_.unlock();
+            }
             return false;
         }
     }
@@ -381,11 +402,14 @@ public:
         }
 
         if (shared_) {
-            std::unique_lock<std::mutex> _(mutex_);
+            mutex_.lock();
         }
 
         // No reader
         if (shm_ptr_->header.read_magic != magic_) {
+            if (shared_) {
+                mutex_.unlock();
+            }
             return false;
         }
 
@@ -394,6 +418,9 @@ public:
 
         // Queue full
         if ((tail - head) % num_element_ == 1) {
+            if (shared_) {
+                mutex_.unlock();
+            }
             return false;
         }
 
@@ -403,8 +430,14 @@ public:
             auto next_head = head + 1;
             next_head %= num_element_;
             shm_ptr_->header.head = next_head;
+            if (shared_) {
+                mutex_.unlock();
+            }
             return true;
         } else {
+            if (shared_) {
+                mutex_.unlock();
+            }
             return false;
         }
     }
@@ -421,11 +454,14 @@ public:
         }
 
         if (shared_) {
-            std::unique_lock<std::mutex> _(mutex_);
+            mutex_.lock();
         }
 
         // No writer
         if (shm_ptr_->header.write_magic != magic_) {
+            if (shared_) {
+                mutex_.unlock();
+            }
             return nullptr;
         }
 
@@ -434,6 +470,9 @@ public:
 
         // Queue empty
         if (tail == head) {
+            if (shared_) {
+                mutex_.unlock();
+            }
             return nullptr;
         }
 
@@ -444,6 +483,9 @@ public:
         next_tail %= num_element_;
         shm_ptr_->header.tail = next_tail;
 
+        if (shared_) {
+            mutex_.unlock();
+        }
         return data;
     }
 
@@ -474,8 +516,8 @@ private:
     size_t num_element_;   ///< quantity of memory slot
     size_t element_size_;  ///< size of every memory slot
 
-    std::mutex mutex_;  ///< mutex of write/read operation, only used if shared_ is true
-    bool shared_;       ///< if this ipc_queue is shared by multiple threads
+    mutable std::mutex mutex_;  ///< mutex of write/read operation, only used if shared_ is true
+    bool shared_;               ///< if this ipc_queue is shared by multiple threads
 };
 
 }  // namespace ipc
