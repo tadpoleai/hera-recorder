@@ -17,7 +17,7 @@ namespace slam {
 std::unique_ptr<IPCResult> Result::handler(const ipc::OpenMode mode)
 {
     auto ipc_result = IPCResult::create();
-    ipc_result->open(IPCResultKey, mode);
+    ipc_result->open(IPCResultKey, mode, false, IPCResultNumElement, IPCResultElementSize);
     return ipc_result;
 }
 

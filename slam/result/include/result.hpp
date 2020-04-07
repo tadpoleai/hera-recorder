@@ -22,7 +22,7 @@ namespace slam {
 class Result;
 static constexpr auto IPCResultNumElement = 2;              ///< Single buffer
 static constexpr auto IPCResultElementSize = 32 * 1 << 20;  ///< Max size of result, 32MiB
-using IPCResult = ipc::IPCQueue<Result, IPCResultNumElement, IPCResultElementSize>;
+using IPCResult = ipc::IPCQueue<Result>;
 using ResultPtr = std::shared_ptr<Result>;
 
 #pragma pack(push, 1)
