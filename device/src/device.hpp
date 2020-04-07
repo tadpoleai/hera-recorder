@@ -73,13 +73,15 @@ public:
     /// in slash/case, i.e, category/vendor,
     /// e.g., lidar/velodyne, camera/flir
     /// @param name device name,
-    /// @param storage pointer to global storage for all devices
     /// @param forward whether to realtime forward data by ipc
+    /// @param ipc_queue ipc queue for forwarding
+    /// @param storage pointer to global storage for all devices
     /// @param essential_parameter_types essential parameter types for a specific vendor_type
     Device(const uint32_t id,
            const std::string& vendor_type,
            const std::string& name,
            const bool forward,
+           ipc::IPCQueue<data::SensorData>* const ipc_queue,
            storage::StorageManager* const storage,
            const size_t history_depth,
            const std::vector<DeviceParameterType>& essential_parameter_types);
@@ -357,7 +359,7 @@ private:
     const bool is_forward_;                                ///< if device configured to forward
     std::thread* thread_forward_;                          ///< forwarding thread
     common::ThreadQueue<data::DeviceData> forward_queue_;  ///< DeviceData(device raw data) queue, ready for forwarding
-    decltype(ipc::IPCQueue<data::SensorData>::create()) ipc_queue_;  ///< IPC queue for sensor data forwarding
+    ipc::IPCQueue<data::SensorData>* ipc_queue_;           ///< IPC queue for sensor data forwarding
 
     const std::vector<DeviceParameterType> essential_parameter_types_;  ///< essential parameters types
 };

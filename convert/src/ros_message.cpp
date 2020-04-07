@@ -43,6 +43,11 @@ void operator<<(rosbag_direct_write::DirectBag& bag, ROSMessagePtr&& message)
         bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
         break;
     }
+    case ROSMessageType::Image: {
+        auto ros_message = reinterpret_cast<sensor_msgs::Image*>(message->ptr);
+        bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
+        break;
+    }
     case ROSMessageType::NavSatFix: {
         auto ros_message = reinterpret_cast<sensor_msgs::NavSatFix*>(message->ptr);
         bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
@@ -112,6 +117,14 @@ ROSMessagePtr ROSMessage::create<ROSMessageType::CompressedImage>()
 }
 
 template<>
+ROSMessagePtr ROSMessage::create<ROSMessageType::Image>()
+{
+    auto result = std::unique_ptr<ROSMessage>(new ROSMessage(ROSMessageType::Image));
+    result->ptr = new sensor_msgs::Image();
+    return result;
+}
+
+template<>
 ROSMessagePtr ROSMessage::create<ROSMessageType::NavSatFix>()
 {
     auto result = std::unique_ptr<ROSMessage>(new ROSMessage(ROSMessageType::NavSatFix));
@@ -139,6 +152,9 @@ ROSMessage::~ROSMessage()
             break;
         case ROSMessageType::CompressedImage:
             delete reinterpret_cast<sensor_msgs::CompressedImage*>(ptr);
+            break;
+        case ROSMessageType::Image:
+            delete reinterpret_cast<sensor_msgs::Image*>(ptr);
             break;
         case ROSMessageType::NavSatFix:
             delete reinterpret_cast<sensor_msgs::NavSatFix*>(ptr);
@@ -174,6 +190,8 @@ std::vector<ROSMessagePtr> ROSMessage::convert(device::data::SensorDataPtr& sens
             return convert<device::SensorDataType::PointsXYZI>(sensor_data, topic_prefix, frame_id, remapper);
         case device::SensorDataType::CompressedImage:
             return convert<device::SensorDataType::CompressedImage>(sensor_data, topic_prefix, frame_id, remapper);
+        case device::SensorDataType::Image:
+            return convert<device::SensorDataType::Image>(sensor_data, topic_prefix, frame_id, remapper);
         case device::SensorDataType::NavSatFix:
             return convert<device::SensorDataType::NavSatFix>(sensor_data, topic_prefix, frame_id, remapper);
         default: {

@@ -19,7 +19,7 @@ add_custom_command(
 
 # Build daemon
 file(GLOB_RECURSE ALL_SRC "src/*.cpp" "src/**/*.cpp")
-include_directories("../" "/usr/local/include/" ${CMAKE_BINARY_DIR})
+include_directories("../" "/" ${CMAKE_BINARY_DIR})
 add_executable(
   ${PROJECT_NAME}
   ${ALL_SRC} ${RPC_GEN_CPP}/hera_types.cpp ${RPC_GEN_CPP}/hera_constants.cpp

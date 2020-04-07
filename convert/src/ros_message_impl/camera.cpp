@@ -51,6 +51,45 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::Compresse
     return ret;
 }
 
+template<>
+std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::Image>(device::data::SensorDataPtr& sensor_data,
+                                                                              const std::string& topic_prefix,
+                                                                              const std::string& frame_id,
+                                                                              const common::Remapper* remapper)
+{
+    auto data_impl = reinterpret_cast<device::data::Image*>(sensor_data.get());
+    auto message = ROSMessage::create<ROSMessageType::Image>();
+    auto ros_message = reinterpret_cast<sensor_msgs::Image*>(message->ptr);
+    std::vector<ROSMessagePtr> ret;
+
+    message->topic_name = remapper->remap(topic_prefix + "image");
+    message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+    ros_message->header.seq = sensor_data->sequence;
+    ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+    ros_message->header.frame_id = frame_id;
+
+    ros_message->height = data_impl->image_meta.rows;
+    ros_message->width = data_impl->image_meta.cols;
+    ros_message->is_bigendian = 0;
+
+    switch (data_impl->image_meta.pixel_format) {
+    case device::data::Image::PixelFormat::Mono8:
+        ros_message->encoding = "mono8";
+        ros_message->step = ros_message->width * 1;
+        break;
+    default:
+        log::error << "Converter: Invalid Format:" << static_cast<int>(data_impl->image_meta.pixel_format) << "\n"
+                   << "Please add format in convert/src/ros_message_impl/camera.cpp" << log::endl;
+        return ret;
+    }
+
+    ros_message->data.resize(data_impl->image_data_size);
+    memcpy(ros_message->data.data(), data_impl->image_data, data_impl->image_data_size);
+
+    ret.emplace_back(std::move(message));
+    return ret;
+}
+
 }  // namespace convert
 }  // namespace hera
 }  // namespace wayz

@@ -50,6 +50,7 @@ StorageManager::StorageManager(const std::string& filename, const bool read_mode
 
 void StorageManager::close()
 {
+    log::debug << "StorageManager: Close" << log::endl;
     if (thread_ != nullptr) {
         thread_running_ = false;
         thread_->join();
@@ -66,6 +67,7 @@ void StorageManager::close()
             header->write_to(out_file_);
             header.reset();
         }
+        log::debug << "StorageManager: closing file" << log::endl;
         out_file_.close();
         out_file_opened_ = false;
     }
@@ -82,10 +84,12 @@ bool StorageManager::add_device(const std::string& full_name, const size_t histo
         log::warn << "Storage: Can not add device" << log::endl;
         return false;
     }
+    log::debug << "Storage: Add device " << full_name << log::endl;
     header->device_message_nums.push_back(0);
     header->device_names.push_back(full_name);
     header->device_data_sizes.push_back(0);
-    data_array_.emplace_back(std::move(std::make_unique<common::ThreadQueue<device::data::DeviceData>>(0, history_depth)));
+    data_array_.emplace_back(
+            std::move(std::make_unique<common::ThreadQueue<device::data::DeviceData>>(0, history_depth)));
     return true;
 }
 
@@ -100,7 +104,17 @@ void StorageManager::finish_add_device()
 bool StorageManager::add_data(const uint32_t device_id, device::data::DeviceDataPtr& data, const bool if_write_data)
 {
     if (read_mode_ || !add_device_finished_ || device_id >= data_array_.size()) {
-        log::warn << "Storage: Can not add data" << log::endl;
+        auto logger = log::warn << "Storage: Can not add data";
+        if (read_mode_) {
+            logger << " due to read mode";
+        }
+        if (!add_device_finished_) {
+            logger << " due to finish_add_device not called yet";
+        }
+        if (device_id >= data_array_.size()) {
+            logger << " due to device id '" << device_id << "' is out of range";
+        }
+        logger << log::endl;
         return false;
     }
 

@@ -66,8 +66,9 @@ public:
            const std::string& vendor_type,
            const std::string& name,
            const bool forward,
+           ipc::IPCQueue<data::SensorData>* const ipc_queue,
            storage::StorageManager* const storage) :
-        Device(id, vendor_type, name, forward, storage, HistoryDepth_, EssentialParameterTypes)
+        Device(id, vendor_type, name, forward, ipc_queue, storage, HistoryDepth_, EssentialParameterTypes)
     {}
     Foobar(const Foobar&) = delete;
     Foobar& operator=(const Foobar&) = delete;

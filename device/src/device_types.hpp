@@ -32,6 +32,7 @@ enum class DeviceVendorType : uint16_t {
     ImuAceinna = 0x0201,      ///< An 9-axis Imu, vendor is Aceinna, embedded in Wayz Tron Sync Board
     GnssSerialsync = 0x0301,  ///< RTK-GNSS, outputs NavSatFix, vendor is any that outpus NMEA
     CameraFlir = 0x0401,      ///< Camera, outputs RawImage or CompressedImage, vendor is FLIR
+    CameraS32VMipi = 0x0402,  ///< Camera, outputs RawImage, only for S32V, by mipi-csi
     LidarVelodyne = 0x0501,   ///< Lidar, outputs PointsXYZI, vendor is Velodyne
 };
 
@@ -48,6 +49,7 @@ enum class DeviceDataType : uint16_t {
     GnssSerialsyncNmea = 0x0301,         ///< For Nmea Sentence
     CameraFlirCompressedImage = 0x0401,  ///< For Flir's camera's compressed image
     CameraFlirRawImage = 0x0402,         ///< For Flir's camera's raw image
+    CameraS32VMipiRawImage = 0x0403,     ///< For S32vMipi's camera's raw image
     LidarVelodynePacket = 0x0501,        ///< For Velodyne's raw UDP packet
 };
 
@@ -69,7 +71,7 @@ enum class SensorDataType : uint16_t {
     ImuMagneticField = 0x0201,  ///< ROS Imu and MagneticField
     NavSatFix = 0x0301,         ///< ROS NavSatFix
     CompressedImage = 0x0401,   ///< ROS CompressedImage
-    RawImage = 0x0402,          ///< ROS Image, some minor format conversion needed
+    Image = 0x0402,          ///< ROS Image, some minor format conversion needed
     PointsXYZI = 0x0501,        ///< ROS PointCloud2, some PCL function needed
 };
 

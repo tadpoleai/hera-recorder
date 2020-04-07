@@ -14,7 +14,7 @@ find_package(rosbag REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 file(GLOB_RECURSE ALL_SRC "src/*.cpp" "src/**/*.cpp")
-include_directories("../" "/usr/local/include/" ${rosbag_INCLUDE_DIRS}
+include_directories("../" "/" ${rosbag_INCLUDE_DIRS}
                     ${PCL_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 add_executable(${PROJECT_NAME} ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} hera-common hera-device

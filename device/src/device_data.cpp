@@ -143,6 +143,7 @@ SensorDataPtr SensorData::end_of_file()
 size_t SensorData::serialize(void* dest, size_t max_size) const
 {
     if (length > max_size) {
+        log::debug << "SensorData: Serialize Max Size Over" << log::endl;
         return 0;
     }
     memcpy(dest, this, length);

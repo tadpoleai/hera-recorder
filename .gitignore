@@ -59,7 +59,7 @@ _deps
 
 # Folder
 vendor/
-build/
+build*/
 dist/
 runtime/
 tmp/

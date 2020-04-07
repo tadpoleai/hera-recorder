@@ -43,10 +43,10 @@ public:
 /// @brief SensorData for Camera
 ///
 /// Need minor effort to ROS Image
-class RawImage final : public SensorData {
+class Image final : public SensorData {
 public:
     ///
-    /// @brief Format of pixel for RawImage
+    /// @brief Format of pixel for Image
     ///
     /// Compatible with FLIR's SDK
     enum class PixelFormat : uint32_t {
@@ -73,7 +73,7 @@ public:
     };
 
     ///
-    /// @brief Format of bayer tile for RawImage
+    /// @brief Format of bayer tile for Image
     ///
     /// Compatible with FLIR's SDK
     enum class BayerFormat : uint32_t {
@@ -86,7 +86,7 @@ public:
     };
 
     ///
-    /// @brief Meta data for RawImage
+    /// @brief Meta data for Image
     ///
     struct ImageMeta {
         uint32_t rows;             ///< number of rows, i.e., height
