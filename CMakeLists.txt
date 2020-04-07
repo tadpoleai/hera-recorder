@@ -34,7 +34,7 @@ else()
   message(STATUS "Hera will build without device driver flir")
 endif()
 
-if(with-driver-s32vmipi OR with-driver-all)
+if(with-driver-s32vmipi OR with-driver-arm)
   set(DEVICE_DRIVER_S32VMIPI 1)
   add_definitions(-DDEVICE_DRIVER_S32VMIPI)
   message(STATUS "Hera will build with device driver s32vmipi")
