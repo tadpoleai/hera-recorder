@@ -15,11 +15,9 @@ if(DEVICE_DRIVER_FLIR)
   include("../deploy/cmake/flycapture.cmake")
 endif()
 
-if(TARGET_ARM)
-  # Drivers - Camera/S32VMipi
-  if(DEVICE_DRIVER_S32VMIPI)
-    set(S32V_VSDK_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/arm/libvsdk_ar0143.so)
-  endif()
+# Drivers - Camera/S32VMipi
+if(DEVICE_DRIVER_S32VMIPI)
+  set(S32V_VSDK_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/arm/libvsdk_ar0143.so)
 endif()
 
 # Build device (core)
