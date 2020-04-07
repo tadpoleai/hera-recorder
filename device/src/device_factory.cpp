@@ -15,6 +15,7 @@
 
 // Device Vendors
 #include "camera/flir/flir.hpp"
+#include "camera/s32vmipi/s32vmipi.hpp"
 #include "dummy/foobar/foobar.hpp"
 #include "gnss/serialsync/serialsync.hpp"
 #include "imu/aceinna/aceinna.hpp"
@@ -26,7 +27,7 @@ namespace device {
 
 std::vector<std::string> DeviceFactory::types()
 {
-    return {"dummy/foobar", "imu/aceinna", "lidar/velodyne", "camera/flir", "gnss/serialsync"};
+    return {"dummy/foobar", "imu/aceinna", "lidar/velodyne", "camera/flir", "camera/s32vmipi", "gnss/serialsync"};
 }
 
 bool DeviceFactory::check_type(const std::string& vendor_type)
@@ -60,6 +61,9 @@ std::pair<std::vector<std::string>, std::vector<std::string>> DeviceFactory::par
     } else if (vendor_type.compare("camera/flir") == 0) {
         essential = camera::flir::Flir::EssentialParameterTypes;
         optional = camera::flir::Flir::OptionalParameterTypes;
+    } else if (vendor_type.compare("camera/s32vmipi") == 0) {
+        essential = camera::s32vmipi::S32VMipi::EssentialParameterTypes;
+        optional = camera::s32vmipi::S32VMipi::OptionalParameterTypes;
     } else if (vendor_type.compare("gnss/serialsync") == 0) {
         essential = gnss::serialsync::Serialsync::EssentialParameterTypes;
         optional = gnss::serialsync::Serialsync::OptionalParameterTypes;
@@ -79,18 +83,21 @@ DevicePtr DeviceFactory::create(const uint32_t id,
                                 const std::string& vendor_type,
                                 const std::string& name,
                                 const bool forward,
+                                ipc::IPCQueue<data::SensorData>* const ipc_queue,
                                 storage::StorageManager* const storage)
 {
     if (vendor_type.compare("dummy/foobar") == 0) {
-        return std::make_unique<dummy::foobar::Foobar>(id, vendor_type, name, forward, storage);
+        return std::make_unique<dummy::foobar::Foobar>(id, vendor_type, name, forward, ipc_queue, storage);
     } else if (vendor_type.compare("imu/aceinna") == 0) {
-        return std::make_unique<imu::aceinna::Aceinna>(id, vendor_type, name, forward, storage);
+        return std::make_unique<imu::aceinna::Aceinna>(id, vendor_type, name, forward, ipc_queue, storage);
     } else if (vendor_type.compare("lidar/velodyne") == 0) {
-        return std::make_unique<lidar::velodyne::Velodyne>(id, vendor_type, name, forward, storage);
+        return std::make_unique<lidar::velodyne::Velodyne>(id, vendor_type, name, forward, ipc_queue, storage);
     } else if (vendor_type.compare("camera/flir") == 0) {
-        return std::make_unique<camera::flir::Flir>(id, vendor_type, name, forward, storage);
+        return std::make_unique<camera::flir::Flir>(id, vendor_type, name, forward, ipc_queue, storage);
+    } else if (vendor_type.compare("camera/s32vmipi") == 0) {
+        return std::make_unique<camera::s32vmipi::S32VMipi>(id, vendor_type, name, forward, ipc_queue, storage);
     } else if (vendor_type.compare("gnss/serialsync") == 0) {
-        return std::make_unique<gnss::serialsync::Serialsync>(id, vendor_type, name, forward, storage);
+        return std::make_unique<gnss::serialsync::Serialsync>(id, vendor_type, name, forward, ipc_queue, storage);
     }
 
     log::warn << "DeviceFactory::create: Unknown vendor type : " << vendor_type << log::endl;
@@ -114,6 +121,8 @@ data::SensorDataPtr DeviceFactory::convert(data::DeviceDataPtr& data)
         return gnss::serialsync::Serialsync::do_convert(data);
     case DeviceVendorType::CameraFlir:
         return camera::flir::Flir::do_convert(data);
+    case DeviceVendorType::CameraS32VMipi:
+        return camera::s32vmipi::S32VMipi::do_convert(data);
     case DeviceVendorType::LidarVelodyne:
         return lidar::velodyne::Velodyne::do_convert(data);
     default:

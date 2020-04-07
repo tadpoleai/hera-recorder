@@ -61,6 +61,7 @@ public:
     /// @see DeviceVendorType
     /// @param name device name
     /// @param forward whether to realtime forward data by ipc
+    /// @param ipc_queue ipc queue for forwarding
     /// @param storage pointer to global storage for all devices
     /// @param read_mode operate in read mode or not
     /// @return DevicePtr an unique pointer to Device
@@ -71,6 +72,7 @@ public:
                             const std::string& vendor_type,
                             const std::string& name,
                             const bool forward,
+                            ipc::IPCQueue<data::SensorData>* const ipc_queue,
                             storage::StorageManager* const storage);
 
     ///

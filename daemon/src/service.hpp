@@ -92,6 +92,8 @@ private:
     std::string storage_name_;
     storage::StorageManagerPtr storage_;
 
+    std::unique_ptr<ipc::IPCQueue<device::data::SensorData>> ipc_queue_;
+
     const std::string ProfilesFileName_;
     std::vector<Profile> profiles_;
 

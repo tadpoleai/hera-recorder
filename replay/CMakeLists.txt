@@ -8,7 +8,7 @@ include("../deploy/cmake/cpp_common.cmake")
 find_package(Threads REQUIRED)
 
 file(GLOB_RECURSE ALL_SRC "src/*.cpp" "src/**/*.cpp")
-include_directories("../" "/usr/local/include/")
+include_directories("../")
 add_executable(${PROJECT_NAME} ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} hera-common hera-device hera-storage)
 

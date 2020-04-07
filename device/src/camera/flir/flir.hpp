@@ -73,11 +73,11 @@ public:
         /// Timestamp at the half from capture triggered to shutter closed,
         /// i.e, trigger timestamp + 1/2 of shutter duration
         uint64_t timestamp_intrinsic_ns;
-        data::RawImage::ImageMeta image_meta;  ///< meta data of image
-        uint32_t flir_embedded_timstamp;       ///< flir embedded timstamp, see flir's manual
-        uint32_t flir_embedded_shutter;        ///< flir embedded timstamp, see flir's manual
-        uint32_t image_data_size;              ///< size of image_data
-        uint8_t image_data[0];                 ///< raw image data
+        data::Image::ImageMeta image_meta;  ///< meta data of image
+        uint32_t flir_embedded_timstamp;    ///< flir embedded timstamp, see flir's manual
+        uint32_t flir_embedded_shutter;     ///< flir embedded timstamp, see flir's manual
+        uint32_t image_data_size;           ///< size of image_data
+        uint8_t image_data[0];              ///< raw image data
     };
 
     ///
@@ -105,8 +105,9 @@ public:
          const std::string& vendor_type,
          const std::string& name,
          const bool forward,
+         ipc::IPCQueue<data::SensorData>* const ipc_queue,
          storage::StorageManager* const storage) :
-        Device(id, vendor_type, name, forward, storage, HistoryDepth_, EssentialParameterTypes)
+        Device(id, vendor_type, name, forward, ipc_queue, storage, HistoryDepth_, EssentialParameterTypes)
     {}
     Flir(const Flir&) = delete;
     Flir& operator=(const Flir&) = delete;

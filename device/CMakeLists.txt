@@ -15,6 +15,11 @@ if(DEVICE_DRIVER_FLIR)
   include("../deploy/cmake/flycapture.cmake")
 endif()
 
+# Drivers - Camera/S32VMipi
+if(DEVICE_DRIVER_S32VMIPI)
+  set(S32V_VSDK_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/arm/libvsdk_ar0143.so)
+endif()
+
 # Build device (core)
 include_directories(${PROJECT_NAME} "../" ${JPEG_TURBO_INCLUDE_DIR})
 add_library(${PROJECT_NAME} STATIC ${ALL_SRC})
@@ -27,4 +32,20 @@ target_include_directories(${PROJECT_NAME}-driver
                            PRIVATE ${FLY_CAPTURE_INCLUDE_DIR})
 target_compile_definitions(${PROJECT_NAME}-driver PRIVATE WITH_DRIVER=1)
 target_link_libraries(${PROJECT_NAME}-driver hera-common hera-storage
-                      Threads::Threads ${JPEG_TURBO_LIBS} ${FLT_CAPTURE_LIBS})
+                      Threads::Threads ${JPEG_TURBO_LIBS}
+                      ${FLT_CAPTURE_LIBS} ${S32V_VSDK_LIBS})
+
+if(TARGET_ARM)
+  # Build s32vmipi test
+  add_executable(${PROJECT_NAME}-s32vmipi-test unit_test/s32vmipi_test.cpp)
+  target_link_libraries(${PROJECT_NAME}-s32vmipi-test hera-common hera-storage
+                        ${PROJECT_NAME}-driver Threads::Threads ${JPEG_TURBO_LIBS}
+                        ${FLT_CAPTURE_LIBS} ${S32V_VSDK_LIB})
+endif()
+
+# Build test
+add_executable(${PROJECT_NAME}-test unit_test/dummy_test.cpp)
+target_link_libraries(${PROJECT_NAME}-test hera-common hera-storage
+                      ${PROJECT_NAME}-driver Threads::Threads ${JPEG_TURBO_LIBS}
+                      ${FLT_CAPTURE_LIBS})
+

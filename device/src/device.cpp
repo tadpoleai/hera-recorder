@@ -18,6 +18,7 @@ Device::Device(const uint32_t id,
                const std::string& vendor_type,
                const std::string& name,
                const bool forward,
+               ipc::IPCQueue<data::SensorData>* const ipc_queue,
                storage::StorageManager* const storage,
                const size_t history_depth,
                const std::vector<DeviceParameterType>& essential_parameter_types) :
@@ -33,7 +34,7 @@ Device::Device(const uint32_t id,
     storage_(storage),
     is_forward_(forward),
     thread_forward_(nullptr),
-    ipc_queue_(ipc::IPCQueue<data::SensorData>::create()),
+    ipc_queue_(ipc_queue),
     essential_parameter_types_(essential_parameter_types)
 {
     storage_->add_device(vendor_type_ + "/" + name_, history_depth_);
@@ -225,7 +226,6 @@ void Device::fetch_thread_function()
 /// if it returns a non-nullptr value, pass it to storage
 void Device::forward_thread_function()
 {
-    ipc_queue_->open(id_, ipc::OpenMode::Write);
     while (status_ == DeviceStatus::Connected) {
         auto storage_data = forward_queue_.wait_pop();
         if (storage_data != nullptr) {
@@ -235,7 +235,6 @@ void Device::forward_thread_function()
             }
         }
     }
-    ipc_queue_->close();
 }
 
 }  // namespace device

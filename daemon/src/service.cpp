@@ -56,6 +56,7 @@ void Service::reset()
     }
     devices_.clear();
     storage_.reset();
+    ipc_queue_.reset();
 #ifdef WITH_SLAM
     slam::Caller::stop();
 #endif

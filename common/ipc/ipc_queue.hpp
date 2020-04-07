@@ -176,18 +176,19 @@ public:
 
         // Check size
         if (num_element == 0) {
-            log::error << "ElementSize must must not be 0" << log::endl;
+            log::error << "NumElement must must not be 0" << log::endl;
             return false;
         }
-        if (num_element % 256 != 0) {
-            log::error << "ElementSize must be multiple of 256" << log::endl;
-            return false;
-        }
-        if (element_size < 2) {
+        if (num_element < 2) {
             log::error << "NumElement must be larger than 2" << log::endl;
             return false;
         }
-        if (num_element * element_size > (256 << 10)) {
+        if (element_size % 256 != 0) {
+            log::error << "ElementSize must be multiple of 256" << log::endl;
+            return false;
+        }
+
+        if (num_element * element_size > (256 << 20)) {
             log::error << "Size of shared memory data segment should be smaller than 256MiB" << log::endl;
             return false;
         }
@@ -332,6 +333,7 @@ public:
     bool write(DataPtr& data)
     {
         if (!is_open() || (mode_ == OpenMode::Read) || is_closed_) {
+            log::debug << "IPC: Not Open" << log::endl;
             return false;
         }
 
@@ -341,6 +343,7 @@ public:
 
         // No reader
         if (shm_ptr_->header.read_magic != magic_) {
+            log::debug << "IPC: No Reader" << log::endl;
             return false;
         }
 

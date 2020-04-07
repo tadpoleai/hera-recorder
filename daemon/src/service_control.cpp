@@ -60,13 +60,18 @@ void Service::start(Result& result, const int32_t profileIndex, const std::strin
         }
     }
 
+
+    // Open IPC
+    ipc_queue_ = ipc::IPCQueue<device::data::SensorData>::create();
+    ipc_queue_->open(0, ipc::OpenMode::Write, true);
+
     // Start calling factory function
     auto device_id = 0;
     std::string full_storage_name = FileNamePrefix_ + storage_name_ + FileNameSuffix_;
     storage_ = storage::StorageManager::open(full_storage_name, false);
     for (const auto& device : profile.devices) {
-        devices_.emplace_back(
-                device::DeviceFactory::create(device_id++, device.type, device.name, device.forward, storage_.get()));
+        devices_.emplace_back(device::DeviceFactory::create(
+                device_id++, device.type, device.name, device.forward, ipc_queue_.get(), storage_.get()));
         auto device_ptr = devices_.back().get();
 
         // Define parameters
