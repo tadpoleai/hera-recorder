@@ -18,10 +18,10 @@ if [ $? -ne 0 ]; then
     echo "build error"
 fi
 
-# make client
-# if [ $? -ne 0 ]; then
-#     echo "build client error"
-# fi
+make client
+if [ $? -ne 0 ]; then
+    echo "build client error"
+fi
 
 # Package artifacts
 echo "Packaging artifacts/amd64"
