@@ -7,7 +7,7 @@
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
-#include "ipc_queue.hpp"
+#include "ipc/ipc_queue.hpp"
 
 namespace wayz {
 namespace hera {

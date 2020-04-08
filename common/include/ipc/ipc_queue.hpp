@@ -19,7 +19,7 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 
-#include "common/logger/logger.hpp"
+#include "../logger/logger.hpp"
 
 namespace wayz {
 namespace hera {

@@ -7,9 +7,9 @@
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
-#include "gnss_data.hpp"
+#include "data/gnss_data.hpp"
 
-#include "common/logger/logger.hpp"
+#include "common/include/logger/logger.hpp"
 
 namespace wayz {
 namespace hera {

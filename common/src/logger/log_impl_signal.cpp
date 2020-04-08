@@ -4,8 +4,7 @@
 
 #include <regex>
 
-#include "../logger.hpp"
-#include "log_impl.hpp"
+#include "logger/logger.hpp"
 
 namespace wayz {
 namespace hera {

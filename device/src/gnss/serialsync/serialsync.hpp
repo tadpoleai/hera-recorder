@@ -10,10 +10,10 @@
 
 #pragma once
 
-#include "../../device.hpp"
 #include "../../utils/serial_port_sentence.hpp"
 #include "../../utils/serial_transport.hpp"
-#include "../gnss_data.hpp"
+#include "data/gnss_data.hpp"
+#include "device.hpp"
 
 namespace wayz {
 namespace hera {

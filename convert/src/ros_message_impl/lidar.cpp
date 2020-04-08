@@ -11,7 +11,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
 
-#include "../ros_message_impl.hpp"
+#include "ros_message_impl.hpp"
 
 namespace wayz {
 namespace hera {

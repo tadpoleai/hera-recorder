@@ -12,7 +12,7 @@
 
 #include <cstdint>
 
-#include "common/third_party/enum.hpp"
+#include "common/include/third_party/enum.hpp"
 
 namespace wayz {
 namespace hera {

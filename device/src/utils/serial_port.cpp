@@ -10,7 +10,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include <common/logger/logger.hpp>
+#include <common/include/logger/logger.hpp>
 #include <linux/serial.h>
 #include <sys/ioctl.h>
 

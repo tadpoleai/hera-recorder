@@ -13,7 +13,7 @@
 #include <mutex>
 #include <semaphore.h>
 
-#include "device/include.hpp"
+#include "device/include/include.hpp"
 
 namespace wayz {
 namespace hera {

@@ -11,7 +11,7 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include <common/logger/logger.hpp>
+#include <common/include/logger/logger.hpp>
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/server/TThreadedServer.h>
 #include <thrift/transport/TBufferTransports.h>

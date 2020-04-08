@@ -7,12 +7,12 @@
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
-#include "imu_data.hpp"
+#include "data/imu_data.hpp"
 
 #include <iomanip>
 #include <sstream>
 
-#include "common/logger/logger.hpp"
+#include "common/include/logger/logger.hpp"
 
 namespace wayz {
 namespace hera {

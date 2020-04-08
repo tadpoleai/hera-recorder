@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "impl/log_impl.hpp"
+#include "log_impl.hpp"
 
 namespace wayz {
 namespace hera {

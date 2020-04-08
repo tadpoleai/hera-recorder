@@ -15,9 +15,9 @@
 #include <thread>
 #include <vector>
 
-#include "common/ipc/ipc_queue.hpp"
-#include "common/utils/folder_content.hpp"
-#include "storage/src/storage.hpp"
+#include "common/include/ipc/ipc_queue.hpp"
+#include "common/include/utils/folder_content.hpp"
+#include "storage/include/storage.hpp"
 
 namespace wayz {
 namespace hera {

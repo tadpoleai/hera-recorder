@@ -20,16 +20,18 @@ if(DEVICE_DRIVER_S32VMIPI)
   set(S32V_VSDK_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/arm/libvsdk_ar0143.so)
 endif()
 
+include_directories(${PROJECT_NAME} "../" include)
+
 # Build device (core)
-include_directories(${PROJECT_NAME} "../" ${JPEG_TURBO_INCLUDE_DIR})
-add_library(${PROJECT_NAME} STATIC ${ALL_SRC})
+add_library(${PROJECT_NAME} SHARED ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} hera-common hera-storage Threads::Threads
                       ${JPEG_TURBO_LIBS})
 
 # Build device (drivers)
-add_library(${PROJECT_NAME}-driver STATIC ${ALL_SRC})
-target_include_directories(${PROJECT_NAME}-driver
-                           PRIVATE ${FLY_CAPTURE_INCLUDE_DIR})
+add_library(${PROJECT_NAME}-driver SHARED ${ALL_SRC})
+target_include_directories(
+  ${PROJECT_NAME}-driver PRIVATE ${FLY_CAPTURE_INCLUDE_DIR}
+                                 ${JPEG_TURBO_INCLUDE_DIR})
 target_compile_definitions(${PROJECT_NAME}-driver PRIVATE WITH_DRIVER=1)
 target_link_libraries(
   ${PROJECT_NAME}-driver
@@ -39,6 +41,13 @@ target_link_libraries(
   ${JPEG_TURBO_LIBS}
   ${FLT_CAPTURE_LIBS}
   ${S32V_VSDK_LIBS})
+
+# Install shared libraries
+install(
+  TARGETS ${PROJECT_NAME} ${PROJECT_NAME}-driver
+  PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE
+              WORLD_READ
+  DESTINATION lib)
 
 if(TARGET_ARM)
   # Build s32vmipi test

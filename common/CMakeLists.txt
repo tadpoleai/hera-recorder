@@ -7,11 +7,18 @@ include("../deploy/cmake/cpp_common.cmake")
 
 find_package(Threads REQUIRED)
 
-file(GLOB_RECURSE ALL_SRC "**/*.cpp")
-include_directories("../")
-add_library(${PROJECT_NAME} STATIC ${ALL_SRC})
+file(GLOB_RECURSE ALL_SRC "src/*.cpp")
+include_directories(".." include)
+add_library(${PROJECT_NAME} SHARED ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} Threads::Threads)
 
 if(GIT_INFO_ENABLED)
   target_link_libraries(${PROJECT_NAME} hera-common-git-info)
 endif()
+
+# Install shared libraries
+install(
+  TARGETS ${PROJECT_NAME}
+  PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE
+              WORLD_READ
+  DESTINATION lib)

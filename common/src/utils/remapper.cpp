@@ -1,10 +1,13 @@
-#include "remapper.hpp"
+//
+// Copyright 2018 Wayz.ai. All Rights Reserved.
+//
 
 #include <fstream>
 #include <iostream>
 
-#include "../third_party/json.hpp"
-#include "common/logger/logger.hpp"
+#include "third_party/json.hpp"
+#include "common/include/logger/logger.hpp"
+#include "utils/remapper.hpp"
 
 namespace wayz {
 namespace hera {

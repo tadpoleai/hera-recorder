@@ -17,8 +17,8 @@
 #include <fstream>
 #include <iomanip>
 
-#include "common/logger/logger.hpp"
-#include "common/utils/folder_content.hpp"
+#include "common/include/logger/logger.hpp"
+#include "common/include/utils/folder_content.hpp"
 
 namespace wayz {
 namespace hera {

@@ -10,10 +10,12 @@
 
 #include "flir.hpp"
 
+#ifdef WITH_DRIVER
 #include <turbojpeg.h>
+#endif
 
 #include <arpa/inet.h>
-#include <common/logger/logger.hpp>
+#include <common/include/logger/logger.hpp>
 
 namespace wayz {
 namespace hera {

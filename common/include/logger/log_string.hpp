@@ -9,8 +9,8 @@
 #include <sstream>
 #include <string>
 
-#include "common/utils/thread_queue.hpp"
-#include "common/utils/time.hpp"
+#include "../utils/thread_queue.hpp"
+#include "../utils/time.hpp"
 #include "log_level.hpp"
 
 namespace wayz {
@@ -29,6 +29,7 @@ public:
 };
 
 class LogString;
+
 using LogQueue = common::ThreadQueue<LogString, false>;
 
 class LogString final {

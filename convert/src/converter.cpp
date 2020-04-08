@@ -10,8 +10,8 @@
 
 #include "converter.hpp"
 
-#include "common/logger/logger.hpp"
-#include "device/include.hpp"
+#include "common/include/logger/logger.hpp"
+#include "device/include/include.hpp"
 
 namespace wayz {
 namespace hera {

@@ -12,8 +12,8 @@
 
 #include <memory>
 
-#include "common/ipc/ipc_queue.hpp"
-#include "common/utils/time.hpp"
+#include "common/include/ipc/ipc_queue.hpp"
+#include "common/include/utils/time.hpp"
 
 namespace wayz {
 namespace hera {

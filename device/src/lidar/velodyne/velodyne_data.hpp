@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "../../device.hpp"
-#include "../lidar_data.hpp"
+#include "data/lidar_data.hpp"
+#include "device.hpp"
 namespace wayz {
 namespace hera {
 namespace device {

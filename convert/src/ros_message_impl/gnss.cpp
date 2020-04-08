@@ -7,7 +7,7 @@
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
-#include "../ros_message_impl.hpp"
+#include "ros_message_impl.hpp"
 
 namespace wayz {
 namespace hera {

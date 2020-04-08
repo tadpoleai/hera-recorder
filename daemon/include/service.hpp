@@ -8,11 +8,11 @@
 #include <string>
 #include <vector>
 
-#include "common/hera_errno.h"
-#include "common/logger/logger.hpp"
-#include "common/third_party/json.hpp"
+#include "common/include/hera_errno.h"
+#include "common/include/logger/logger.hpp"
+#include "common/include/third_party/json.hpp"
 #include "daemon/rpc/gen-cpp/Service.h"
-#include "device/include.hpp"
+#include "device/include/include.hpp"
 
 #ifdef WITH_SLAM
 #include "slam/caller/include/caller.hpp"

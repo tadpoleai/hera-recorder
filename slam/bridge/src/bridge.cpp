@@ -17,9 +17,9 @@
 #include <string>
 #include <turbojpeg.h>
 
-#include "common/logger/logger.hpp"
-#include "common/utils/time.hpp"
-#include "device/include.hpp"
+#include "common/include/logger/logger.hpp"
+#include "common/include/utils/time.hpp"
+#include "device/include/include.hpp"
 
 namespace wayz {
 namespace hera {

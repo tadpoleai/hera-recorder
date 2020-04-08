@@ -2,7 +2,7 @@
 // Copyright 2018 Wayz.ai. All Rights Reserved.
 //
 
-#include "folder_content.hpp"
+#include "utils/folder_content.hpp"
 
 #include <cstring>
 #include <dirent.h>
