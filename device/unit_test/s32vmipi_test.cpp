@@ -1,4 +1,4 @@
-#include "../src/device_factory.hpp"
+#include "device_factory.hpp"
 #include "unistd.h"
 
 using namespace wayz::hera;

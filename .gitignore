@@ -82,3 +82,7 @@ gen-cpp/
 
 # Doxygen
 doxygen/
+
+# Artifacts
+artifacts/
+artifacts*
