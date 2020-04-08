@@ -38,7 +38,7 @@ tar -czvf \
     ../convert/config \
     ../README.md \
     ../INSTALLATION.md \
-    ../client/USAGE.md \
+#    ../client/USAGE.md \
     ../convert/USAGE.md \
     ../slam/USAGE.md \
     ../deploy/*.md \
