@@ -28,9 +28,9 @@ echo "Packaging artifacts/amd64"
 mkdir -p ../artifacts/amd64/client
 mkdir -p ../artifacts/amd64/lib
 mkdir -p ../artifacts/amd64/bin
-mkdir -p ../artifacts/amd64/include/common
-mkdir -p ../artifacts/amd64/include/storage
-mkdir -p ../artifacts/amd64/include/device
+mkdir -p ../artifacts/amd64/include/common/include
+mkdir -p ../artifacts/amd64/include/storage/include
+mkdir -p ../artifacts/amd64/include/device/include
 mkdir -p ../artifacts/amd64/script
 mkdir -p ../artifacts/amd64/script/daemon
 mkdir -p ../artifacts/amd64/shared
@@ -43,9 +43,9 @@ mkdir -p ../artifacts/amd64/manual/convert
 cp -r ../client/dist/* ../artifacts/amd64/client
 
 # Headers
-cp -r ../common/include/* ../artifacts/amd64/include/common
-cp -r ../device/include/* ../artifacts/amd64/include/device
-cp -r ../storage/include/* ../artifacts/amd64/include/storage
+cp -r ../common/include/* ../artifacts/amd64/include/common/include
+cp -r ../device/include/* ../artifacts/amd64/include/device/include
+cp -r ../storage/include/* ../artifacts/amd64/include/storage/include
 
 # Libraries
 cp -r common/libhera-common.so ../artifacts/amd64/lib

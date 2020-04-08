@@ -13,6 +13,10 @@ if [ ! -d "bin" ] || [ ! -d "lib" ] || [ ! -d "include" ] || [ -d ".git" ]; then
     exit 1
 fi
 
+if ! [ $(id -u) = 0 ]; then
+   alias sudo=''
+fi
+
 echo "Installing Binraries"
 sudo chmod 755 bin/*
 sudo cp -r bin/hera-* /usr/local/bin/
@@ -23,9 +27,16 @@ sudo cp -r lib/libhera-*.so /usr/local/lib/
 sudo ldconfig
 
 echo "Installing Headers"
-sudo mkdir -p /usr/local/lib/hera
-sudo cp -r include/* /usr/local/lib/hera
-sudo cp shared/FindHera.cmake /usr/share/$(ls /usr/share/ | grep 'cmake-' | head -1)/Modules/
+sudo mkdir -p /usr/local/include/hera
+sudo cp -r include/* /usr/local/include/hera
+
+echo
+read -p "Install CMake Package (y/N): " ans
+echo
+if [[ $ans = [yY] ]]; then
+    echo "Installating CMake Package"
+    sudo cp shared/FindHera.cmake /usr/share/$(ls /usr/share/ | grep 'cmake-' | head -1)/Modules/
+fi
 
 echo
 read -p "Install shared/carto (y/N): " ans
