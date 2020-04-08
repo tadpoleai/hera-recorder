@@ -49,6 +49,10 @@ install(
               WORLD_READ
   DESTINATION lib)
 
+# Install headers
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+        DESTINATION include/hera/device/include/)
+
 if(TARGET_ARM)
   # Build s32vmipi test
   add_executable(${PROJECT_NAME}-s32vmipi-test unit_test/s32vmipi_test.cpp)
