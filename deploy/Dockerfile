@@ -2,7 +2,7 @@
 # Copyright 2018 Wayz.ai. All Rights Reserved.
 #
 
-# TAG: v0.2
+# TAG: v0.3
 # Everytime this file is modified, please add TAG by 0.1
 
 FROM registry.newayz.com/autonomy/leta-localization_core:latest
@@ -11,19 +11,21 @@ WORKDIR /workspace/setup
 
 # preparation
 COPY ./sources.list /etc/apt/sources.list
-RUN apt-get update && \
-    apt-get install -y sudo wget && \
+RUN rm -rf /etc/apt/sources.list.d/* && \
+    apt-get update && \
+    apt-get install -y sudo wget apt-utils && \
     rm -rf /var/lib/apt/lists/*
 
 # install thrift
 COPY ./install-thrift.sh ./
 RUN ./install-thrift.sh && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf thrift*
 
 # install flycapture
 COPY ./install-flycapture.sh ./
 RUN ./install-flycapture.sh && \
-    rm -rf flycapture2-2.12.3.31-amd64 && \
+    rm -rf flycapture2-2.12.3.31-amd64* && \
     rm -rf /var/lib/apt/lists/*
 
 # install jpeg
@@ -40,6 +42,19 @@ RUN ./install-pcl.sh && \
 COPY ./install-npm.sh ./
 RUN ./install-npm.sh && \
     rm -rf /var/lib/apt/lists/*
+
+# install s32v-crossenv
+COPY ./S32v_env.tar.gz ./
+COPY ./install-s32v-crossenv.sh ./
+RUN ./install-s32v-crossenv.sh && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf S32v_env.tar.gz S32v_env
+
+# compile s32v-arm-turbojpeg
+COPY ./install-jpeg-turbo-arm.sh ./
+RUN ./install-jpeg-turbo-arm.sh && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf libjpeg-turbo*
 
 # source dynamic lib
 RUN ldconfig

@@ -1,35 +1,39 @@
 # 编译 hera-recorder docker 镜像
 
-## docker login registry.newayz.com/autonomy/hera-recorder:latest镜像
+## 登录公司 docker 服务器
 
-    Username: autonomy
+`docker login registry.newayz.com/autonomy/hera-recorder:latest`
 
-    Passwaord:auto123
+`Username: autonomy`
 
-## 获取最新hera-recorder docker镜像
+`Passwaord:auto123`
 
-    sudo docker pull 172.2.2.11:5000/hera-recorder:latest
+## 拉取最新 hera-recorder docker 镜像
 
-## 编译docker镜像
+`sudo docker pull registry.newayz.com/autonomy/hera-recorder:latest`
 
-    sudo docker build -t 172.2.2.11:5000/hera-recorder:latest .
+## 编译 docker 镜像
 
-## 测试docker镜像
+`sudo docker build -t registry.newayz.com/autonomy/hera-recorder:latest .`
 
-    cd .. (移动至工程根目录)
-    sudo docker run -t --rm -v $(pwd):/workspace/hera-recorder 172.2.2.11:5000/hera-recorder:latest
+## 测试 docker 镜像
 
-## 上传docker镜像
+`cd .. `(移动至工程根目录)
 
-### 上传至公司docker registry
+`sudo docker run -t --rm -v $(pwd):/workspace/hera-recorder registry.newayz.com/autonomy/hera-recorder:latest`
 
-    sudo docker push 172.2.2.11:5000/hera-recorder:latest
+## 上传 docker 镜像
 
-    // <tag>可以从Dockerfile第5行得到, 每次修改Dockerfile, 请将tag增加0.1
-    sudo docker tag 172.2.2.11:5000/hera-recorder:latest 172.2.2.11:5000/hera-recorder:<tag>
-    sudo docker push 172.2.2.11:5000/hera-recorder:<tag>
+### 上传至公司 docker registry
 
-### 上传至自动化测试docker registry
+`sudo docker push registry.newayz.com/autonomy/hera-recorder:latest`
 
-    sudo docker tag 172.2.2.11:5000/hera-recorder:latest registry.newayz.com/autonomy/hera-recorder:latest
-    sudo docker push registry.newayz.com/autonomy/hera-recorder:latest
+tag可以从Dockerfile第5行得到, 每次修改Dockerfile, 请将tag增加0.1
+`sudo docker tag registry.newayz.com/autonomy/hera-recorder:latest registry.newayz.com/autonomy/hera-recorder:<tag>`
+
+`sudo docker push registry.newayz.com/autonomy/hera-recorder:<tag>`
+
+### 上传至自动化测试 docker registry
+
+`sudo docker tag registry.newayz.com/autonomy/hera-recorder:latest registry.newayz.com/autonomy/hera-recorder:latest`
+`sudo docker push registry.newayz.com/autonomy/hera-recorder:latest`

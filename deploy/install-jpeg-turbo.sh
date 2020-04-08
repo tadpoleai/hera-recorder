@@ -1,4 +1,4 @@
-VERSION="2.0.3"
+VERSION="2.0.4"
 ARCH="amd64"
 NAME="libjpeg-turbo-official_${VERSION}_${ARCH}.deb"
 URL="https://iweb.dl.sourceforge.net/project/libjpeg-turbo/${VERSION}/${NAME}"

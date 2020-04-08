@@ -25,13 +25,19 @@ sudo ldconfig
 echo "Installing Headers"
 sudo mkdir -p /usr/local/lib/hera
 sudo cp -r include/* /usr/local/lib/hera
-sudo cp shared/FindHera.cmake /usr/share/`ls /usr/share/ | grep 'cmake-' | head -1`/Modules/
+sudo cp shared/FindHera.cmake /usr/share/$(ls /usr/share/ | grep 'cmake-' | head -1)/Modules/
 
-echo "Installing Shared/carto"
-sudo chmod 755 shared/carto/bin/*
-sudo mkdir -p /usr/local/share/hera/slam/carto
-sudo cp -r shared/carto/share /usr/local/share/hera/slam/carto/
-sudo cp shared/carto/bin/* /usr/local/bin
+echo
+read -p "Install shared/carto (y/N): " ans
+echo
+if [[ $ans = [yY] ]]; then
+    echo "Installating shared/carto"
+
+    sudo chmod 755 shared/carto/bin/*
+    sudo mkdir -p /usr/local/share/hera/slam/carto
+    sudo cp -r shared/carto/share /usr/local/share/hera/slam/carto/
+    sudo cp shared/carto/bin/* /usr/local/bin
+fi
 
 echo
 read -p "Install client (y/N): " ans
