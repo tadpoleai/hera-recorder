@@ -12,7 +12,9 @@ div
       template(v-if="status.local.profiles.length === 0")
         van-cell(title="列表为空")
       //- For Every Profile
-      van-swipe-cell(v-for="(profile, index) in status.local.profiles")
+      van-swipe-cell(
+        v-for="(profile, index) in status.local.profiles"
+        :key="index")
         van-cell(:title="profile.name" clickable @click="clickSelectProfile(index)")
           van-radio(slot="right-icon" :name="index")
         template(slot="right")
