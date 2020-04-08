@@ -8,21 +8,25 @@
 ///
 ///
 
-#include "camera_data.hpp"
+#include "data/camera_data.hpp"
 
+#ifdef WITH_DRIVER
 #include <turbojpeg.h>
+#endif
 
-#include "common/logger/logger.hpp"
+#include "common/include/logger/logger.hpp"
 
 namespace wayz {
 namespace hera {
 namespace device {
 namespace data {
 
+
 template<>
 std::string DisplayData::parse<SensorDataType::CompressedImage>(std::vector<SensorDataPtr>&& sensor_datas,
                                                                 bool& is_jpeg)
 {
+#ifdef WITH_DRIVER
     static constexpr auto NoData = "No data";
     static constexpr auto MaxTargetWidth = 540;
     static constexpr auto TargetQuality = 60;
@@ -115,6 +119,9 @@ std::string DisplayData::parse<SensorDataType::CompressedImage>(std::vector<Sens
         return result;
     }
     return NoData;
+#endif
+
+    return "Driver is not implenmented in driver-core";
 }
 
 }  // namespace data

@@ -7,18 +7,21 @@
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
-#include "lidar_data.hpp"
+#include "data/lidar_data.hpp"
 
+#ifdef WITH_DRIVER
 #include <algorithm>
 #include <turbojpeg.h>
+#endif
 
-#include "common/logger/logger.hpp"
+#include "common/include/logger/logger.hpp"
 
 namespace wayz {
 namespace hera {
 namespace device {
 namespace data {
 
+#ifdef WITH_DRIVER
 class ColorProfileType {
 public:
     constexpr ColorProfileType() : data()
@@ -52,10 +55,12 @@ private:
     static constexpr auto LUTSize = MaxIntensity + 1;
     uint8_t data[3 * LUTSize];
 };
+#endif
 
 template<>
 std::string DisplayData::parse<SensorDataType::PointsXYZI>(std::vector<SensorDataPtr>&& sensor_datas, bool& is_jpeg)
 {
+#ifdef WITH_DRIVER
     static constexpr auto NoData = "No data";
     static constexpr auto CanvasPixelSize = 480;
     static constexpr auto CanvasPixelCenter = CanvasPixelSize / 2;
@@ -121,6 +126,9 @@ std::string DisplayData::parse<SensorDataType::PointsXYZI>(std::vector<SensorDat
     tjDestroy(tj_instance);
     tjFree(dst_image);
     return result;
+#endif
+
+    return "Driver is not implenmented in driver-core";
 }
 
 }  // namespace data

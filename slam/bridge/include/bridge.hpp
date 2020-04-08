@@ -17,8 +17,8 @@
 #include <sensor_msgs/LaserScan.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include "common/ipc/ipc_queue.hpp"
-#include "device/include.hpp"
+#include "common/include/ipc/ipc_queue.hpp"
+#include "device/include/include.hpp"
 #include "slam/result/include/result.hpp"
 
 namespace wayz {

@@ -16,8 +16,8 @@
 #endif
 #endif
 
-#include "../../device.hpp"
-#include "../camera_data.hpp"
+#include "device.hpp"
+#include "data/camera_data.hpp"
 #include "flir_timestamp_calculator.hpp"
 
 namespace wayz {

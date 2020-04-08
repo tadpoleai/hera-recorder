@@ -11,9 +11,11 @@
 
 #include "s32vmipi.hpp"
 
+#ifdef WITH_DRIVER
 #include <turbojpeg.h>
+#endif
 
-#include <common/logger/logger.hpp>
+#include <common/include/logger/logger.hpp>
 
 namespace wayz {
 namespace hera {

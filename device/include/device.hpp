@@ -17,11 +17,11 @@
 #include <utility>
 #include <vector>
 
-#include "common/hera_errno.h"
-#include "common/ipc/ipc_queue.hpp"
-#include "common/logger/logger.hpp"
+#include "common/include/hera_errno.h"
+#include "common/include/ipc/ipc_queue.hpp"
+#include "common/include/logger/logger.hpp"
 #include "device_data.hpp"
-#include "storage/src/storage.hpp"
+#include "storage/include/storage.hpp"
 
 namespace wayz {
 namespace hera {

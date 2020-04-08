@@ -73,7 +73,7 @@ make client
 
 #### 从Jenkins构建产物部署
 
-下载Jenkins构建产物，并解压运行里面的jenkins_deploy.sh
+下载Jenkins构建产物，并解压运行里面的install_artifacts.sh
 
 #### 从本地构建部署
 

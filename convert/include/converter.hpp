@@ -17,11 +17,11 @@
 #include <thread>
 #include <vector>
 
-#include "common/utils/remapper.hpp"
-#include "common/utils/time.hpp"
+#include "common/include/utils/remapper.hpp"
+#include "common/include/utils/time.hpp"
 #include "direct_bag/direct_bag.h"
 #include "ros_message.hpp"
-#include "storage/src/storage.hpp"
+#include "storage/include/storage.hpp"
 
 namespace wayz {
 namespace hera {

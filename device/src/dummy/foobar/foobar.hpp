@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "../../device.hpp"
-#include "../dummy_data.hpp"
+#include "device.hpp"
+#include "data/dummy_data.hpp"
 
 namespace wayz {
 namespace hera {

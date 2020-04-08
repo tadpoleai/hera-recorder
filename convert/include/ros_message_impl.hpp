@@ -17,5 +17,5 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/PointCloud2.h>
 
-#include "common/logger/logger.hpp"
+#include "common/include/logger/logger.hpp"
 #include "ros_message.hpp"

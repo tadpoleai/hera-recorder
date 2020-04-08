@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "direct_bag.h"
+#include "direct_bag/direct_bag.h"
 
 #include <cassert>
 #include <errno.h>
@@ -25,7 +25,7 @@
 
 #include <sys/stat.h>
 
-#include "direct_bag_impl_dependencies.h"
+#include "direct_bag/direct_bag_impl_dependencies.h"
 
 namespace rosbag_direct_write {
 

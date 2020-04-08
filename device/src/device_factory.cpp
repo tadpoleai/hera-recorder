@@ -11,7 +11,7 @@
 
 #include <algorithm>
 
-#include "common/logger/logger.hpp"
+#include "common/include/logger/logger.hpp"
 
 // Device Vendors
 #include "camera/flir/flir.hpp"

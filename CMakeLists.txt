@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.5.1)
 set(PROJECT_NAME hera)
 project(${PROJECT_NAME})
 
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "/usr/local")
+endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+
 if(target-arm)
   set(TARGET_ARM 1)
   add_definitions(-DTARGET_ARM)

@@ -19,8 +19,8 @@
 #include <utility>
 #include <vector>
 
-#include "common/utils/thread_queue.hpp"
-#include "device/src/device_data.hpp"
+#include "common/include/utils/thread_queue.hpp"
+#include "device/include/device_data.hpp"
 #include "storage_data_header.hpp"
 
 namespace wayz {

@@ -13,8 +13,8 @@
 #include <cstdint>
 #include <memory>
 
-#include "common/utils/remapper.hpp"
-#include "device/include.hpp"
+#include "common/include/utils/remapper.hpp"
+#include "device/include/include.hpp"
 #include "direct_bag/direct_bag.h"
 
 namespace wayz {

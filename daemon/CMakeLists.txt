@@ -10,8 +10,11 @@ include("../deploy/cmake/thrift.cmake")
 set(RPC_GEN_CPP "${CMAKE_CURRENT_SOURCE_DIR}/rpc/gen-cpp")
 add_custom_command(
   OUTPUT ${RPC_GEN_CPP}/hera_types.cpp
+  OUTPUT ${RPC_GEN_CPP}/hera_types.h
   OUTPUT ${RPC_GEN_CPP}/hera_constants.cpp
+  OUTPUT ${RPC_GEN_CPP}/hera_constants.h
   OUTPUT ${RPC_GEN_CPP}/Service.cpp
+  OUTPUT ${RPC_GEN_CPP}/Service.h
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/rpc/hera.thrift"
   COMMAND "mkdir" "-p" "${RPC_GEN_CPP}"
   COMMAND "thrift" "-out" "${RPC_GEN_CPP}" "--gen" "cpp:no_skeleton"
@@ -19,11 +22,10 @@ add_custom_command(
 
 # Build daemon
 file(GLOB_RECURSE ALL_SRC "src/*.cpp" "src/**/*.cpp")
-include_directories("../" "/" ${CMAKE_BINARY_DIR})
+include_directories(".." include)
 add_executable(
-  ${PROJECT_NAME}
-  ${ALL_SRC} ${RPC_GEN_CPP}/hera_types.cpp ${RPC_GEN_CPP}/hera_constants.cpp
-  ${RPC_GEN_CPP}/Service.cpp)
+  ${PROJECT_NAME} ${ALL_SRC} ${RPC_GEN_CPP}/hera_types.cpp
+                  ${RPC_GEN_CPP}/hera_constants.cpp ${RPC_GEN_CPP}/Service.cpp)
 target_link_libraries(${PROJECT_NAME} hera-common hera-device-driver ${THRIFT})
 
 install(
@@ -33,7 +35,7 @@ install(
 install(
   TARGETS hera-daemon
   PERMISSIONS OWNER_EXECUTE OWNER_READ
-  DESTINATION /usr/local/bin)
+  DESTINATION bin)
 install(
   CODE "execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/script/install-extra.sh)"
 )

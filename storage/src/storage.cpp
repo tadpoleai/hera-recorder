@@ -12,7 +12,7 @@
 
 #include <sstream>
 
-#include "common/logger/logger.hpp"
+#include "common/include/logger/logger.hpp"
 #include "unistd.h"
 
 namespace wayz {

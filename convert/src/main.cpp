@@ -3,8 +3,8 @@
 #include <sstream>
 #include <unistd.h>
 
-#include "common/logger/logger.hpp"
-#include "common/utils/remapper.hpp"
+#include "common/include/logger/logger.hpp"
+#include "common/include/utils/remapper.hpp"
 #include "converter.hpp"
 
 using namespace wayz::hera;

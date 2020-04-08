@@ -8,9 +8,9 @@
 ///
 ///
 
-#include "dummy_data.hpp"
+#include "data/dummy_data.hpp"
 
-#include "common/logger/logger.hpp"
+#include "common/include/logger/logger.hpp"
 
 namespace wayz {
 namespace hera {

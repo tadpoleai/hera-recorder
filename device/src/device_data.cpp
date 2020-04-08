@@ -13,8 +13,8 @@
 
 #include <fstream>
 
-#include "common/logger/logger.hpp"
-#include "common/utils/time.hpp"
+#include "common/include/logger/logger.hpp"
+#include "common/include/utils/time.hpp"
 
 namespace wayz {
 namespace hera {

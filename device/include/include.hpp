@@ -11,11 +11,11 @@
 #pragma once
 
 // Device Factory
-#include "src/device_factory.hpp"
+#include "device_factory.hpp"
 
 // Sensor data
-#include "src/camera/camera_data.hpp"
-#include "src/dummy/dummy_data.hpp"
-#include "src/gnss/gnss_data.hpp"
-#include "src/imu/imu_data.hpp"
-#include "src/lidar/lidar_data.hpp"
+#include "data/camera_data.hpp"
+#include "data/dummy_data.hpp"
+#include "data/gnss_data.hpp"
+#include "data/imu_data.hpp"
+#include "data/lidar_data.hpp"

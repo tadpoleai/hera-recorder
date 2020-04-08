@@ -12,9 +12,9 @@
 
 #include <cmath>
 
-#include "../../device.hpp"
 #include "../../utils/serial_transport.hpp"
-#include "../imu_data.hpp"
+#include "data/imu_data.hpp"
+#include "device.hpp"
 
 namespace wayz {
 namespace hera {

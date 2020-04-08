@@ -10,7 +10,7 @@
 #include <thread>
 #include <vector>
 
-#include <common/utils/thread_queue.hpp>
+#include <common/include/utils/thread_queue.hpp>
 
 #include "serial_port.hpp"
 
