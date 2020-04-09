@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5.1)
 
-set(PROJECT_NAME wrapper)
+set(PROJECT_NAME mipi-record)
 project(${PROJECT_NAME})
 
 # Require C++14
@@ -16,6 +16,6 @@ message(STATUS "Find Hera of ARM in ${HERA_INCLUDE_DIRS}")
 
 include_directories(${HERA_INCLUDE_DIRS} include)
 
-add_executable(${PROJECT_NAME} src/bridge.cpp src/main.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp)
 
-target_link_libraries(${PROJECT_NAME} ${HERA_LIBS})
+target_link_libraries(${PROJECT_NAME} ${HERA_DRIVER_ARM_LIBS})

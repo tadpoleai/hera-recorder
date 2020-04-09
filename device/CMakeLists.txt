@@ -53,20 +53,6 @@ install(
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
         DESTINATION include/hera/device/)
 
-if(TARGET_ARM)
-  # Build s32vmipi test
-  add_executable(${PROJECT_NAME}-s32vmipi-test unit_test/s32vmipi_test.cpp)
-  target_link_libraries(
-    ${PROJECT_NAME}-s32vmipi-test
-    hera-common
-    hera-storage
-    ${PROJECT_NAME}-driver
-    Threads::Threads
-    ${JPEG_TURBO_LIBS}
-    ${FLT_CAPTURE_LIBS}
-    ${S32V_VSDK_LIB})
-endif()
-
 # Build test
 add_executable(${PROJECT_NAME}-test unit_test/dummy_test.cpp)
 target_link_libraries(
