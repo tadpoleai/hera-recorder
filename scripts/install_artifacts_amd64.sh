@@ -13,31 +13,38 @@ if [ ! -d "bin" ] || [ ! -d "lib" ] || [ ! -d "include" ] || [ -d ".git" ]; then
     exit 1
 fi
 
-if ! [ $(id -u) = 0 ]; then
-   alias sudo=''
-fi
-
+# echo "Input install prefix for libhera(arm)"
+install_path="/usr/local"
+# read -e -i "$install_path" -p "Please input install prefix for libhera: " ans
+# install_path="${ans:-$install_path}"
+# mkdir -p $install_path
+# echo
+sudo mkdir -p $install_path/bin
+sudo mkdir -p $install_path/lib
+sudo mkdir -p $install_path/include
 
 echo "Installing Binraries"
 sudo chmod 755 bin/*
-sudo cp -r bin/hera-* /usr/local/bin/
+sudo cp -r bin/hera-* $install_path/bin/
 
 echo "Installing Libraries"
 sudo chmod 755 lib/*
-sudo cp -r lib/libhera-*.so /usr/local/lib/
+sudo cp -r lib/libhera-*.so $install_path/lib/
 sudo ldconfig
 
 echo "Installing Headers"
-sudo mkdir -p /usr/local/include/hera
-sudo cp -r include/* /usr/local/include/hera
+sudo mkdir -p $install_path/include/hera
+sudo cp -r include/* $install_path/include/hera
 
-echo
 read -p "Install CMake Package (y/N): " ans
-echo
 if [[ $ans = [yY] ]]; then
+    cmake_module_path=$(echo 'message("${CMAKE_ROOT}")' >tmp_cmake_root && cmake -N -P tmp_cmake_root && rm tmp_cmake_root)/Modules
+    read -e -i "$cmake_module_path" -p "Please confirm install prefix for CMake module: " ans
+    cmake_module_path="${ans:-$cmake_module_path}"
     echo "Installating CMake Package"
-    sudo cp shared/FindHera.cmake /usr/share/$(ls /usr/share/ | grep 'cmake-' | head -1)/Modules/
+    sudo cp shared/FindHera.cmake $cmake_module_path
 fi
+echo
 
 echo
 read -p "Install shared/carto (y/N): " ans
@@ -46,9 +53,9 @@ if [[ $ans = [yY] ]]; then
     echo "Installating shared/carto"
 
     sudo chmod 755 shared/carto/bin/*
-    sudo mkdir -p /usr/local/share/hera/slam/carto
-    sudo cp -r shared/carto/share /usr/local/share/hera/slam/carto/
-    sudo cp shared/carto/bin/* /usr/local/bin
+    sudo mkdir -p $install_path/share/hera/slam/carto
+    sudo cp -r shared/carto/share $install_path/share/hera/slam/carto/
+    sudo cp shared/carto/bin/* $install_path/bin
 fi
 
 echo

@@ -15,11 +15,24 @@ fi
 
 echo "This script is for installing cross libhera(arm) to a host linux(amd64) machine"
 
+if [[ $ARCH == aarch64 ]] || [[ $ARCH == arm* ]]; then
+    echo "ARM-Crossplatform toolset activated"
+else
+    echo "ARM-Crossplatform toolset is not activated"
+    echo "Please source <toolset_path>/environment-setup-aarch64-fsl-linux first"
+    echo "Exiting"
+    exit -1
+fi
+
 echo "Input install prefix for cross libhera(arm)"
 install_path="/opt/s32v/hera"
 read -e -i "$install_path" -p "Please input install prefix for libhera: " ans
 install_path="${ans:-$install_path}"
 echo
+
+sudo mkdir -p $install_path/bin
+sudo mkdir -p $install_path/lib
+sudo mkdir -p $install_path/include
 
 echo "Installing Libraries"
 sudo chmod 755 lib/*
@@ -37,18 +50,21 @@ ls ${install_path}/include/hera
 echo
 
 echo "Generating cmake template"
-echo "set(HERA_INSTALL_PREFIX ${install_path})" > shared/FindHeraArm.cmake
-cat shared/FindHera.cmake >> shared/FindHeraArm.cmake
+echo "set(HERA_INSTALL_PREFIX ${install_path})" >shared/FindHeraArm.cmake
+cat shared/FindHera.cmake >>shared/FindHeraArm.cmake
 echo "CMake module file is shared/FindHeraArm.cmake"
 echo
 
 read -p "Install CMake Package (y/N): " ans
 if [[ $ans = [yY] ]]; then
-    install_path=/usr/share/$(ls /usr/share/ | grep 'cmake-' | head -1)/Modules
-    read -e -i "$install_path" -p "Please confirm install prefix for CMake module: " ans
-    install_path="${ans:-$install_path}"
+    echo 'message("${CMAKE_ROOT}/Modules")' >tmp_cmake_root_cmake
+    cmake_module_path=$(cmake -N -P tmp_cmake_root_cmake 2>&1)
+    rm tmp_cmake_root_cmake
+
+    read -e -i "$cmake_module_path" -p "Please confirm install prefix for CMake module: " ans
+    cmake_module_path="${ans:-$cmake_module_path}"
     echo "Installating CMake Package"
-    sudo cp shared/FindHera.cmake $install_path
+    sudo cp shared/FindHeraArm.cmake $cmake_module_path
 fi
 echo
 

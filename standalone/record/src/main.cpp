@@ -1,4 +1,5 @@
-#include "device_factory.hpp"
+#include <hera/device/include.hpp>
+
 #include "unistd.h"
 
 using namespace wayz::hera;
@@ -40,7 +41,7 @@ int main()
     device0->record(true);
 
     while (!g_stop)
-        ;
+        usleep(10000);
 
     device0->stop();
 

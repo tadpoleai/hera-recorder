@@ -29,6 +29,10 @@ install_path="${ans:-$install_path}"
 mkdir -p $install_path
 echo
 
+mkdir -p $install_path/bin
+mkdir -p $install_path/lib
+mkdir -p $install_path/include
+
 echo "Installing Binraries"
 chmod 755 bin/*
 cp -r bin/hera-* $install_path/bin/
