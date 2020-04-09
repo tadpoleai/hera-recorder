@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <atomic>
+
 #include <hera/common/ipc/ipc_queue.hpp>
 #include <hera/device/include.hpp>
 
@@ -36,6 +38,10 @@ public:
     /// @brief Block and wait for message
     ///
     void spin();
+    ///
+    /// @brief Stop message
+    ///
+    void stop();
 
 private:
     ///
@@ -44,13 +50,36 @@ private:
     /// @param data lidar data
     ///
     void camera_handler(const device::data::Image* const data);
+    ///
+    /// @brief Handler for lidar data from hera
+    ///
+    /// @param data lidar data
+    ///
+    void gnss_handler(const device::data::NavSatFix* const data);
+    ///
+    /// @brief Handler for lidar data from hera
+    ///
+    /// @param data lidar data
+    ///
+    void front_wheel_speed_handler(const device::data::FrontWheelSpeed* const data);
+    ///
+    /// @brief Handler for lidar data from hera
+    ///
+    /// @param data lidar data
+    ///
+    void rear_wheel_speed_handler(const device::data::RearWheelSpeed* const data);
+
+    void steering_angle_handler(const device::data::SteeringAngle* const data);
 
 
 private:
     std::unique_ptr<ipc::IPCQueue<device::data::SensorData>> ipc_queue_;  ///< ipc queue interface from hera
 
     /// Hera goes Fusion_Location_SDK Parameters
-    int camera_sensor_id_;  ///< Restrict sensor id for camera, only accept id-matched data, -1 to disable
+    int camera_sensor_id_;    ///< Restrict sensor id for camera, only accept id-matched data, -1 to disable
+    int serial_sensor_id_;    ///< Restrict sensor id for gnss serial, only accept id-matched data, -1 to disable
+    int odometry_sensor_id_;  ///< Restrict sensor id for odometry s32v can, only accept id-matched data, -1 to disable
+    std::atomic<bool> stop_;
 };
 
 }  // namespace wayz

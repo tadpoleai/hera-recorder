@@ -37,6 +37,7 @@ enum HeraErrno {
     CanNotOpenTtyDevice = 205,
     CanNotOpenSmbusDevice = 206,
     CanNotOpenCamera = 207,
+    CanNotOpenCanDevice = 208,
 
     InvalidParameterType = 300,
     InsufficientParameters = 301,

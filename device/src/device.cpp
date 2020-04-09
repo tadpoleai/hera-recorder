@@ -218,7 +218,9 @@ void Device::fetch_thread_function()
             if (is_forward_) {
                 forward_queue_.push(new_data);
             }
-            storage_->add_data(id_, new_data, is_record_);
+            if (storage_) {
+                storage_->add_data(id_, new_data, is_record_);
+            }
         }
     }
 }

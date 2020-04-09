@@ -1,14 +1,15 @@
 ///
-/// @file serialsync.cpp
-/// @author zheming.lyu (zheming.lyu@wayz.ai)
-/// @brief Implementation of class Serialsync
+/// @file serial.cpp
+/// @author chunchen.wang (chunchen.wang@wayz.ai)
+/// @brief
 /// @version 0.1
-/// @date 2019-11-25
+/// @date 2020-04-13
 ///
-/// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
+/// Copyright 2018 Wayz.ai. All Rights Reserved.
+///
 ///
 
-#include "serialsync.hpp"
+#include "serial.hpp"
 
 #include <cmath>
 #include <functional>
@@ -18,32 +19,26 @@ namespace wayz {
 namespace hera {
 namespace device {
 namespace gnss {
-namespace serialsync {
+namespace serial {
 
-const std::vector<DeviceParameterType> Serialsync::EssentialParameterTypes = {DeviceParameterType::Kernel,
-                                                                              DeviceParameterType::KernelAuxiliary,
-                                                                              DeviceParameterType::BaudRate,
-                                                                              DeviceParameterType::BaudRateAuxiliary,
-                                                                              DeviceParameterType::SerialMsgType};
+const std::vector<DeviceParameterType> Serial::EssentialParameterTypes = {DeviceParameterType::Kernel,
+                                                                          DeviceParameterType::BaudRate};
 
-const std::vector<DeviceParameterType> Serialsync::OptionalParameterTypes = {};
+const std::vector<DeviceParameterType> Serial::OptionalParameterTypes = {};
 
-auto _ = DeviceFactory::register_type({.type = DeviceVendorType::GnssSerialsync,
-                                       .type_name = "gnss/serialsync",
-                                       .create = &Serialsync::create,
-                                       .do_convert = &Serialsync::do_convert,
-                                       .essential_parameter_types = Serialsync::EssentialParameterTypes,
-                                       .optional_parameter_types = Serialsync::OptionalParameterTypes,
+auto _ = DeviceFactory::register_type({.type = DeviceVendorType::GnssSerial,
+                                       .type_name = "gnss/serial",
+                                       .create = &Serial::create,
+                                       .do_convert = &Serial::do_convert,
+                                       .essential_parameter_types = Serial::EssentialParameterTypes,
+                                       .optional_parameter_types = Serial::OptionalParameterTypes,
                                        .implemented = true});
 
-HeraErrno Serialsync::connect()
+HeraErrno Serial::connect()
 {
     try {
         kernel_ = parameters_[DeviceParameterType::Kernel];
-        kernel_auxiliary_ = parameters_[DeviceParameterType::KernelAuxiliary];
         baud_rate_ = stoi(parameters_[DeviceParameterType::BaudRate]);
-        baud_rate_auxiliary_ = stoi(parameters_[DeviceParameterType::BaudRateAuxiliary]);
-        serial_msg_type_ = stoi(parameters_[DeviceParameterType::SerialMsgType]);
     } catch (...) {
         return handle_error(HeraErrno::InvalidParameterValue);
     }
@@ -53,53 +48,24 @@ HeraErrno Serialsync::connect()
         return handle_error(HeraErrno::CanNotOpenTtyDevice, "Can not open primary device '" + kernel_ + "'");
     }
     queue_ = serial_port_->get_queue_handler();
-
-    serial_port_auxiliary_ =
-            utils::SerialTransport::create(kernel_auxiliary_, utils::SerialConfig(baud_rate_auxiliary_));
-    if (!serial_port_auxiliary_->is_opened()) {
-        return handle_error(HeraErrno::CanNotOpenTtyDevice,
-                            "Can not open auxiliary device '" + kernel_auxiliary_ + "'");
-    }
-    queue_auxiliary_ = serial_port_auxiliary_->get_queue_handler(serial_msg_type_);
-    if (!queue_auxiliary_) {
-        return handle_error(HeraErrno::CanNotOpenTtyDevice, "Can not register listener");
-    }
-
-    shiftation_timestamp_ = 0;
-    shifation_value_ns_ = 0;
-
     return HeraErrno::Success;
 }
 
 /// Free the serial port object
 ///
-void Serialsync::disconnect()
+void Serial::disconnect()
 {
     if (serial_port_ != nullptr) {
         delete serial_port_;
-    }
-    if (serial_port_auxiliary_ != nullptr) {
-        serial_port_auxiliary_->free();
     }
 }
 
 /// Fetch data from serial port
 ///
-data::DeviceDataPtr Serialsync::fetch()
+data::DeviceDataPtr Serial::fetch()
 {
-    if (!queue_ || !queue_auxiliary_) {
+    if (!queue_) {
         return nullptr;
-    }
-
-    auto now = time::Timestamp::now();
-
-    // Get Timestamp shiftation from queue_auxiliary
-    auto time_shift = queue_auxiliary_->pop();
-    if (time_shift) {
-        if (time_shift->size() == sizeof(uint64_t)) {
-            memcpy(&shifation_value_ns_, time_shift->data(), sizeof(uint64_t));
-            shiftation_timestamp_ = now;
-        }
     }
 
     // Get Rawdata from a Real Sensor
@@ -108,107 +74,34 @@ data::DeviceDataPtr Serialsync::fetch()
         return nullptr;
     }
 
-    uint64_t timestamp_aligned = now;
-    uint8_t timestamp_aligned_valid = 0;
-    try {
-        // Tokenize nmea sentence
-        std::string token;
-        std::stringstream nmea(std::string(nmea_sentence_str->begin(), nmea_sentence_str->end()));
-
-        if (!getline(nmea, token, ',')) {
-            throw std::runtime_error("Can not tokenize 1st token");
-        }
-        // Only accept NMEA::GPGGA
-        /// @see https://www.gpsinformation.org/dale/nmea.htm#GGA
-        if (token != "$GPGGA") {
-            throw std::runtime_error("got non-gpgga sentence '" + token + "'");
-        }
-
-        // Get original time of NMEA (hhmmss)
-        if (!getline(nmea, token, ',')) {
-            throw std::runtime_error("Can not tokenize 2nd token");
-        }
-
-        // Valid time info (No signal from satellites)
-        if (token.size() != 0) {
-            // Tokenize GPTS
-            auto hours = std::stoull(token.substr(0, 2));
-            auto minutes = std::stoull(token.substr(2, 2));
-            auto seconds = std::stoull(token.substr(4, 2));
-            uint64_t nanoseconds = 0;
-            if (token.size() != 6) {
-                if (token[6] != '.') {
-                    throw std::runtime_error("Can not tokenize gpts '" + token + "'");
-                }
-                nanoseconds = std::stoull(token.substr(7));
-                switch (token.size()) {
-                case 8:                             // e.g. 121212.4
-                    nanoseconds *= 100'000'000ULL;  // 100ms
-                    break;
-                case 9:                            // e.g. 121212.45
-                    nanoseconds *= 10'000'000ULL;  // 10ms
-                    break;
-                case 10:                          // e.g. 121212.450
-                    nanoseconds *= 1'000'000ULL;  // 1ms
-                    break;
-                default:
-                    throw std::runtime_error("Can not tokenize gpts '" + token + "'");
-                }
-            }
-
-            // Calculate original timestamp
-            uint64_t timestamp_nmea_original =
-                    hours * time::OneHour + minutes * time::OneMinute + seconds * time::OneSecond + nanoseconds;
-
-            if (now - shiftation_timestamp_ < ShifationDelayTolerance_) {
-                timestamp_nmea_original += shifation_value_ns_;
-
-                uint64_t days = now / time::OneDay;
-                int64_t now_residual = int64_t(now) - days * time::OneDay;
-
-                if (int64_t(timestamp_nmea_original) - now_residual > time::OneDay / 2) {
-                    days -= 1;
-                } else if (int64_t(timestamp_nmea_original) - now_residual < -time::OneDay / 2) {
-                    days += 1;
-                }
-
-                timestamp_aligned_valid = 1;
-                timestamp_aligned = timestamp_nmea_original + days * time::OneDay;
-            }
-        }
-    } catch (std::exception& err) {
-        log::warn << "SerialSync: fetch(), " << err.what() << log::endl;
-        return nullptr;
-    }
-
     // Total length of device data
     auto nmea_sentence_length = nmea_sentence_str->size();
-    auto length = sizeof(SerialSyncNmea) + nmea_sentence_length;
+    auto length = sizeof(SerialNmea) + nmea_sentence_length;
     auto data = data::DeviceData::create(length,
                                          id_,
-                                         DeviceVendorType::GnssSerialsync,
-                                         DeviceDataType::GnssSerialsyncNmea,
+                                         DeviceVendorType::GnssSerial,
+                                         DeviceDataType::GnssSerialNmea,
                                          sequence_++);
-    auto derived_data = static_cast<SerialSyncNmea*>(data.get());
+    auto derived_data = static_cast<SerialNmea*>(data.get());
 
-    // Copy data
-    /// @todo calculate time
-    derived_data->data.timestamp_intrinsic_ns = timestamp_aligned;
-    derived_data->data.timestamp_valid = timestamp_aligned_valid;
+    std::string nmea_std_str;
+    for (auto c : *nmea_sentence_str) {
+        nmea_std_str.push_back(c);
+    }
+
+    log::debug << "Received NMEA: " << nmea_std_str << log::endl;
+
     derived_data->data.nmea_sentence_length = nmea_sentence_length;
     memcpy(derived_data->data.nmea_sentence, nmea_sentence_str->data(), nmea_sentence_length);
 
     return data;
 }
 
-HeraErrno Serialsync::adjust_parameter(DeviceParameterType type, const std::string& value)
+HeraErrno Serial::adjust_parameter(DeviceParameterType type, const std::string& value)
 {
     switch (type) {
     case DeviceParameterType::Kernel:
-    case DeviceParameterType::KernelAuxiliary:
     case DeviceParameterType::BaudRate:
-    case DeviceParameterType::BaudRateAuxiliary:
-    case DeviceParameterType::SerialMsgType:
         return HeraErrno::ImmutableParameter;
     default:
         return HeraErrno::UnimplementedParameter;
@@ -216,23 +109,23 @@ HeraErrno Serialsync::adjust_parameter(DeviceParameterType type, const std::stri
     return HeraErrno::Success;
 }
 
-data::SensorDataPtr Serialsync::do_convert(data::DeviceDataPtr& storage_data)
+data::SensorDataPtr Serial::do_convert(data::DeviceDataPtr& storage_data)
 {
-    if (!storage_data->is_type(DeviceDataType::GnssSerialsyncNmea)) {
+    if (!storage_data->is_type(DeviceDataType::GnssSerialNmea)) {
         return data::SensorData::broken_data();
     }
 
+    log::debug << "Serial:Convert!" << log::endl;
+
     // Raw DeviceData of Derived Type
-    auto raw_data = static_cast<SerialSyncNmea*>(storage_data.get());
+    auto raw_data = static_cast<SerialNmea*>(storage_data.get());
 
     // Create a SensorData from DeviceData
     auto length = sizeof(data::NavSatFix);
     auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::NavSatFix, length);
     auto navsatfix_sensor_data = static_cast<data::NavSatFix*>(sensor_data.get());
 
-
     // Initialize an invalid data template
-    navsatfix_sensor_data->timestamp_intrinsic_ns = raw_data->data.timestamp_intrinsic_ns;
     navsatfix_sensor_data->status.status = data::NavSatFix::StatusType::NO_Fix;
     navsatfix_sensor_data->status.service = data::NavSatFix::ServiceType::GPS;
     navsatfix_sensor_data->position_covariance_type = data::NavSatFix::PositionCovarianceType::Unknown;
@@ -243,11 +136,6 @@ data::SensorDataPtr Serialsync::do_convert(data::DeviceDataPtr& storage_data)
     navsatfix_sensor_data->latitude = NAN;
     navsatfix_sensor_data->longitude = NAN;
     navsatfix_sensor_data->altitude = NAN;
-
-    // Return if time::Timestamp is not valid
-    if (raw_data->data.timestamp_valid == 0) {
-        return sensor_data;
-    }
 
     // Parse NMEA Sentence
     try {
@@ -274,6 +162,51 @@ data::SensorDataPtr Serialsync::do_convert(data::DeviceDataPtr& storage_data)
 
         // UTC time status of position (hhmmss) (Token 2)
         if (!getline(nmea, token, ',')) {
+            throw std::runtime_error("Can not tokenize token 2");
+        }
+        // Valid time info (No signal from satellites)
+        if (token.size() != 0) {
+            // Tokenize GPTS
+            auto hours = std::stoull(token.substr(0, 2));
+            auto minutes = std::stoull(token.substr(2, 2));
+            auto seconds = std::stoull(token.substr(4, 2));
+            uint64_t nanoseconds = 0;
+            if (token.size() != 6) {
+                if (token[6] != '.') {
+                    throw std::runtime_error("Can not tokenize gpts '" + token + "'");
+                }
+                nanoseconds = std::stoull(token.substr(7));
+                switch (token.size()) {
+                case 8:                             // e.g. 121212.4
+                    nanoseconds *= 100'000'000ULL;  // 100ms
+                    break;
+                case 9:                            // e.g. 121212.45
+                    nanoseconds *= 10'000'000ULL;  // 10ms
+                    break;
+                case 10:                          // e.g. 121212.450
+                    nanoseconds *= 1'000'000ULL;  // 1ms
+                    break;
+                    return data::SensorData::broken_data();
+                default:
+                    throw std::runtime_error("Can not tokenize gpts '" + token + "'");
+                }
+            }
+
+            // Calculate UTC time of NMEA
+            uint64_t timestamp_nmea_original =
+                    hours * time::OneHour + minutes * time::OneMinute + seconds * time::OneSecond + nanoseconds;
+
+            uint64_t days = raw_data->get_timestamp_receive_ns() / time::OneDay;
+            int64_t now_residual = int64_t(raw_data->get_timestamp_receive_ns()) - days * time::OneDay;
+
+            if (int64_t(timestamp_nmea_original) - now_residual > time::OneDay / 2) {
+                days -= 1;
+            } else if (int64_t(timestamp_nmea_original) - now_residual < -time::OneDay / 2) {
+                days += 1;
+            }
+
+            sensor_data->timestamp_intrinsic_ns = timestamp_nmea_original + days * time::OneDay;
+        } else {
             throw std::runtime_error("Can not tokenize token 2");
         }
 
@@ -420,15 +353,18 @@ data::SensorDataPtr Serialsync::do_convert(data::DeviceDataPtr& storage_data)
         navsatfix_sensor_data->longitude = longitude;
         navsatfix_sensor_data->altitude = altitude;
         navsatfix_sensor_data->status.status = fixed;
+        log::debug << "navsatfix_sensor_data->latitude: " << navsatfix_sensor_data->latitude
+                   << " navsatfix_sensor_data->longitude: " << navsatfix_sensor_data->longitude
+                   << " navsatfix_sensor_data->altitude " << navsatfix_sensor_data->altitude << log::endl;
     } catch (std::exception& err) {
-        log::warn << "SerialSync: convert(), " << err.what() << log::endl;
+        log::warn << "Serial: convert(), " << err.what() << log::endl;
         return data::SensorData::broken_data();
     }
 
     return sensor_data;
 }
 
-}  // namespace serialsync
+}  // namespace serial
 }  // namespace gnss
 }  // namespace device
 }  // namespace hera

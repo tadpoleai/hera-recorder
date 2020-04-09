@@ -47,11 +47,11 @@ cp -r ../storage/include/* ../artifacts/arm/include/storage
 # Libraries
 cp -r common/libhera-common.so ../artifacts/arm/lib
 cp -r device/libhera-device*.so ../artifacts/arm/lib
+cp -r device/libhera-device*.a ../artifacts/arm/lib
 cp -r storage/libhera-storage.so ../artifacts/arm/lib
 
 # Copy Dependency
 cp -rL /opt/s32v/thrift/lib/libthrift.so ../artifacts/arm/lib
-cp -rL /opt/s32v/libjpeg-turbo/lib/libturbojpeg.so ../artifacts/arm/lib
 
 # Binaries
 cp -r daemon/hera-daemon ../artifacts/arm/bin

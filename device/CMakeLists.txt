@@ -18,18 +18,22 @@ endif()
 
 # Drivers - Camera/S32VMipi
 if(DEVICE_DRIVER_S32VMIPI)
-  set(S32V_VSDK_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/lib/arm/libvsdk_ar0143.so)
+  set(S32V_VSDK_LIBS /opt/s32v/extra-depends/libvsdk_ov10635.so)
 endif()
+
+# Drivers - Odometry/S32V CAN @note see s32v_extra.cmake
 
 include_directories(${PROJECT_NAME} "../" include)
 
 # Build device (core)
-add_library(${PROJECT_NAME} SHARED src/device_factory.cpp ${UTILS_SRC} ${ALL_SRC})
+add_library(${PROJECT_NAME} SHARED src/device_factory.cpp ${UTILS_SRC}
+                                   ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} hera-common hera-storage Threads::Threads
                       ${JPEG_TURBO_LIBS})
 
 # Build device (drivers)
-add_library(${PROJECT_NAME}-driver SHARED src/device_factory.cpp ${UTILS_SRC} ${ALL_SRC})
+add_library(${PROJECT_NAME}-driver STATIC src/device_factory.cpp ${UTILS_SRC}
+                                          ${ALL_SRC})
 target_include_directories(
   ${PROJECT_NAME}-driver PRIVATE ${FLY_CAPTURE_INCLUDE_DIR}
                                  ${JPEG_TURBO_INCLUDE_DIR})
@@ -40,8 +44,9 @@ target_link_libraries(
   hera-storage
   Threads::Threads
   ${JPEG_TURBO_LIBS}
-  ${FLT_CAPTURE_LIBS}
-  ${S32V_VSDK_LIBS})
+  ${FLY_CAPTURE_LIBS}
+  ${S32V_VSDK_LIBS}
+  ${S32V_EXTRA_LIBS})
 
 # Install shared libraries
 install(
@@ -63,4 +68,4 @@ target_link_libraries(
   ${PROJECT_NAME}-driver
   Threads::Threads
   ${JPEG_TURBO_LIBS}
-  ${FLT_CAPTURE_LIBS})
+  ${FLY_CAPTURE_LIBS})

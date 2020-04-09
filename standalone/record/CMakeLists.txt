@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS "-Werror -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-find_package(HeraArm)
+find_package(Hera)
 
 message(STATUS "Find Hera of ARM in ${HERA_INCLUDE_DIRS}")
 

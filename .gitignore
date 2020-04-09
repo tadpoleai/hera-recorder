@@ -3,6 +3,8 @@
 *.slo
 *.lo
 *.o
+*.so
+*.so.*
 *.obj
 *.gch
 *.pch
@@ -86,3 +88,6 @@ doxygen/
 # Artifacts
 artifacts/
 artifacts*
+
+device/lib/arm/*
+device/device-lib/*

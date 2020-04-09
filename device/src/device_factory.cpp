@@ -17,9 +17,11 @@
 #include "camera/flir/flir.hpp"
 #include "camera/s32vmipi/s32vmipi.hpp"
 #include "dummy/foobar/foobar.hpp"
+#include "gnss/serial/serial.hpp"
 #include "gnss/serialsync/serialsync.hpp"
 #include "imu/aceinna/aceinna.hpp"
 #include "lidar/velodyne/velodyne.hpp"
+#include "odometry/geely/geely.hpp"
 
 namespace wayz {
 namespace hera {
