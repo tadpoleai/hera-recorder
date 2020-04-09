@@ -12,7 +12,11 @@
 
 #include <cstdint>
 
+#ifdef HERA_COMPILE_IN_REPO
 #include "common/include/third_party/enum.hpp"
+#else
+#include <hera/common/third_party/enum.hpp>
+#endif
 
 namespace wayz {
 namespace hera {
@@ -71,7 +75,7 @@ enum class SensorDataType : uint16_t {
     ImuMagneticField = 0x0201,  ///< ROS Imu and MagneticField
     NavSatFix = 0x0301,         ///< ROS NavSatFix
     CompressedImage = 0x0401,   ///< ROS CompressedImage
-    Image = 0x0402,          ///< ROS Image, some minor format conversion needed
+    Image = 0x0402,             ///< ROS Image, some minor format conversion needed
     PointsXYZI = 0x0501,        ///< ROS PointCloud2, some PCL function needed
 };
 

@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include <common/include/ipc/ipc_queue.hpp>
-#include <device/include/include.hpp>
+#include <hera/common/ipc/ipc_queue.hpp>
+#include <hera/device/include.hpp>
 
 using namespace wayz::hera;
 

@@ -3,7 +3,7 @@ mkdir -p build
 cd build
 
 if [ -z "$1" ]; then
-    cmake .. -Dwith-all=1 -Dwith-driver-all=0
+    cmake .. -Dwith-all=1 -Dwith-driver-all=1
 else
     echo "git version is $1"
     cmake .. -Dwith-all=1 -Dwith-driver-all=1 -Dforce-git-info=$1

@@ -17,6 +17,7 @@ if ! [ $(id -u) = 0 ]; then
    alias sudo=''
 fi
 
+
 echo "Installing Binraries"
 sudo chmod 755 bin/*
 sudo cp -r bin/hera-* /usr/local/bin/

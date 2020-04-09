@@ -16,8 +16,8 @@
 #include <memory>
 #include <string>
 
-#include "common/include/logger/logger.hpp"
-#include "common/include/utils/time.hpp"
+#include <hera/common/logger/logger.hpp>
+#include <hera/common/utils/time.hpp>
 
 namespace wayz {
 
