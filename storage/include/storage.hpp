@@ -19,9 +19,16 @@
 #include <utility>
 #include <vector>
 
+#ifdef HERA_COMPILE_IN_REPO
 #include "common/include/utils/thread_queue.hpp"
 #include "device/include/device_data.hpp"
+#else
+#include <hera/common/utils/thread_queue.hpp>
+#include <hera/device/device_data.hpp>
+#endif
+
 #include "storage_data_header.hpp"
+
 
 namespace wayz {
 namespace hera {

@@ -22,4 +22,4 @@ install(
 
 # Install headers
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
-        DESTINATION include/hera/storage/include)
+        DESTINATION include/hera/storage/)

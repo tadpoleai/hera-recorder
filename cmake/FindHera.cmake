@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.5.1)
-
 if(NOT HERA_INSTALL_PREFIX)
   message(STATUS "FindHera.cmake: Setting HERA_INSTALL_PREFIX to '/usr/local/'")
   set(HERA_INSTALL_PREFIX /usr/local/)

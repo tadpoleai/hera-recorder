@@ -55,5 +55,7 @@ cp -r \
     ../artifacts/arm/manual
 
 # Install Script
-cp -r ../install_artifacts.sh ../artifacts/arm
-chmod +x ../artifacts/arm/install_artifacts.sh
+cp -r ../scripts/install_artifacts_arm_host.sh ../artifacts/arm
+cp -r ../scripts/install_artifacts_arm_target.sh ../artifacts/arm
+chmod +x ../artifacts/arm/install_artifacts_arm_host.sh
+chmod +x ../artifacts/arm/install_artifacts_arm_target.sh
