@@ -82,6 +82,35 @@ public:
     /// @return SensorDataPtr converted data if succeed, otherwise broken_data()
     ///
     static data::SensorDataPtr convert(data::DeviceDataPtr& data);
+
+public:
+    struct DeviceHandle {
+        DeviceVendorType type;
+        std::string type_name;
+        DevicePtr (*create)(const uint32_t,
+                            const std::string&,
+                            const std::string&,
+                            const bool,
+                            ipc::IPCQueue<data::SensorData>* const,
+                            storage::StorageManager* const);         ///< Function pointer to create
+        data::SensorDataPtr (*do_convert)(data::DeviceDataPtr&);     ///< Function pointer to do_convert
+        std::vector<DeviceParameterType> essential_parameter_types;  ///< Essential Parameters for device
+        std::vector<DeviceParameterType> optional_parameter_types;   ///< Optional Parameters for device
+        bool implemented;                                            ///< Is driver implemented or not
+    };
+
+    ///
+    /// @brief To register a device
+    ///
+    /// @note This should be called in vendor device's cpp
+    ///
+    /// @param device_handle
+    /// @return int no use
+    ///
+    static int register_type(DeviceHandle&& device_handle);
+
+private:
+    static std::vector<DeviceHandle> device_handles;  ///< Registered device handles
 };
 
 }  // namespace device

@@ -16,8 +16,9 @@
 #endif
 #endif
 
-#include "device.hpp"
 #include "data/camera_data.hpp"
+#include "device.hpp"
+#include "device_factory.hpp"
 #include "flir_timestamp_calculator.hpp"
 
 namespace wayz {
@@ -111,6 +112,16 @@ public:
     {}
     Flir(const Flir&) = delete;
     Flir& operator=(const Flir&) = delete;
+
+    static DevicePtr create(const uint32_t id,
+                            const std::string& vendor_type,
+                            const std::string& name,
+                            const bool forward,
+                            ipc::IPCQueue<data::SensorData>* const ipc_queue,
+                            storage::StorageManager* const storage)
+    {
+        return std::make_unique<Flir>(id, vendor_type, name, forward, ipc_queue, storage);
+    }
 
     ///
     /// @brief Destroy the Flir object

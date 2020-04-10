@@ -9,6 +9,7 @@
 ///
 
 #pragma once
+
 #include <cmath>
 #include <unistd.h>
 
@@ -16,6 +17,9 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include "data/lidar_data.hpp"
+#include "device.hpp"
+#include "device_factory.hpp"
 #include "velodyne_data.hpp"
 #include "velodyne_defs.hpp"
 
@@ -45,6 +49,16 @@ public:
     {}
     Velodyne(const Velodyne&) = delete;
     Velodyne& operator=(const Velodyne&) = delete;
+
+    static DevicePtr create(const uint32_t id,
+                            const std::string& vendor_type,
+                            const std::string& name,
+                            const bool forward,
+                            ipc::IPCQueue<data::SensorData>* const ipc_queue,
+                            storage::StorageManager* const storage)
+    {
+        return std::make_unique<Velodyne>(id, vendor_type, name, forward, ipc_queue, storage);
+    }
 
     ///
     /// @brief Destroy the Velodyne object

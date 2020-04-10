@@ -23,6 +23,14 @@ const std::vector<DeviceParameterType> Aceinna::EssentialParameterTypes = {Devic
 
 const std::vector<DeviceParameterType> Aceinna::OptionalParameterTypes = {};
 
+auto _ = DeviceFactory::register_type({.type = DeviceVendorType::ImuAceinna,
+                                       .type_name = "imu/aceinna",
+                                       .create = &Aceinna::create,
+                                       .do_convert = &Aceinna::do_convert,
+                                       .essential_parameter_types = Aceinna::EssentialParameterTypes,
+                                       .optional_parameter_types = Aceinna::OptionalParameterTypes,
+                                       .implemented = true});
+
 /// Open serial port by kernel, baud rate, serial msg type,
 /// and get a thread-safe queue
 HeraErrno Aceinna::connect()

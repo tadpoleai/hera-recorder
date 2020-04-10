@@ -17,8 +17,9 @@
 #endif
 #endif
 
-#include "device.hpp"
 #include "data/camera_data.hpp"
+#include "device.hpp"
+#include "device_factory.hpp"
 
 namespace wayz {
 namespace hera {
@@ -82,6 +83,16 @@ public:
     {}
     S32VMipi(const S32VMipi&) = delete;
     S32VMipi& operator=(const S32VMipi&) = delete;
+
+    static DevicePtr create(const uint32_t id,
+                            const std::string& vendor_type,
+                            const std::string& name,
+                            const bool forward,
+                            ipc::IPCQueue<data::SensorData>* const ipc_queue,
+                            storage::StorageManager* const storage)
+    {
+        return std::make_unique<S32VMipi>(id, vendor_type, name, forward, ipc_queue, storage);
+    }
 
     ///
     /// @brief Destroy the S32VMipi object

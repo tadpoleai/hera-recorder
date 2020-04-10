@@ -25,6 +25,14 @@ const std::vector<DeviceParameterType> Foobar::EssentialParameterTypes = {Device
 
 const std::vector<DeviceParameterType> Foobar::OptionalParameterTypes = {};
 
+auto _ = DeviceFactory::register_type({.type = DeviceVendorType::DummyFoobar,
+                                       .type_name = "dummy/foobar",
+                                       .create = &Foobar::create,
+                                       .do_convert = &Foobar::do_convert,
+                                       .essential_parameter_types = Foobar::EssentialParameterTypes,
+                                       .optional_parameter_types = Foobar::OptionalParameterTypes,
+                                       .implemented = true});
+
 const std::string Foobar::DefaultMessage_ = "This is a default message from dummy sensor";
 
 /// Parse parameters first
