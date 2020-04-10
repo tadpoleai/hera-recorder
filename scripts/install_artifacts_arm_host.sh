@@ -37,7 +37,7 @@ sudo mkdir -p $install_path/include
 echo "Installing Libraries"
 sudo chmod 755 lib/*
 sudo mkdir -p ${install_path}/lib
-sudo cp -r lib/libhera-*.so ${install_path}/lib
+sudo cp -r lib/lib*.so ${install_path}/lib
 echo "Libraries installed to ${install_path}/lib"
 ls ${install_path}/lib
 echo

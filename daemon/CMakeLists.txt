@@ -22,7 +22,7 @@ add_custom_command(
 
 # Build daemon
 file(GLOB_RECURSE ALL_SRC "src/*.cpp" "src/**/*.cpp")
-include_directories(".." include)
+include_directories(".." include ${THRIFT_INCLUDE_DIR})
 add_executable(
   ${PROJECT_NAME} ${ALL_SRC} ${RPC_GEN_CPP}/hera_types.cpp
                   ${RPC_GEN_CPP}/hera_constants.cpp ${RPC_GEN_CPP}/Service.cpp)
