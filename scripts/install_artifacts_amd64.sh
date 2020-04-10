@@ -29,7 +29,7 @@ sudo cp -r bin/hera-* $install_path/bin/
 
 echo "Installing Libraries"
 sudo chmod 755 lib/*
-sudo cp -r lib/libhera-*.so $install_path/lib/
+sudo cp -r lib/lib*.so $install_path/lib/
 sudo ldconfig
 
 echo "Installing Headers"

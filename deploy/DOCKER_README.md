@@ -20,7 +20,7 @@
 
 `cd .. `(移动至工程根目录)
 
-`sudo docker run -t --rm -v $(pwd):/workspace/hera-recorder registry.newayz.com/autonomy/hera-recorder:latest`
+`sudo docker run -it --rm -v $(pwd):/workspace/hera-recorder registry.newayz.com/autonomy/hera-recorder:latest`
 
 ## 上传 docker 镜像
 

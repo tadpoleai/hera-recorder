@@ -41,7 +41,7 @@ echo
 
 echo "Installing Libraries"
 chmod 755 lib/*
-cp -r lib/libhera-*.so $install_path/lib/
+cp -r lib/lib*.so $install_path/lib/
 echo "Libraries installed to ${install_path}/lib"
 echo
 ldconfig
@@ -50,6 +50,38 @@ echo "Installing Headers"
 mkdir -p $install_path/include/hera
 cp -r include/* $install_path/include/hera
 echo "Headers installed to ${install_path}/include/hera"
+
+echo
+read -p "Install client (y/N): " ans
+echo
+if [[ $ans = [yY] ]]; then
+    echo "Installating client"
+
+    # Install client (web dist)
+    sudo rm -rf /var/www/hera-client
+    sudo mkdir -p /var/www/hera-client
+    sudo cp -r client /var/www/hera-client
+
+    echo "Client installed to /var/www/hera-client"
+fi
+
+echo
+read -p "Install daemon (y/N): " ans
+echo
+if [[ $ans = [yY] ]]; then
+    echo "Installating daemon"
+
+    # Install hera-daemon's service
+    sudo cp script/daemon/hera-daemon.service /lib/systemd/system
+
+    # Make directory for hera-daemon
+    sudo mkdir -p /var/hera/
+    sudo mkdir -p /var/hera/data
+    sudo mkdir -p /var/hera/logs
+
+    # Enable boot-up hera-daemon
+    sudo systemctl enable hera-daemon.service
+fi
 
 echo
 echo "Installation Completed"

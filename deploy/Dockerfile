@@ -2,7 +2,7 @@
 # Copyright 2018 Wayz.ai. All Rights Reserved.
 #
 
-# TAG: v0.3
+# TAG: v0.4
 # Everytime this file is modified, please add TAG by 0.1
 
 FROM registry.newayz.com/autonomy/leta-localization_core:latest
@@ -25,7 +25,7 @@ RUN ./install-thrift.sh && \
 # install flycapture
 COPY ./install-flycapture.sh ./
 RUN ./install-flycapture.sh && \
-    rm -rf flycapture2-2.12.3.31-amd64* && \
+    rm -rf ./flycapture2-2.12.3.31-amd64* && \
     rm -rf /var/lib/apt/lists/*
 
 # install jpeg
@@ -48,13 +48,19 @@ COPY ./S32v_env.tar.gz ./
 COPY ./install-s32v-crossenv.sh ./
 RUN ./install-s32v-crossenv.sh && \
     rm -rf /var/lib/apt/lists/* && \
-    rm -rf S32v_env.tar.gz S32v_env
+    rm -rf ./S32v_env.tar.gz ./S32v_env
 
 # compile s32v-arm-turbojpeg
 COPY ./install-jpeg-turbo-arm.sh ./
 RUN ./install-jpeg-turbo-arm.sh && \
     rm -rf /var/lib/apt/lists/* && \
-    rm -rf libjpeg-turbo*
+    rm -rf ./libjpeg-turbo*
+
+# compile s32v-arm-thrift
+COPY ./thrift-0.12.0-aarch64-lib.tar.gz ./
+COPY ./install-thrift-arm.sh ./
+RUN ./install-thrift-arm.sh && \
+    rm -rf ./thrift-0.12.0-aarch64-lib.tar.gz
 
 # source dynamic lib
 RUN ldconfig
