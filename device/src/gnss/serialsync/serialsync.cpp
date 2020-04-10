@@ -28,6 +28,14 @@ const std::vector<DeviceParameterType> Serialsync::EssentialParameterTypes = {De
 
 const std::vector<DeviceParameterType> Serialsync::OptionalParameterTypes = {};
 
+auto _ = DeviceFactory::register_type({.type = DeviceVendorType::GnssSerialsync,
+                                       .type_name = "gnss/serialsync",
+                                       .create = &Serialsync::create,
+                                       .do_convert = &Serialsync::do_convert,
+                                       .essential_parameter_types = Serialsync::EssentialParameterTypes,
+                                       .optional_parameter_types = Serialsync::OptionalParameterTypes,
+                                       .implemented = true});
+
 HeraErrno Serialsync::connect()
 {
     try {

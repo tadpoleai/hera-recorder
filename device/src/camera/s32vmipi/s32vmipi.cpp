@@ -27,6 +27,23 @@ const std::vector<DeviceParameterType> S32VMipi::EssentialParameterTypes = {};
 
 const std::vector<DeviceParameterType> S32VMipi::OptionalParameterTypes = {};
 
+auto _ = DeviceFactory::register_type({.type = DeviceVendorType::CameraS32VMipi,
+                                       .type_name = "camera/s32vmipi",
+                                       .create = &S32VMipi::create,
+                                       .do_convert = &S32VMipi::do_convert,
+                                       .essential_parameter_types = S32VMipi::EssentialParameterTypes,
+                                       .optional_parameter_types = S32VMipi::OptionalParameterTypes,
+#ifdef WITH_DRIVER
+#ifdef DEVICE_DRIVER_S32VMIPI
+                                       .implemented = true
+#else
+                                       .implemented = false
+#endif
+#else
+                                       .implemented = false
+#endif
+});
+
 #ifdef WITH_DRIVER
 #ifdef DEVICE_DRIVER_S32VMIPI
 

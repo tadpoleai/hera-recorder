@@ -14,6 +14,7 @@
 #include "../../utils/serial_transport.hpp"
 #include "data/gnss_data.hpp"
 #include "device.hpp"
+#include "device_factory.hpp"
 
 namespace wayz {
 namespace hera {
@@ -96,6 +97,16 @@ public:
     {}
     Serialsync(const Serialsync&) = delete;
     Serialsync& operator=(const Serialsync&) = delete;
+
+    static DevicePtr create(const uint32_t id,
+                            const std::string& vendor_type,
+                            const std::string& name,
+                            const bool forward,
+                            ipc::IPCQueue<data::SensorData>* const ipc_queue,
+                            storage::StorageManager* const storage)
+    {
+        return std::make_unique<Serialsync>(id, vendor_type, name, forward, ipc_queue, storage);
+    }
 
     ///
     /// @brief Destroy the Serialsync object

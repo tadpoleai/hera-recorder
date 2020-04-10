@@ -30,6 +30,25 @@ const std::vector<DeviceParameterType> Flir::OptionalParameterTypes = {DevicePar
                                                                        DeviceParameterType::WhiteBalanceBlue,
                                                                        DeviceParameterType::FrameRate};
 
+auto a = &Flir::create;
+
+auto _ = DeviceFactory::register_type({.type = DeviceVendorType::CameraFlir,
+                                       .type_name = "camera/flir",
+                                       .create = &Flir::create,
+                                       .do_convert = &Flir::do_convert,
+                                       .essential_parameter_types = Flir::EssentialParameterTypes,
+                                       .optional_parameter_types = Flir::OptionalParameterTypes,
+#ifdef WITH_DRIVER
+#ifdef DEVICE_DRIVER_FLIR
+                                       .implemented = true
+#else
+                                       .implemented = false
+#endif
+#else
+                                       .implemented = false
+#endif
+});
+
 #ifdef WITH_DRIVER
 #ifdef DEVICE_DRIVER_FLIR
 
@@ -225,14 +244,15 @@ data::SensorDataPtr Flir::do_convert(data::DeviceDataPtr& storage_data)
         camera_sensor_data->image_data_size = image_data_size;
         memcpy(camera_sensor_data->image_data, &(raw_data->data.image_data), image_data_size);
         return sensor_data;
-    } else if (storage_data->is_type(DeviceDataType::CameraFlirRawImage)) {
+    }  // namespace flir
+    else if (storage_data->is_type(DeviceDataType::CameraFlirRawImage)) {
         // Return CameraRawImage
         /// @todo Implement convertion for RawImage
         log::warn << "Flir: CamareRawImage is not supported yet" << log::endl;
         return data::SensorData::broken_data();
     }
     return data::SensorData::broken_data();
-}
+}  // namespace camera
 
 }  // namespace flir
 }  // namespace camera

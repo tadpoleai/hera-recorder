@@ -10,8 +10,9 @@
 
 #pragma once
 
-#include "device.hpp"
 #include "data/dummy_data.hpp"
+#include "device.hpp"
+#include "device_factory.hpp"
 
 namespace wayz {
 namespace hera {
@@ -70,8 +71,17 @@ public:
            storage::StorageManager* const storage) :
         Device(id, vendor_type, name, forward, ipc_queue, storage, HistoryDepth_, EssentialParameterTypes)
     {}
-    Foobar(const Foobar&) = delete;
     Foobar& operator=(const Foobar&) = delete;
+
+    static DevicePtr create(const uint32_t id,
+                            const std::string& vendor_type,
+                            const std::string& name,
+                            const bool forward,
+                            ipc::IPCQueue<data::SensorData>* const ipc_queue,
+                            storage::StorageManager* const storage)
+    {
+        return std::make_unique<Foobar>(id, vendor_type, name, forward, ipc_queue, storage);
+    }
 
     ///
     /// @brief Destroy the Aceinna object

@@ -37,7 +37,9 @@ Device::Device(const uint32_t id,
     ipc_queue_(ipc_queue),
     essential_parameter_types_(essential_parameter_types)
 {
-    storage_->add_device(vendor_type_ + "/" + name_, history_depth_);
+    if (storage_) {
+        storage_->add_device(vendor_type_ + "/" + name_, history_depth_);
+    }
 }
 
 Device::~Device() {}

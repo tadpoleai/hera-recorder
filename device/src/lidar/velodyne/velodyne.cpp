@@ -21,6 +21,14 @@ const std::vector<DeviceParameterType> Velodyne::EssentialParameterTypes = {Devi
 
 const std::vector<DeviceParameterType> Velodyne::OptionalParameterTypes = {};
 
+auto _ = DeviceFactory::register_type({.type = DeviceVendorType::LidarVelodyne,
+                                       .type_name = "lidar/velodyne",
+                                       .create = &Velodyne::create,
+                                       .do_convert = &Velodyne::do_convert,
+                                       .essential_parameter_types = Velodyne::EssentialParameterTypes,
+                                       .optional_parameter_types = Velodyne::OptionalParameterTypes,
+                                       .implemented = true});
+
 const timeval Velodyne::TimeOut_ = {0, 50000};
 
 /// Turn on Lidar's Laser by Remote Control (curl),

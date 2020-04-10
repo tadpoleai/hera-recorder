@@ -25,9 +25,23 @@ namespace wayz {
 namespace hera {
 namespace device {
 
+std::vector<DeviceFactory::DeviceHandle> DeviceFactory::device_handles;
+
+int DeviceFactory::register_type(DeviceFactory::DeviceHandle&& device_handle)
+{
+    device_handles.emplace_back(device_handle);
+    return 0;
+}
+
 std::vector<std::string> DeviceFactory::types()
 {
-    return {"dummy/foobar", "imu/aceinna", "lidar/velodyne", "camera/flir", "camera/s32vmipi", "gnss/serialsync"};
+    std::vector<std::string> ret;
+    for (const auto& device_handle : device_handles) {
+        if (device_handle.implemented) {
+            ret.push_back(device_handle.type_name);
+        }
+    }
+    return ret;
 }
 
 bool DeviceFactory::check_type(const std::string& vendor_type)
@@ -49,24 +63,12 @@ std::pair<std::vector<std::string>, std::vector<std::string>> DeviceFactory::par
 
     decltype(parameter_types(std::string())) ret;
 
-    if (vendor_type.compare("dummy/foobar") == 0) {
-        essential = dummy::foobar::Foobar::EssentialParameterTypes;
-        optional = dummy::foobar::Foobar::OptionalParameterTypes;
-    } else if (vendor_type.compare("imu/aceinna") == 0) {
-        essential = imu::aceinna::Aceinna::EssentialParameterTypes;
-        optional = imu::aceinna::Aceinna::OptionalParameterTypes;
-    } else if (vendor_type.compare("lidar/velodyne") == 0) {
-        essential = lidar::velodyne::Velodyne::EssentialParameterTypes;
-        optional = lidar::velodyne::Velodyne::OptionalParameterTypes;
-    } else if (vendor_type.compare("camera/flir") == 0) {
-        essential = camera::flir::Flir::EssentialParameterTypes;
-        optional = camera::flir::Flir::OptionalParameterTypes;
-    } else if (vendor_type.compare("camera/s32vmipi") == 0) {
-        essential = camera::s32vmipi::S32VMipi::EssentialParameterTypes;
-        optional = camera::s32vmipi::S32VMipi::OptionalParameterTypes;
-    } else if (vendor_type.compare("gnss/serialsync") == 0) {
-        essential = gnss::serialsync::Serialsync::EssentialParameterTypes;
-        optional = gnss::serialsync::Serialsync::OptionalParameterTypes;
+    for (const auto& device_handle : device_handles) {
+        if (vendor_type == device_handle.type_name) {
+            essential = device_handle.essential_parameter_types;
+            optional = device_handle.optional_parameter_types;
+            break;
+        }
     }
 
     for (const auto& type : essential) {
@@ -86,21 +88,13 @@ DevicePtr DeviceFactory::create(const uint32_t id,
                                 ipc::IPCQueue<data::SensorData>* const ipc_queue,
                                 storage::StorageManager* const storage)
 {
-    if (vendor_type.compare("dummy/foobar") == 0) {
-        return std::make_unique<dummy::foobar::Foobar>(id, vendor_type, name, forward, ipc_queue, storage);
-    } else if (vendor_type.compare("imu/aceinna") == 0) {
-        return std::make_unique<imu::aceinna::Aceinna>(id, vendor_type, name, forward, ipc_queue, storage);
-    } else if (vendor_type.compare("lidar/velodyne") == 0) {
-        return std::make_unique<lidar::velodyne::Velodyne>(id, vendor_type, name, forward, ipc_queue, storage);
-    } else if (vendor_type.compare("camera/flir") == 0) {
-        return std::make_unique<camera::flir::Flir>(id, vendor_type, name, forward, ipc_queue, storage);
-    } else if (vendor_type.compare("camera/s32vmipi") == 0) {
-        return std::make_unique<camera::s32vmipi::S32VMipi>(id, vendor_type, name, forward, ipc_queue, storage);
-    } else if (vendor_type.compare("gnss/serialsync") == 0) {
-        return std::make_unique<gnss::serialsync::Serialsync>(id, vendor_type, name, forward, ipc_queue, storage);
+    for (const auto& device_handle : device_handles) {
+        if (vendor_type == device_handle.type_name) {
+            return (*device_handle.create)(id, vendor_type, name, forward, ipc_queue, storage);
+        }
     }
 
-    log::warn << "DeviceFactory::create: Unknown vendor type : " << vendor_type << log::endl;
+    log::warn << "DeviceFactory::create: Unknown vendor type: " << vendor_type << log::endl;
     return nullptr;
 }
 #endif
@@ -112,24 +106,18 @@ data::SensorDataPtr DeviceFactory::convert(data::DeviceDataPtr& data)
         return data::SensorData::broken_data();
     }
 
-    switch (data->get_vendor_type()) {
-    case DeviceVendorType::DummyFoobar:
-        return dummy::foobar::Foobar::do_convert(data);
-    case DeviceVendorType::ImuAceinna:
-        return imu::aceinna::Aceinna::do_convert(data);
-    case DeviceVendorType::GnssSerialsync:
-        return gnss::serialsync::Serialsync::do_convert(data);
-    case DeviceVendorType::CameraFlir:
-        return camera::flir::Flir::do_convert(data);
-    case DeviceVendorType::CameraS32VMipi:
-        return camera::s32vmipi::S32VMipi::do_convert(data);
-    case DeviceVendorType::LidarVelodyne:
-        return lidar::velodyne::Velodyne::do_convert(data);
-    default:
-        log::warn << "DeviceFactory::convert: Unknown vendor type :" << static_cast<uint16_t>(data->get_vendor_type())
-                  << log::endl;
-        return data::SensorData::broken_data();
+    auto vendor_type = data->get_vendor_type();
+
+    for (const auto& device_handle : device_handles) {
+        if (vendor_type == device_handle.type) {
+            return (*device_handle.do_convert)(data);
+            break;
+        }
     }
+
+    log::warn << "DeviceFactory::convert: Unknown vendor type :" << static_cast<uint16_t>(data->get_vendor_type())
+              << log::endl;
+    return data::SensorData::broken_data();
 }
 
 }  // namespace device
