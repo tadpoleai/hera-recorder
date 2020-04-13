@@ -4,7 +4,7 @@ const defaultPort = 9090;
 const defaultHttps = false;
 const defaultPath = '';
 const syncPeriodMs = 5000;
-const dataPeriodMs = 1000;
+const dataPeriodMs = 300;
 
 export default {
   defaultHost,

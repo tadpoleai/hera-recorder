@@ -46,7 +46,7 @@ const status = {
     recording: false,
     storageName: '',
     profileName: '',
-    diskFreeSpaceKB: 0,
+    diskUsedSpaceKB: 0,
     diskTotalSpaceKB: 0,
     devices: [],
     profiles: [],
@@ -161,20 +161,8 @@ const Api = {
   adjustParameters: apiWrapper<number, Array<Hera.Parameter>>('adjustParameters'),
   updateProfiles: apiWrapper<void, void>('updateProfiles'),
   getData: apiWrapper<void, void>('getData'),
+  config,
   formatResult
 };
-
-async function sync() {
-  const result = await Api.get();
-  console.log(result);
-  console.log(status);
-}
-
-async function init() {
-  await Api.get();
-  sync();
-}
-
-init();
 
 export { Hera, Api, status };

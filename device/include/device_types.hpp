@@ -33,6 +33,7 @@ namespace device {
 ///
 enum class DeviceVendorType : uint16_t {
     DummyFoobar = 0x0101,     ///< A dummy category for testing, vendor is Wayz
+    DummyImage = 0x0102,      ///< A dummy category for testing, outputs dummy image
     ImuAceinna = 0x0201,      ///< An 9-axis Imu, vendor is Aceinna, embedded in Wayz Tron Sync Board
     GnssSerialsync = 0x0301,  ///< RTK-GNSS, outputs NavSatFix, vendor is any that outpus NMEA
     CameraFlir = 0x0401,      ///< Camera, outputs RawImage or CompressedImage, vendor is FLIR
@@ -49,6 +50,7 @@ enum class DeviceVendorType : uint16_t {
 ///
 enum class DeviceDataType : uint16_t {
     DummyFoobarData = 0x0101,            ///< A dummy device's device data
+    DummyImageData = 0x0102,             ///< A dummy image device's data
     ImuAceinnaData = 0x0201,             ///< For Wayz Tron Sync Board's serial output
     GnssSerialsyncNmea = 0x0301,         ///< For Nmea Sentence
     CameraFlirCompressedImage = 0x0401,  ///< For Flir's camera's compressed image
@@ -72,6 +74,7 @@ enum class SensorDataType : uint16_t {
     EndOfFile = 0xFFFE,         ///< Mark as end of file
     Broken = 0xFFFF,            ///< Mark for a broken data
     Dummy = 0x0101,             ///< A dummy message, no correspond ROS Message
+    DummyImage = 0x0102,        ///< A dummy message, no correspond ROS Message, only to debug image show
     ImuMagneticField = 0x0201,  ///< ROS Imu and MagneticField
     NavSatFix = 0x0301,         ///< ROS NavSatFix
     CompressedImage = 0x0401,   ///< ROS CompressedImage

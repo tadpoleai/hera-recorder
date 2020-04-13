@@ -28,6 +28,7 @@ void Service::start(Result& result, const int32_t profileIndex, const std::strin
         return handle_error(result, HeraErrno::ErrorReadProfiles, "ProfileIndex out of range");
     }
     const auto& profile = profiles_[profileIndex];
+    profile_index_ = profileIndex;
 
     // Check if device list if empty
     if (profile.devices.size() == 0) {

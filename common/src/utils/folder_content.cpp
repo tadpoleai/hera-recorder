@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include <sys/stat.h>
+#include <sys/statfs.h>
 #include <sys/types.h>
 
 namespace wayz {
@@ -70,6 +71,24 @@ FolderContent get_folder_content(const std::string& parent)
     closedir(dir);
 
     return content;
+}
+
+FilesystemStatus get_filesystem_status(const std::string& path)
+{
+    FilesystemStatus ret;
+    struct statfs diskInfo;
+
+    if (statfs(path.c_str(), &diskInfo) < 0) {
+        ret.opened = false;
+        return ret;
+    } else {
+        ret.opened = true;
+        uint64_t blocksize = diskInfo.f_bsize;
+        ret.total_space = diskInfo.f_blocks * blocksize;
+        ret.free_space = diskInfo.f_bavail * blocksize;
+        ret.used_space = ret.total_space - ret.free_space;
+    }
+    return ret;
 }
 
 }  // namespace file
