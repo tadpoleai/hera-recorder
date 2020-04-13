@@ -25,6 +25,7 @@ namespace wayz {
 namespace hera {
 namespace device {
 
+///@ note: !important, Link this cpp file before derived classes of Device
 std::vector<DeviceFactory::DeviceHandle> DeviceFactory::device_handles;
 
 int DeviceFactory::register_type(DeviceFactory::DeviceHandle&& device_handle)
