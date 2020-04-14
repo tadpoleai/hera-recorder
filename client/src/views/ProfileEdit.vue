@@ -14,7 +14,7 @@ div
         span 传感器列表
         van-icon(type="info" name="more-o" size="large" @click="clickAddDevice()")
     template(v-if="status.local.profileToEdit.devices.length === 0")
-      van-cell(title="列表为空")
+      van-empty(description="传感器列表为空")
     //- For deviceList
     van-swipe-cell(v-for="(device, index) in status.local.profileToEdit.devices")
       van-cell(

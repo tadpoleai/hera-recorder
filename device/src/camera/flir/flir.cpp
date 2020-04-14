@@ -30,8 +30,6 @@ const std::vector<DeviceParameterType> Flir::OptionalParameterTypes = {DevicePar
                                                                        DeviceParameterType::WhiteBalanceBlue,
                                                                        DeviceParameterType::FrameRate};
 
-auto a = &Flir::create;
-
 auto _ = DeviceFactory::register_type({.type = DeviceVendorType::CameraFlir,
                                        .type_name = "camera/flir",
                                        .create = &Flir::create,

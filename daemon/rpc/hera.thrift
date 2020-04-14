@@ -63,7 +63,7 @@ struct Status {
     2: required bool recording;
     3: required string storageName;
     4: required string profileName;
-    5: required i32 diskFreeSpaceKB;
+    5: required i32 diskUsedSpaceKB;
     6: required i32 diskTotalSpaceKB;
     10: required list<DeviceStatus> devices;
     20: required list<Profile> profiles;

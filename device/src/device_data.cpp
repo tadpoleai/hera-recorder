@@ -191,6 +191,9 @@ DisplayDataPtr DisplayData::create_from(std::vector<SensorDataPtr>&& sensor_data
     case SensorDataType::Dummy:
         disp_data->data = std::move(parse<SensorDataType::Dummy>(std::move(sensor_datas), disp_data->is_jpeg));
         break;
+    case SensorDataType::DummyImage:
+        disp_data->data = std::move(parse<SensorDataType::DummyImage>(std::move(sensor_datas), disp_data->is_jpeg));
+        break;
     case SensorDataType::ImuMagneticField:
         disp_data->data =
                 std::move(parse<SensorDataType::ImuMagneticField>(std::move(sensor_datas), disp_data->is_jpeg));

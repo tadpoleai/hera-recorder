@@ -43,7 +43,17 @@ struct FolderContent {
     FolderContent() : opened(false), total_size(0) {}
 };
 
+struct FilesystemStatus {
+    bool opened;
+    FileSize total_space;
+    FileSize free_space;
+    FileSize used_space;
+    FilesystemStatus() : opened(false), total_space(0), free_space(0), used_space(0) {}
+};
+
 FolderContent get_folder_content(const std::string& parent);
+
+FilesystemStatus get_filesystem_status(const std::string& path);
 
 }  // namespace file
 }  // namespace hera

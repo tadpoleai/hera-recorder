@@ -6,6 +6,7 @@
 #include <regex>
 #include <thread>
 
+#include "common/include/utils/folder_content.hpp"
 #include "service.hpp"
 
 namespace wayz {
@@ -38,18 +39,6 @@ void Service::append_status(Result& result)
             info.dataSizeKB = device->get_volume() / 1024;
             info.error = device->get_errno();
             info.reason = device->get_reason();
-
-            /*info.data.valid = false;
-            if (is_data || true) {
-                auto disp_data = device::data::DisplayData::create_from(device->history());
-                info.data.valid = disp_data->is_valid;
-                info.data.isJpeg = disp_data->is_jpeg;
-                info.data.sequence = disp_data->sequence;
-                info.data.timeSecond = disp_data->timestamp_intrinsic_ns / time::OneSecond;
-                info.data.timeNanosecond = disp_data->timestamp_intrinsic_ns % time::OneSecond;
-                info.data.data = std::move(disp_data->data);
-            }
-            */
             return info;
         },
         device.get()));
@@ -58,6 +47,11 @@ void Service::append_status(Result& result)
 
     try {
         result.status.profiles = profiles_;
+        if (profile_index_ < profiles_.size()) {
+            result.status.profileName = profiles_[profile_index_].name;
+        } else {
+            result.status.profileName = "";
+        }
     } catch (const std::exception& e) {
         log::error << e.what() << log::endl;
         log::error << "Daemon::Can not get profiles" << log::endl;
@@ -76,6 +70,15 @@ void Service::append_status(Result& result)
         }
     }
 #endif
+
+    auto statfs = file::get_filesystem_status(FileNamePrefix_);
+    if (statfs.opened) {
+        result.status.diskUsedSpaceKB = statfs.used_space / 1024;
+        result.status.diskTotalSpaceKB = statfs.total_space / 1024;
+    } else {
+        result.status.diskUsedSpaceKB = 0;
+        result.status.diskTotalSpaceKB = 0;
+    }
 
     for (auto& promise : promises) {
         result.status.devices.emplace_back(promise.get());

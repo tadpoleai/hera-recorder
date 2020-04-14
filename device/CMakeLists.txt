@@ -8,6 +8,7 @@ include("../deploy/cmake/turbojpeg.cmake")
 
 find_package(Threads REQUIRED)
 
+file(GLOB_RECURSE UTILS_SRC "src/utils/*.cpp")
 file(GLOB_RECURSE ALL_SRC "src/*.cpp")
 
 # Drivers - Camera/Flir
@@ -23,12 +24,12 @@ endif()
 include_directories(${PROJECT_NAME} "../" include)
 
 # Build device (core)
-add_library(${PROJECT_NAME} SHARED ${ALL_SRC})
+add_library(${PROJECT_NAME} SHARED src/device_factory.cpp ${UTILS_SRC} ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} hera-common hera-storage Threads::Threads
                       ${JPEG_TURBO_LIBS})
 
 # Build device (drivers)
-add_library(${PROJECT_NAME}-driver SHARED ${ALL_SRC})
+add_library(${PROJECT_NAME}-driver SHARED src/device_factory.cpp ${UTILS_SRC} ${ALL_SRC})
 target_include_directories(
   ${PROJECT_NAME}-driver PRIVATE ${FLY_CAPTURE_INCLUDE_DIR}
                                  ${JPEG_TURBO_INCLUDE_DIR})

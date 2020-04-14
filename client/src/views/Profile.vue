@@ -10,7 +10,7 @@ div
 
     van-radio-group(v-model="status.local.currentProfileIndex")
       template(v-if="status.local.profiles.length === 0")
-        van-cell(title="列表为空")
+        van-empty(description="配置列表为空")
       //- For Every Profile
       van-swipe-cell(
         v-for="(profile, index) in status.local.profiles"

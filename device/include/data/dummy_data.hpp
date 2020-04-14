@@ -29,6 +29,12 @@ public:
     uint8_t string_buf[0];   ///< a variable-length buf
 };
 
+class DummyImage final : public SensorData {
+public:
+    int32_t image_width;
+    int32_t image_height;
+};
+
 #pragma pack(pop)
 
 }  // namespace data

@@ -12,6 +12,10 @@
 
 #include "common/include/logger/logger.hpp"
 
+#ifdef WITH_DRIVER
+#include <turbojpeg.h>
+#endif
+
 namespace wayz {
 namespace hera {
 namespace device {
@@ -33,6 +37,60 @@ std::string DisplayData::parse<SensorDataType::Dummy>(std::vector<SensorDataPtr>
         }
     }
     return result;
+}
+
+template<>
+std::string DisplayData::parse<SensorDataType::DummyImage>(std::vector<SensorDataPtr>&& sensor_datas, bool& is_jpeg)
+{
+#ifdef WITH_DRIVER
+    static constexpr auto NoData = "No data";
+    static constexpr auto CanvasPixelSize = 480;
+    static constexpr auto CanvasPixelNum = CanvasPixelSize * CanvasPixelSize;
+    static constexpr auto CanvasDataSize = 3 * CanvasPixelNum;
+    static constexpr auto JpegQuality = 90;
+
+    is_jpeg = true;
+    auto canvas = std::unique_ptr<uint8_t[]>(new uint8_t[CanvasDataSize]);
+    auto render_history = std::unique_ptr<float[]>(new float[CanvasPixelNum]);
+    memset(canvas.get(), 16 * (sensor_datas[0]->sequence % 16), CanvasDataSize);
+
+    auto tj_instance = tjInitCompress();
+    if (!tj_instance) {
+        return NoData;
+    }
+    uint8_t* dst_image = nullptr;
+    size_t dst_size = 0;
+
+    if (tjCompress2(tj_instance,
+                    canvas.get(),
+                    CanvasPixelSize,
+                    0,
+                    CanvasPixelSize,
+                    TJPF_BGR,     // Source Image Format
+                    &dst_image,   // Output Image Pointer
+                    &dst_size,    // Output Image Size
+                    TJSAMP_420,   // YUV Binning
+                    JpegQuality,  // Quality
+                    TJFLAG_FASTDCT | TJFLAG_FASTUPSAMPLE) != 0) {
+        log::warn << "Display: Can not compress jpeg" << log::endl;
+        tjDestroy(tj_instance);
+        if (dst_image) {
+            tjFree(dst_image);
+        }
+        return NoData;
+    }
+
+    is_jpeg = true;
+    std::string result;
+    result.resize(dst_size);
+    memcpy((void*)result.data(), dst_image, dst_size);
+
+    tjDestroy(tj_instance);
+    tjFree(dst_image);
+    return result;
+#endif
+
+    return "Driver is not implenmented in driver-core";
 }
 }  // namespace data
 }  // namespace device

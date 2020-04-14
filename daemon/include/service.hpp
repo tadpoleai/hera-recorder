@@ -31,7 +31,7 @@ public:
         started_(false),
         recording_(false),
         FileNamePrefix_(filename_prefix),
-        FileNameSuffix_(".her"),
+        FileNameSuffix_(".hera"),
         ProfilesFileName_(profiles_filename)
     {
         generate_meta();
@@ -96,6 +96,7 @@ private:
 
     const std::string ProfilesFileName_;
     std::vector<Profile> profiles_;
+    size_t profile_index_;
 
 #ifdef WITH_SLAM
     decltype(slam::Result::handler()) slam_handler_;
