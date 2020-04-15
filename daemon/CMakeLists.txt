@@ -29,9 +29,9 @@ add_executable(
 target_link_libraries(${PROJECT_NAME} hera-common hera-storage
                       hera-device-driver ${THRIFT})
 
-if(with-slam)
+if(WITH_SLAM)
   message("STATUS" "Linking with libhera-slam")
-  target_link_libraries(${PROJECT_NAME} hera-slam-caller hera-slam-result)
+  target_link_libraries(${PROJECT_NAME} hera-slam-result)
 endif()
 
 install(
