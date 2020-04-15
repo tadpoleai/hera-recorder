@@ -44,7 +44,10 @@ div
         placeholder="请输入传感器名" label="传感器名")
 
       van-cell(title="转发数据")
-        van-switch(v-model="deviceToEdit.forward" slot="right-icon" size="24")
+        van-switch(
+          slot="right-icon" 
+          v-model="deviceToEdit.forward"
+          size="24")
 
       van-cell-group(title="参数")
         van-field(v-for="(param, index) in deviceToEdit.essentialParameters"
@@ -68,7 +71,7 @@ import { Toast } from 'vant';
 @Component({})
 export default class ProfileEdit extends Vue {
   mounted() {
-    this.deviceTypeMetas = this.status.remoteStatus.meta.deviceTypeMetas;
+    this.deviceTypeMetas = this.status.remoteStatus.meta.deviceTypeMetas.slice();
   }
 
   async clickNavBack() {
@@ -79,7 +82,11 @@ export default class ProfileEdit extends Vue {
     }
     const result = await Api.updateProfiles();
     if (result.error !== 0) {
-      Toast.fail(Api.formatResult(result));
+      Toast.fail({
+        message: Api.formatResult(result),
+        duration: 0,
+        closeOnClick: true
+      });
     } else {
       Toast.success('配置更新成功');
     }

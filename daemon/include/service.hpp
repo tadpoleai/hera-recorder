@@ -30,6 +30,7 @@ public:
     Service(const std::string& filename_prefix = "./", const std::string& profiles_filename = "./profiles.json") :
         started_(false),
         recording_(false),
+        start_time_sec_(0),
         FileNamePrefix_(filename_prefix),
         FileNameSuffix_(".hera"),
         ProfilesFileName_(profiles_filename)
@@ -49,7 +50,7 @@ public:
 
     void get(Result& _return) override;
 
-    void start(Result& _return, const int32_t profileIndex, const std::string& storageName) override;
+    void start(Result& _return, const std::string& storageName, const bool useSlam) override;
 
     void stop(Result& _return) override;
 
@@ -57,7 +58,7 @@ public:
 
     void adjustParameters(Result& _return, const int32_t id, const std::vector<Parameter>& parameters) override;
 
-    void updateProfiles(Result& _return, const std::vector<Profile>& profiles) override;
+    void updateProfiles(Result& _return, const std::vector<Profile>& profiles, const int32_t profileIndex) override;
 
     void getData(ResultData& _return) override;
 
@@ -86,6 +87,7 @@ private:
     std::vector<device::DevicePtr> devices_;
     bool started_;
     bool recording_;
+    int32_t start_time_sec_;
 
     const std::string FileNamePrefix_;
     const std::string FileNameSuffix_;
@@ -96,12 +98,13 @@ private:
 
     const std::string ProfilesFileName_;
     std::vector<Profile> profiles_;
-    size_t profile_index_;
+    int32_t profile_index_;
 
 #ifdef WITH_SLAM
     decltype(slam::Result::handler()) slam_handler_;
     slam::ResultPtr slam_result_;
 #endif
+    bool use_slam_;
 };
 
 }  // namespace daemon

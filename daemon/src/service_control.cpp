@@ -8,14 +8,17 @@
 
 #include "service.hpp"
 
+#if 1
+#include "slam/caller/include/caller.hpp"
+#endif
+
 namespace wayz {
 namespace hera {
 namespace daemon {
 
-void Service::start(Result& result, const int32_t profileIndex, const std::string& storageName)
+void Service::start(Result& result, const std::string& storageName, const bool useSlam)
 {
-    log::info << "Daemon::start called with profileIndex = " << profileIndex << ", storageName = " << storageName
-              << log::endl;
+    log::info << "Daemon::start called with storageName = " << storageName << log::endl;
 
     std::unique_lock<std::mutex> _(mutex_);
     // Check if already started
@@ -24,11 +27,10 @@ void Service::start(Result& result, const int32_t profileIndex, const std::strin
     }
 
     // Check given profilesIndex
-    if (profileIndex < 0 || profileIndex >= (int32_t)profiles_.size()) {
+    if (profile_index_ < 0 || profile_index_ >= (int32_t)profiles_.size()) {
         return handle_error(result, HeraErrno::ErrorReadProfiles, "ProfileIndex out of range");
     }
-    const auto& profile = profiles_[profileIndex];
-    profile_index_ = profileIndex;
+    const auto& profile = profiles_[profile_index_];
 
     // Check if device list if empty
     if (profile.devices.size() == 0) {
@@ -42,7 +44,9 @@ void Service::start(Result& result, const int32_t profileIndex, const std::strin
                             HeraErrno::InvalidStorageFileName,
                             "StorageName given '" + storageName + "' is invalid");
     }
-    storage_name_ = time::Timestamp::now().to_datetime() + "_" + storageName;
+    auto now = time::Timestamp::now();
+    start_time_sec_ = now.tv_sec;
+    storage_name_ = now.to_datetime() + "_" + storageName;
 
     // Precheck device list for type and name
     std::regex device_name_regex("[a-zA-Z0-9_]{1,32}");
@@ -109,9 +113,20 @@ void Service::start(Result& result, const int32_t profileIndex, const std::strin
         }
     }
 
+    use_slam_ = useSlam;
+
     if (failed) {
         return handle_error(result, HeraErrno::CanNotConnectDevices, std::move(reason), true);
     } else {
+        if (use_slam_) {
+#ifdef WITH_SLAM
+            if (system("hera-slam-caller-start") != 0) {
+                log::warn << "Daemon:: Something wrong with slam start" << log::endl;
+            } else {
+                log::info << "Daemon:: called slam start" << log::endl;
+            }
+#endif
+        }
         started_ = true;
         return handle_success(result);
     }
@@ -126,7 +141,19 @@ void Service::stop(Result& result)
         return handle_error(result, HeraErrno::DeviceAlreadyClosed, "Daemon is already stopped");
     }
 
+    log::debug << "Daemon::calling device reset" << log::endl;
     reset();
+
+    if (use_slam_) {
+#ifdef WITH_SLAM
+        log::debug << "Daemon:: calling slam stop" << log::endl;
+        if (system("hera-slam-caller-stop") != 0) {
+            log::warn << "Daemon:: Something wrong with slam stop" << log::endl;
+        } else {
+            log::info << "Daemon:: called slam stop" << log::endl;
+        }
+#endif
+    }
     return handle_success(result);
 }
 

@@ -12,13 +12,16 @@ namespace daemon {
 void Service::load_profiles()
 {
     log::debug << "Daemon::load profiles called" << log::endl;
-    json profiles_json;
+    json profile_outer_json;
 
     try {
         std::ifstream ifs;
         ifs.open(ProfilesFileName_, std::ios::in);
-        ifs >> profiles_json;
+        ifs >> profile_outer_json;
         ifs.close();
+
+        auto profiles_json = profile_outer_json["profiles"];
+        profile_index_ = profile_outer_json["index"];
 
         for (const auto& profile_json : profiles_json) {
             Profile profile;
@@ -28,6 +31,7 @@ void Service::load_profiles()
                 Device device;
                 device.type = device_json["type"];
                 device.name = device_json["name"];
+                device.forward = device_json["forward"];
                 for (const auto& parameter_json : device_json["essentialParameters"]) {
                     Parameter parameter;
                     parameter.type = parameter_json["type"];
@@ -47,9 +51,11 @@ void Service::load_profiles()
     } catch (const std::exception& e) {
         try {
             std::ofstream ofs;
-            profiles_json = json::parse("[]");
+            profile_outer_json = json::parse("{}");
+            profile_outer_json["index"] = 0;
+            profile_outer_json["profiles"] = json::parse("[]");
             ofs.open(ProfilesFileName_, std::ios::out);
-            ofs << profiles_json.dump(4);
+            ofs << profile_outer_json.dump(2);
             ofs.close();
             log::info << "Daemon::Created empty profiles";
         } catch (const std::exception& e) {
@@ -66,6 +72,7 @@ void Service::dump_profiles()
     log::debug << "Daemon::dump profiles called" << log::endl;
 
     try {
+        json profile_outer_json = json::parse("{}");
         json profiles_json = json::parse("[]");
         for (const auto& profile : profiles_) {
             json profile_json;
@@ -96,9 +103,12 @@ void Service::dump_profiles()
             profiles_json.emplace_back(profile_json);
         }
 
+        profile_outer_json["profiles"] = profiles_json;
+        profile_outer_json["index"] = profile_index_;
+
         std::ofstream ofs;
         ofs.open(ProfilesFileName_, std::ios::out);
-        ofs << profiles_json.dump(4);
+        ofs << profile_outer_json.dump(2);
         ofs.close();
     } catch (const std::exception& e) {
         log::error << e.what() << log::endl;
@@ -109,7 +119,7 @@ void Service::dump_profiles()
 }
 
 
-void Service::updateProfiles(Result& result, const std::vector<Profile>& profiles)
+void Service::updateProfiles(Result& result, const std::vector<Profile>& profiles, const int32_t profileIndex)
 {
     log::info << "Daemon::updateProfile called" << log::endl;
 
@@ -121,6 +131,9 @@ void Service::updateProfiles(Result& result, const std::vector<Profile>& profile
     try {
         // Update member;
         profiles_ = profiles;
+
+        log::debug << "Daemon::updateProfile index = " << profileIndex << log::endl;
+        profile_index_ = profileIndex;
 
         // Call dump profiles
         dump_profiles();

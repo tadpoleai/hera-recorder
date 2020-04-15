@@ -29,6 +29,11 @@ add_executable(
 target_link_libraries(${PROJECT_NAME} hera-common hera-storage
                       hera-device-driver ${THRIFT})
 
+if(with-slam)
+  message("STATUS" "Linking with libhera-slam")
+  target_link_libraries(${PROJECT_NAME} hera-slam-caller hera-slam-result)
+endif()
+
 install(
   FILES script/hera-daemon.service
   PERMISSIONS OWNER_EXECUTE OWNER_READ

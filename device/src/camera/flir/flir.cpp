@@ -111,8 +111,10 @@ HeraErrno Flir::connect()
 ///
 void Flir::disconnect()
 {
+    log::debug << "Flir:: disconnecting" << log::endl;
     camera_.StopCapture();
     camera_.Disconnect();
+    log::debug << "Flir:: disconnected" << log::endl;
 }
 
 /// Calculate time::Timestamp by time::Timestamp_calculator and check synced.
@@ -242,15 +244,14 @@ data::SensorDataPtr Flir::do_convert(data::DeviceDataPtr& storage_data)
         camera_sensor_data->image_data_size = image_data_size;
         memcpy(camera_sensor_data->image_data, &(raw_data->data.image_data), image_data_size);
         return sensor_data;
-    }  // namespace flir
-    else if (storage_data->is_type(DeviceDataType::CameraFlirRawImage)) {
+    } else if (storage_data->is_type(DeviceDataType::CameraFlirRawImage)) {
         // Return CameraRawImage
         /// @todo Implement convertion for RawImage
         log::warn << "Flir: CamareRawImage is not supported yet" << log::endl;
         return data::SensorData::broken_data();
     }
     return data::SensorData::broken_data();
-}  // namespace camera
+}
 
 }  // namespace flir
 }  // namespace camera

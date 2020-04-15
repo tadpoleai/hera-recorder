@@ -8,7 +8,7 @@ div
         span 采集配置列表
         van-icon(type="info" name="more-o" size="large" @click="clickAddProfile()")
 
-    van-radio-group(v-model="status.local.currentProfileIndex")
+    van-radio-group(v-model="status.local.profileIndex")
       template(v-if="status.local.profiles.length === 0")
         van-empty(description="配置列表为空")
       //- For Every Profile
@@ -26,8 +26,6 @@ div
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Hera, Api, status } from '@/api';
-
-console.log(status);
 
 @Component({})
 export default class Profile extends Vue {
@@ -57,7 +55,8 @@ export default class Profile extends Vue {
   }
 
   clickSelectProfile(index: number) {
-    this.status.local.currentProfileIndex = index;
+    this.status.local.profileIndex = index;
+    Api.updateProfiles();
   }
 
   status = status;

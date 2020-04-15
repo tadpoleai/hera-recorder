@@ -36,7 +36,6 @@ void Service::append_status(Result& result)
             info.type = device->get_vendor_type();
             info.name = device->get_name();
             info.forward = device->get_forward();
-            info.dataSizeKB = device->get_volume() / 1024;
             info.error = device->get_errno();
             info.reason = device->get_reason();
             return info;
@@ -47,29 +46,11 @@ void Service::append_status(Result& result)
 
     try {
         result.status.profiles = profiles_;
-        if (profile_index_ < profiles_.size()) {
-            result.status.profileName = profiles_[profile_index_].name;
-        } else {
-            result.status.profileName = "";
-        }
+        result.status.profileIndex = profile_index_;
     } catch (const std::exception& e) {
         log::error << e.what() << log::endl;
         log::error << "Daemon::Can not get profiles" << log::endl;
     }
-
-#ifdef WITH_SLAM
-    if (slam_handler_) {
-        auto ret = slam_handler_->read();
-        if (ret) {
-            slam_result_ = ret;
-        }
-        if (slam_result_) {
-            result.slamResult.valid = true;
-            result.slamResult.isJpeg = true;
-            result.data = slam_result_->data;
-        }
-    }
-#endif
 
     auto statfs = file::get_filesystem_status(FileNamePrefix_);
     if (statfs.opened) {
