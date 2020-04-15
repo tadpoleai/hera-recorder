@@ -1,60 +1,150 @@
 {
-    "tron4": [
+  "index": 0,
+  "profiles": [
+    {
+      "author": "Lyu Zheming",
+      "devices": [
         {
-            "type": "imu/aceinna",
-            "name": "embedded",
-            "parameters": [
-                {
-                    "type": "Kernel",
-                    "value": "/dev/ttyUSB0"
-                },
-                {
-                    "type": "BaudRate",
-                    "value": "230400"
-                },
-                {
-                    "type": "SerialMsgType",
-                    "value": "0"
-                }
-            ]
+          "essentialParameters": [
+            {
+              "type": "IpAddress",
+              "value": "10.0.10.100"
+            },
+            {
+              "type": "DataPort",
+              "value": "2368"
+            }
+          ],
+          "forward": true,
+          "name": "top",
+          "optionalParameters": [],
+          "type": "lidar/velodyne"
         },
         {
-            "type": "lidar/velodyne",
-            "name": "horizontal",
-            "parameters": [
-                {
-                    "type": "IpAddress",
-                    "value": "10.0.10.100"
-                },
-                {
-                    "type": "DataPort",
-                    "value": "2368"
-                }
-            ]
+          "essentialParameters": [
+            {
+              "type": "IpAddress",
+              "value": "10.0.11.100"
+            },
+            {
+              "type": "DataPort",
+              "value": "2370"
+            }
+          ],
+          "forward": false,
+          "name": "inclined",
+          "optionalParameters": [],
+          "type": "lidar/velodyne"
         },
         {
-            "type": "lidar/velodyne",
-            "name": "inclined",
-            "parameters": [
-                {
-                    "type": "IpAddress",
-                    "value": "10.0.11.100"
-                },
-                {
-                    "type": "DataPort",
-                    "value": "2370"
-                }
-            ]
+          "essentialParameters": [
+            {
+              "type": "IpAddress",
+              "value": "10.0.4.100"
+            }
+          ],
+          "forward": false,
+          "name": "0",
+          "optionalParameters": [
+            {
+              "type": "Exposure",
+              "value": ""
+            },
+            {
+              "type": "WhiteBalanceRed",
+              "value": ""
+            },
+            {
+              "type": "WhiteBalanceBlue",
+              "value": ""
+            },
+            {
+              "type": "FrameRate",
+              "value": ""
+            }
+          ],
+          "type": "camera/flir"
         },
         {
-            "type": "camera/flir",
-            "name": "rear",
-            "parameters": [
-                {
-                    "type": "IpAddress",
-                    "value": "10.0.2.100"
-                }
-            ]
+          "essentialParameters": [
+            {
+              "type": "IpAddress",
+              "value": "10.0.5.100"
+            }
+          ],
+          "forward": false,
+          "name": "1",
+          "optionalParameters": [
+            {
+              "type": "Exposure",
+              "value": ""
+            },
+            {
+              "type": "WhiteBalanceRed",
+              "value": ""
+            },
+            {
+              "type": "WhiteBalanceBlue",
+              "value": ""
+            },
+            {
+              "type": "FrameRate",
+              "value": ""
+            }
+          ],
+          "type": "camera/flir"
+        },
+        {
+          "essentialParameters": [
+            {
+              "type": "Kernel",
+              "value": "/dev/ttyUSB0"
+            },
+            {
+              "type": "BaudRate",
+              "value": "230400"
+            },
+            {
+              "type": "SerialMsgType",
+              "value": "0"
+            }
+          ],
+          "forward": true,
+          "name": "internal",
+          "optionalParameters": [],
+          "type": "imu/aceinna"
+        },
+        {
+          "essentialParameters": [
+            {
+              "type": "IpAddress",
+              "value": "10.0.2.100"
+            }
+          ],
+          "forward": false,
+          "name": "2",
+          "optionalParameters": [
+            {
+              "type": "Exposure",
+              "value": ""
+            },
+            {
+              "type": "WhiteBalanceRed",
+              "value": ""
+            },
+            {
+              "type": "WhiteBalanceBlue",
+              "value": ""
+            },
+            {
+              "type": "FrameRate",
+              "value": ""
+            }
+          ],
+          "type": "camera/flir"
         }
-    ]
+      ],
+      "name": "SLAM Test"
+    }
+  ]
 }

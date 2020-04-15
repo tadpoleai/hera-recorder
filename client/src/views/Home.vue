@@ -5,6 +5,7 @@
   van-cell-group(title="控制")
     van-cell(title="连接传感器" center)
       van-switch(
+        slot="right-icon"
         :value="status.remoteStatus.started"
         @input="onClickSwitchStart"
         :loading="isSwitchStartLoading"
@@ -13,6 +14,7 @@
       v-show="status.remoteStatus.started"
       title="录制数据" center)
       van-switch(
+        slot="right-icon"
         :value="status.remoteStatus.recording"
         @input="onClickSwitchRecord"
         :loading="isSwitchRecordLoading"
@@ -27,11 +29,30 @@
       to="monitor")
 
   van-cell-group(title="设置")
-    van-cell(title="配置" is-link :value="profileName" @click="clickProfile()")
-    van-field(v-model="status.local.executor" placeholder="请输入采集人" label="采集人" input-align="right")
-    van-field(v-model="status.local.place" placeholder="请输入采集地点" label="采集地点" input-align="right")
+    van-cell(
+      title="配置"
+      :is-link="!status.remoteStatus.started"
+      :value="profileName"
+      @click="clickProfile()"
+    )
     van-cell(title="在线建图" center)
-      van-switch(v-model="status.local.onlineSlam" slot="right-icon" size="24")
+      van-switch(
+        slot="right-icon"
+        v-model="status.local.useSlam"
+        :disabled="status.remoteStatus.started"
+        size="24")
+    van-field(
+      v-model="status.local.executor"
+      :disabled="status.remoteStatus.started"
+      placeholder="请输入采集人"
+      label="采集人"
+      input-align="right")
+    van-field(
+      v-model="status.local.place"
+      :disabled="status.remoteStatus.started"
+      placeholder="请输入采集地点"
+      label="采集地点"
+      input-align="right")
 </template>
 
 <script lang="ts">
@@ -42,19 +63,20 @@ import { Toast } from 'vant';
 @Component({})
 export default class Home extends Vue {
   onClickSwitchStart(checked: boolean) {
-    console.log(checked);
     this.isSwitchStartLoading = true;
     if (checked) {
-      Api.start(this.status.local.currentProfileIndex, this.status.local.executor + '_' + this.status.local.place).then(
-        result => {
-          if (result.error !== 0) {
-            Toast.fail(Api.formatResult(result));
-          } else {
-            Toast.success('操作成功');
-          }
-          this.isSwitchStartLoading = false;
+      Api.start(this.status.local.executor + '_' + this.status.local.place, this.status.local.useSlam).then(result => {
+        if (result.error !== 0) {
+          Toast.fail({
+            message: Api.formatResult(result),
+            duration: 0,
+            closeOnClick: true
+          });
+        } else {
+          Toast.success('操作成功');
         }
-      );
+        this.isSwitchStartLoading = false;
+      });
     } else {
       Api.stop().then(result => {
         this.isSwitchStartLoading = false;
@@ -64,10 +86,13 @@ export default class Home extends Vue {
 
   onClickSwitchRecord(checked: boolean) {
     this.isSwitchRecordLoading = true;
-    console.log(checked);
     Api.record(checked).then(result => {
       if (result.error !== 0) {
-        Toast.fail(Api.formatResult(result));
+        Toast.fail({
+          message: Api.formatResult(result),
+          duration: 0,
+          closeOnClick: true
+        });
       } else {
         Toast.success('操作成功');
       }
@@ -80,13 +105,15 @@ export default class Home extends Vue {
   isSwitchRecordLoading = false;
 
   clickProfile() {
-    this.$router.push('profile');
+    if (!status.remoteStatus.started) {
+      this.$router.push('profile');
+    }
   }
 
   status = status;
 
   get profileName(): string {
-    const profile = this.status.local.profiles[this.status.local.currentProfileIndex];
+    const profile = this.status.local.profiles[this.status.local.profileIndex];
     if (profile) {
       return profile.name;
     }

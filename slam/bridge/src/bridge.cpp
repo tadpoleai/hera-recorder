@@ -37,7 +37,7 @@ Bridge::Bridge(ros::NodeHandle& nh, ros::NodeHandle& private_nh) :
 {
     log::debug << "Init OK" << log::endl;
     // Get paramaters
-    private_nh_.param<int>("lidar_sensor_id", lidar_sensor_id_, 1);
+    private_nh_.param<int>("lidar_sensor_id", lidar_sensor_id_, -1);
     private_nh_.param<int>("imu_sensor_id", imu_sensor_id_, -1);
 
     private_nh_.param<std::string>("scan_topic", scan_topic_, "scan");

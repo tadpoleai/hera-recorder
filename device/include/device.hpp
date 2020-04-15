@@ -244,6 +244,16 @@ public:
     }
 
     ///
+    /// @brief Get device's data frequency (averaged by 3s)
+    ///
+    /// @return frequency
+    ///
+    inline double get_frequency() const noexcept
+    {
+        return frequency_;
+    }
+
+    ///
     /// @brief Get the parameters
     ///
     /// @return OutParametersType parameters in map<string, string>
@@ -358,8 +368,9 @@ private:
     const size_t history_depth_;  ///< history depth of device data
 
     std::atomic<DeviceStatus> status_;  ///< device status
-    HeraErrno hera_errno_;              ///< device error code
-    std::string reason_;                ///< extra error reason
+    std::atomic<double> frequency_;     ///< data frequency
+    HeraErrno hera_errno_;  ///< device error code
+    std::string reason_;    ///< extra error reason
 
     std::atomic<bool> is_record_;             ///< if device is recording
     std::thread* thread_fetch_;               ///< fetching thread
