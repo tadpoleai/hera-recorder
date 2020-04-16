@@ -89,5 +89,5 @@ cp -r \
     ../artifacts/amd64/manual/convert
 
 # Install Script
-cp -r ../install_artifacts_amd64.sh ../artifacts/amd64
+cp -r ../scripts/install_artifacts_amd64.sh ../artifacts/amd64
 chmod +x ../artifacts/amd64/install_artifacts_amd64.sh

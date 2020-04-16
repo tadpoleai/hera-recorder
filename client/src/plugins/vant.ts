@@ -21,7 +21,6 @@ import {
   Progress,
   Radio,
   RadioGroup,
-  Skeleton,
   SwipeCell,
   Switch,
   Toast
@@ -47,8 +46,6 @@ Vue.use(Picker);
 Vue.use(Progress);
 Vue.use(Radio);
 Vue.use(RadioGroup);
-
-Vue.use(Skeleton);
 Vue.use(SwipeCell);
 Vue.use(Switch);
 Vue.use(Toast);

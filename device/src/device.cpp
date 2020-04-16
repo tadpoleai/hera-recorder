@@ -28,6 +28,7 @@ Device::Device(const uint32_t id,
     sequence_(0),
     history_depth_(history_depth),
     status_(DeviceStatus::BeforeConnect),
+    frequency_(0),
     hera_errno_(HeraErrno::OK),
     is_record_(false),
     thread_fetch_(nullptr),
@@ -211,14 +212,25 @@ bool Device::check_parameter()
 /// if it returns a non-nullptr value, pass it to storage
 void Device::fetch_thread_function()
 {
+    static constexpr auto FrequencyAverageFactor_ = 0.1;
+    frequency_ = 0;
+    thread_local int64_t time = time::Timestamp::now();
     while (status_ == DeviceStatus::Connected) {
         auto new_data = fetch();
 
         if (new_data != nullptr) {
+            auto difftime = new_data->get_timestamp_receive_ns() - time;
+            time = new_data->get_timestamp_receive_ns();
+            if (sequence_ > 2) {
+                frequency_ = frequency_ * (1.0 - FrequencyAverageFactor_) +
+                             (double)time::OneSecond / (double)difftime * FrequencyAverageFactor_;
+            } else {
+                frequency_ = (double)time::OneSecond / (double)difftime * FrequencyAverageFactor_;
+            }
             if (is_forward_) {
                 forward_queue_.push(new_data);
             }
-            if (storage_) {
+            if (storage_ != nullptr) {
                 storage_->add_data(id_, new_data, is_record_);
             }
         }

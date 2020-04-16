@@ -60,15 +60,6 @@ endif()
 message(STATUS "Hera adding device")
 add_subdirectory(device)
 
-if(with-daemon
-   OR with-all
-   AND NOT without-daemon)
-  message(STATUS "Hera will build with daemon")
-  add_subdirectory(daemon)
-else()
-  message(STATUS "Hera will build without daemon")
-endif()
-
 if(with-convert
    OR with-all
    AND NOT without-convert)
@@ -97,6 +88,15 @@ if(with-slam
   add_subdirectory(slam)
 else()
   message(STATUS "Hera will build without slam")
+endif()
+
+if(with-daemon
+   OR with-all
+   AND NOT without-daemon)
+  message(STATUS "Hera will build with daemon")
+  add_subdirectory(daemon)
+else()
+  message(STATUS "Hera will build without daemon")
 endif()
 
 if(with-client

@@ -1,5 +1,5 @@
 const defaultHost = window.location.hostname;
-//const defaultHost = "10.0.0.1";
+//const defaultHost = "192.168.1.49";
 const defaultPort = 9090;
 const defaultHttps = false;
 const defaultPath = '';

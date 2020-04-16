@@ -28,6 +28,8 @@ void Service::getData(ResultData& result)
             data.id = device->get_id();
             data.type = device->get_vendor_type();
             data.name = device->get_name();
+            data.dataSizeKB = device->get_volume() / 1024;
+            data.frequency = device->get_frequency();
 
             data.valid = false;
             auto disp_data = device::data::DisplayData::create_from(device->history());
@@ -52,7 +54,8 @@ void Service::getData(ResultData& result)
         }
         if (slam_result_) {
             result.slamResultValid = true;
-            result.slamResult = slam_result_->data;
+            result.slamResult.resize(slam_result_->data.size());
+            memcpy((void*)result.slamResult.data(), slam_result_->data.data(), slam_result_->data.size());
         }
     }
 #endif
@@ -60,6 +63,9 @@ void Service::getData(ResultData& result)
     for (auto& promise : promises) {
         result.deviceDatas.emplace_back(promise.get());
     }
+
+    result.startTimeSec = start_time_sec_;
+    result.nowTimeSec = time::Timestamp::now().tv_sec;
 
     mutex_.unlock();
 }  // namespace daemon

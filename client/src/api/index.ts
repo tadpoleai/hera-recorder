@@ -14,6 +14,7 @@ interface PureResult {
 const status = {
   active: false,
   local: {
+    profileIndex: 0,
     profiles: [
       new Hera.Profile({
         name: '测试',
@@ -30,31 +31,32 @@ const status = {
       })
     ],
     profileToEdit: new Hera.Profile({
-      name: 'Test',
-      author: 'Unknown',
+      name: '',
+      author: '',
       devices: []
     }),
     profileAddOrEdit: false,
-    currentProfileIndex: 0,
     executor: 'NoName',
     place: 'NoPlace',
-    onlineSlam: false
+    useSlam: true
   },
   remoteConnected: false,
   remoteStatus: new Hera.Status({
     started: false,
     recording: false,
     storageName: '',
-    profileName: '',
     diskUsedSpaceKB: 0,
     diskTotalSpaceKB: 0,
     devices: [],
     profiles: [],
+    profileIndex: 0,
     meta: new Hera.Meta({ deviceTypeMetas: [] })
   }),
   deviceDatas: new Array<Hera.DeviceData>(),
   slamResultValid: false,
-  slamResult: new Buffer('')
+  slamResult: new Buffer(''),
+  startTimeSec: 0,
+  nowTimeSec: 0
 };
 
 function newClient(callback: (err: any | void) => void): Hera.Service.Client {
@@ -86,19 +88,21 @@ function apiWrapper<T0, T1>(apiName: string) {
         });
       });
 
-      console.log('Sending Request');
       let result: Hera.Result;
       let resultData: Hera.ResultData;
       switch (apiName) {
         case 'get':
           result = await client.get();
-          status.local.profiles = result.status.profiles;
+          if (((arg0 as unknown) as boolean) == true) {
+            status.local.profiles = result.status.profiles;
+            status.local.profileIndex = result.status.profileIndex;
+          }
           status.remoteStatus = result.status;
           status.remoteConnected = true;
           resolve({ error: result.error, reason: result.reason });
           break;
         case 'start':
-          result = await client.start((arg0 as unknown) as number, (arg1 as unknown) as string);
+          result = await client.start((arg0 as unknown) as string, (arg1 as unknown) as boolean);
           status.remoteStatus = result.status;
           status.remoteConnected = true;
           resolve({ error: result.error, reason: result.reason });
@@ -125,7 +129,7 @@ function apiWrapper<T0, T1>(apiName: string) {
           resolve({ error: result.error, reason: result.reason });
           break;
         case 'updateProfiles':
-          result = await client.updateProfiles(status.local.profiles);
+          result = await client.updateProfiles(status.local.profiles, status.local.profileIndex);
           status.remoteStatus = result.status;
           status.remoteConnected = true;
           resolve({ error: result.error, reason: result.reason });
@@ -136,6 +140,8 @@ function apiWrapper<T0, T1>(apiName: string) {
             status.deviceDatas = resultData.deviceDatas;
             status.slamResultValid = resultData.slamResultValid;
             status.slamResult = resultData.slamResult;
+            status.startTimeSec = resultData.startTimeSec;
+            status.nowTimeSec = resultData.nowTimeSec;
           }
           resolve({ error: resultData.error, reason: resultData.reason });
           break;
@@ -150,12 +156,12 @@ export function formatResult(result: PureResult) {
   if (result.error === 0) {
     return '成功';
   }
-  return `错误码: ${result.error.toString()}, 信息: ${result.reason}`;
+  return `错误码: ${result.error.toString()} \n${result.reason}`;
 }
 
 const Api = {
-  get: apiWrapper<void, void>('get'),
-  start: apiWrapper<number, string>('start'),
+  get: apiWrapper<boolean, void>('get'),
+  start: apiWrapper<string, boolean>('start'),
   stop: apiWrapper<void, void>('stop'),
   record: apiWrapper<boolean, void>('record'),
   adjustParameters: apiWrapper<number, Array<Hera.Parameter>>('adjustParameters'),

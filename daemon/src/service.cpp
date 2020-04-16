@@ -57,9 +57,16 @@ void Service::reset()
     devices_.clear();
     storage_.reset();
     ipc_queue_.reset();
+    if (use_slam_) {
 #ifdef WITH_SLAM
-    slam::Caller::stop();
+        log::debug << "Daemon:: calling slam stop" << log::endl;
+        if (system("hera-slam-caller-stop") != 0) {
+            log::warn << "Daemon:: Something wrong with slam stop" << log::endl;
+        } else {
+            log::info << "Daemon:: called slam stop" << log::endl;
+        }
 #endif
+    }
     started_ = false;
     recording_ = false;
 }

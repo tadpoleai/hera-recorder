@@ -51,20 +51,7 @@ HeraErrno Velodyne::connect()
         return handle_error(HeraErrno::CanNotOpenEthernetDevice);
     }
 
-    try {
-        int ret = system(
-                ("curl --data \"laser=on\" http://" + parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
-                        .c_str());
-        if (ret == 0) {
-            log::info << "Velodyne::Succeeded to power on lidar " << get_name() << log::endl;
-        } else {
-            return handle_error(HeraErrno::CanNotOpenEthernetDevice, "Failed to power on " + get_name());
-        }
-    } catch (...) {
-        return handle_error(HeraErrno::CanNotOpenEthernetDevice, "Failed to power on " + get_name());
-    }
-
-    log::debug << "Velodyne::Connection succeed: " << log::endl;
+    log::debug << "Velodyne:: Connection succeed" << log::endl;
     return HeraErrno::Success;
 }
 
@@ -72,20 +59,9 @@ HeraErrno Velodyne::connect()
 /// then delete the socket
 void Velodyne::disconnect()
 {
-    try {
-        int ret = system(
-                ("curl --data \"laser=off\" http://" + parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
-                        .c_str());
-        if (ret == 0) {
-            log::info << "Velodyne::Succeeded to power off lidar " << get_name() << log::endl;
-        } else {
-            log::info << "Velodyne::Failed to power off lidar " << get_name() << log::endl;
-        }
-    } catch (...) {
-        log::info << "Velodyne::Failed to power off lidar " << get_name() << log::endl;
-    }
-
+    log::debug << "Velodyne:: socket closing" << log::endl;
     ::close(socket_);
+    log::debug << "Velodyne:: socket closed successfullly " << log::endl;
 }
 
 /// Wait a UDP packet from socket, then create a VelodyneStorage,

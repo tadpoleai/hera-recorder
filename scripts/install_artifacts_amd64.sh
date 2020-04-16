@@ -15,16 +15,18 @@ fi
 
 # echo "Input install prefix for libhera(arm)"
 install_path="/usr/local"
-# read -e -i "$install_path" -p "Please input install prefix for libhera: " ans
-# install_path="${ans:-$install_path}"
-# mkdir -p $install_path
-# echo
+read -e -i "$install_path" -p "Please input install prefix for libhera: " ans
+install_path="${ans:-$install_path}"
+mkdir -p $install_path
+echo
+
 sudo mkdir -p $install_path/bin
 sudo mkdir -p $install_path/lib
 sudo mkdir -p $install_path/include
 
 echo "Installing Binraries"
 sudo chmod 755 bin/*
+sudo pkill -9 hera-
 sudo cp -r bin/hera-* $install_path/bin/
 
 echo "Installing Libraries"
@@ -38,7 +40,10 @@ sudo cp -r include/* $install_path/include/hera
 
 read -p "Install CMake Package (y/N): " ans
 if [[ $ans = [yY] ]]; then
-    cmake_module_path=$(echo 'message("${CMAKE_ROOT}")' >tmp_cmake_root && cmake -N -P tmp_cmake_root && rm tmp_cmake_root)/Modules
+    echo 'message("${CMAKE_ROOT}/Modules")' >tmp_cmake_root_cmake
+    cmake_module_path=$(cmake -N -P tmp_cmake_root_cmake 2>&1)
+    rm tmp_cmake_root_cmake
+
     read -e -i "$cmake_module_path" -p "Please confirm install prefix for CMake module: " ans
     cmake_module_path="${ans:-$cmake_module_path}"
     echo "Installating CMake Package"
