@@ -352,7 +352,6 @@ public:
 
         // No reader
         if (shm_ptr_->header.read_magic != magic_) {
-            log::debug << "IPC: No Reader" << log::endl;
             if (shared_) {
                 mutex_.unlock();
             }

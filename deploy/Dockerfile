@@ -62,6 +62,13 @@ COPY ./install-thrift-arm.sh ./
 RUN ./install-thrift-arm.sh && \
     rm -rf ./thrift-0.12.0-aarch64-lib.tar.gz
 
+# install s32v-extra-depends
+COPY ./extra-depends.tar.gz ./
+COPY ./install-s32v-extra-depends.sh ./
+RUN ./install-s32v-extra-depends.sh && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf ./extra-depends.tar.gz
+
 # source dynamic lib
 RUN ldconfig
 

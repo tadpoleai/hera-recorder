@@ -22,11 +22,7 @@ namespace replay {
 /// Read the recorded data filename and construct processers,
 /// and init the ipc thread
 Replayer::Replayer(const std::string& filename, const double replay_rate, const bool showonly) :
-    replay_thread_(nullptr),
-    replay_rate_(replay_rate),
-    running_(false),
-    progress_(0),
-    total_duration_(0)
+    replay_thread_(nullptr), replay_rate_(replay_rate), running_(false), progress_(0), total_duration_(0)
 {
     storage_ = storage::StorageManager::open(filename, true);
     if (storage_->header != nullptr) {
@@ -72,8 +68,13 @@ void Replayer::replay_thread_function()
             progress_ = (uint64_t(time::Timestamp::now()) - t_start) * replay_rate_;
         };
         auto sensor_data = device::DeviceFactory::convert(data);
-        if (sensor_data->sensor_data_type != device::SensorDataType::Broken) {
-            ipc_queue_->write(sensor_data);
+        if (sensor_data) {
+            if (sensor_data->sensor_data_type != device::SensorDataType::Broken) {
+                ipc_queue_->write(sensor_data);
+            }
+        } else {
+            log::error << "FATAL: Replay: convert() could never return nullptr, return SensorData::broken() instead!"
+                       << log::endl;
         }
     }
     running_ = false;

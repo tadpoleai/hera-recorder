@@ -48,6 +48,15 @@ else()
   message(STATUS "Hera will build without device driver s32vmipi")
 endif()
 
+if(with-driver-s32vcan OR with-driver-arm)
+  set(DEVICE_DRIVER_CAN 1)
+  add_definitions(-DDEVICE_DRIVER_CAN)
+  message(STATUS "Hera will build with device driver odometry")
+  include("deploy/cmake/s32v_extra.cmake")
+else()
+  message(STATUS "Hera will build without device driver odometry")
+endif()
+
 message(STATUS "Hera adding device")
 add_subdirectory(device)
 

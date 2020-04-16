@@ -2,7 +2,7 @@
 
 ## 登录公司 docker 服务器
 
-`docker login registry.newayz.com/autonomy/hera-recorder:latest`
+`sudo docker login registry.newayz.com/autonomy/hera-recorder:latest`
 
 `Username: autonomy`
 

@@ -24,8 +24,11 @@ namespace wayz {
 Bridge::Bridge() : ipc_queue_(ipc::IPCQueue<device::data::SensorData>::create())
 {
     log::debug << "Bridge ipc_queue_ init OK" << log::endl;
-
-    ipc_queue_->open(0, ipc::OpenMode::Read, false, 4UL, (1 << 20));
+    camera_sensor_id_ = -1;
+    serial_sensor_id_ = -1;
+    odometry_sensor_id_ = -1;
+    ipc_queue_->open(0, ipc::OpenMode::Read, false);
+    stop_ = false;
 }
 
 Bridge::~Bridge()
@@ -35,11 +38,11 @@ Bridge::~Bridge()
 
 void Bridge::spin()
 {
-    while (true) {
+    while (!stop_) {
         auto data = ipc_queue_->read();
 
         if (data == nullptr) {
-            usleep(500000);
+            usleep(1000);
             continue;
         }
 
@@ -50,12 +53,42 @@ void Bridge::spin()
                 camera_handler(data_impl);
             }
             break;
+        case device::SensorDataType::NavSatFix:
+            if (int32_t(data->sensor_id) == serial_sensor_id_ || serial_sensor_id_ < 0) {
+                auto data_impl = reinterpret_cast<device::data::NavSatFix*>(data.get());
+                gnss_handler(data_impl);
+            }
+            break;
+        case device::SensorDataType::OdometryFrontWheelSpeed:
+            if (int32_t(data->sensor_id) == odometry_sensor_id_ || odometry_sensor_id_ < 0) {
+                auto data_impl = reinterpret_cast<device::data::FrontWheelSpeed*>(data.get());
+                front_wheel_speed_handler(data_impl);
+            }
+            break;
+        case device::SensorDataType::OdometryRearWheelSpeed:
+            if (int32_t(data->sensor_id) == odometry_sensor_id_ || odometry_sensor_id_ < 0) {
+                auto data_impl = reinterpret_cast<device::data::RearWheelSpeed*>(data.get());
+                rear_wheel_speed_handler(data_impl);
+            }
+            break;
+        case device::SensorDataType::OdometrySteeringAngle:
+            if (int32_t(data->sensor_id) == odometry_sensor_id_ || odometry_sensor_id_ < 0) {
+                auto data_impl = reinterpret_cast<device::data::SteeringAngle*>(data.get());
+                steering_angle_handler(data_impl);
+            }
+            break;
         default:
-            log::debug << "Interface: Unknown type of data" << log::endl;
+            log::warn << "data->sensor_data_type unkown type" << log::endl;
             break;
         }
     }
 }
+
+void Bridge::stop()
+{
+    stop_ = true;
+}
+
 
 void Bridge::camera_handler(const device::data::Image* const data)
 {
@@ -74,4 +107,38 @@ void Bridge::camera_handler(const device::data::Image* const data)
     // cv::imwrite(fileName, grayMat);
 }
 
+void Bridge::gnss_handler(const device::data::NavSatFix* const data)
+{
+    uint64_t timestamp = data->timestamp_intrinsic_ns;
+    double latitude = data->latitude;
+    double longitude = data->longitude;
+    double altitude = data->altitude;
+
+    log::debug << "Bridge: got an image, timestamp = " << time::Timestamp(timestamp) << ", latitude = " << latitude
+               << ", longitude = " << longitude << ", altitude = " << altitude << log::endl;
+}
+
+void Bridge::front_wheel_speed_handler(const device::data::FrontWheelSpeed* const data)
+{
+    uint64_t timestamp = data->timestamp_intrinsic_ns;
+
+    log::debug << "Bridge: got front_wheel_speed, timestamp = " << time::Timestamp(timestamp)
+               << " front_wheel_speed = " << data->right << log::endl;
+}
+
+void Bridge::rear_wheel_speed_handler(const device::data::RearWheelSpeed* const data)
+{
+    uint64_t timestamp = data->timestamp_intrinsic_ns;
+
+    log::debug << "Bridge: got rear_wheel_speed, timestamp = " << time::Timestamp(timestamp)
+               << " rear_wheel_speed = " << data->right << log::endl;
+}
+
+void Bridge::steering_angle_handler(const device::data::SteeringAngle* const data)
+{
+    uint64_t timestamp = data->timestamp_intrinsic_ns;
+
+    log::debug << "Bridge: got steering_angle_handler, timestamp = " << time::Timestamp(timestamp)
+               << " steering_angle = " << data->steering_angle << log::endl;
+}
 }  // namespace wayz

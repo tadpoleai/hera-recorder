@@ -50,6 +50,7 @@ cp -r ../storage/include/* ../artifacts/amd64/include/storage/include
 # Libraries
 cp -r common/libhera-common.so ../artifacts/amd64/lib
 cp -r device/libhera-device*.so ../artifacts/amd64/lib
+cp -r device/libhera-device*.a ../artifacts/amd64/lib
 cp -r storage/libhera-storage.so ../artifacts/amd64/lib
 
 # Binaries

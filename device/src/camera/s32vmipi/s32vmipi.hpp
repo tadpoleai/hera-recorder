@@ -133,13 +133,15 @@ public:
 private:
     static constexpr size_t HistoryDepth_ = 1;  ///< History Depth, 1
     static constexpr size_t ImageWidth_ = 1280;
-    static constexpr size_t ImageHeight_ = 720;
+    static constexpr size_t ImageHeight_ = 800;
     static constexpr size_t ImageMonoDataSize_ = ImageWidth_ * ImageHeight_;     ///< Mono, i.e., only Y channel
     static constexpr size_t ImageYUVDataSize_ = ImageWidth_ * ImageHeight_ * 2;  ///< YUV 4:2:2
     static constexpr size_t CsiPort_ = 0;
     static constexpr size_t FrameSkipStep_ = 30;
 
     uint8_t* frame_data_;
+
+    std::mutex mutex_;
 
 #ifdef WITH_DRIVER
 #ifdef DEVICE_DRIVER_S32VMIPI

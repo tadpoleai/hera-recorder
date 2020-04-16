@@ -51,16 +51,18 @@ auto _ = DeviceFactory::register_type({.type = DeviceVendorType::CameraS32VMipi,
 static void SeqEventCallBack(uint32_t aEventType, void* apUserVal)
 {
     AppContext* lpAppContext = (AppContext*)apUserVal;
-    FrameTimeS frameTime;
+    FrameSyncTime mFrameSyncTimes;
     if (lpAppContext) {
         if (aEventType == AY_EVENT_TYPE_FRAMEDONE) {
-            VisionSdk_GetTimeStatus(frameTime);
-            lpAppContext->mFrmDoneCnt++;
-            /*printf("Frame done message arrived #%u . StartTime %lu . LastDoneTime %lu.\n",
-                       lpAppContext->mFrmDoneCnt++,
-                       frameTime.mStartTime,
-                       frameTime.mLastDoneTime);*/
-
+            if (!VisionSdk_GetFrameSyncTimeStatus(mFrameSyncTimes)) {
+                printf("11 Start %ld.Done %ld.FrameSync %ld. delta_ns %ld, FrameDone Count %lu\n",
+                       mFrameSyncTimes.mStartTime,
+                       mFrameSyncTimes.mLastDoneTime,
+                       mFrameSyncTimes.mFrameSyncTime,
+                       mFrameSyncTimes.delta_ns,
+                       mFrameSyncTimes.mFrmDoneCnt);
+            }
+            printf("Frame done message arrived #%u.\n", lpAppContext->mFrmDoneCnt++);
         }  // if frame done arrived
     }      // if user pointer is NULL
 }  // SeqEventCallBack()
@@ -107,15 +109,17 @@ data::DeviceDataPtr S32VMipi::fetch()
 {
     // Fetch rawdata from camera;
     uint64_t get_length = 0;
-    if (VisionSdk_ReadFrame(app_context_, &frame_data_, &get_length) != AY_SUCCESS) {
-        log::warn << "S32VMipi: Can not read frame, read aborted" << log::endl;
+    uint32_t msTimeout = 10;
+    if (VisionSdk_ReadFrame(app_context_, &frame_data_, &get_length, msTimeout) != AY_SUCCESS) {
+        // log::warn << "S32VMipi: Can not read frame, read aborted" << log::endl;
         return nullptr;
     }
-
-    if (VisionSdk_Display(app_context_) != AY_SUCCESS) {
+    VisionSdk_Display();
+    if (VisionSDK_FramePush(app_context_) != AY_SUCCESS) {
         log::warn << "S32VMipi: Can not display frame, read aborted" << log::endl;
         return nullptr;
     }
+    log::info << "S32VMipi: read frame successfully, get_length: " << get_length << log::endl;
 
     // if (app_context_.mFrmCnt % FrameSkipStep_ != 0) {
     //     return nullptr;
@@ -149,6 +153,7 @@ data::DeviceDataPtr S32VMipi::fetch()
     }
 
     return data;
+    // return nullptr;
 }
 
 HeraErrno S32VMipi::adjust_parameter(DeviceParameterType type, const std::string& value)

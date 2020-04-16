@@ -8,7 +8,7 @@ set(JPEG_TURBO_LIBS ${JPEG_TURBO_LIBRARY_DIR}/libturbojpeg.so)
 
 if(TARGET_ARM)
   message(STATUS "Set Turbojpeg-arm")
-  set(JPEG_TURBO_ROOT_DIR /opt/s32v/libjpeg-turbo)
+  set(JPEG_TURBO_ROOT_DIR /opt/s32v/extra-depends/3rd/libjpeg-turbo)
   set(JPEG_TURBO_INCLUDE_DIR ${JPEG_TURBO_ROOT_DIR}/include)
   set(JPEG_TURBO_LIBRARY_DIR ${JPEG_TURBO_ROOT_DIR}/lib)
   set(JPEG_TURBO_LIBS ${JPEG_TURBO_LIBRARY_DIR}/libturbojpeg.so)
