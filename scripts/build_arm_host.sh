@@ -47,7 +47,6 @@ cp -r ../storage/include/* ../artifacts/arm/include/storage
 # Libraries
 cp -r common/libhera-common.so ../artifacts/arm/lib
 cp -r device/libhera-device*.so ../artifacts/arm/lib
-cp -r device/libhera-device*.a ../artifacts/arm/lib
 cp -r storage/libhera-storage.so ../artifacts/arm/lib
 
 # Copy Dependency

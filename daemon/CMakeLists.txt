@@ -27,11 +27,15 @@ add_executable(
   ${PROJECT_NAME} ${ALL_SRC} ${RPC_GEN_CPP}/hera_types.cpp
                   ${RPC_GEN_CPP}/hera_constants.cpp ${RPC_GEN_CPP}/Service.cpp)
 target_link_libraries(${PROJECT_NAME} hera-common hera-storage
-                      hera-device-driver ${THRIFT})
+                      ${S32V_EXTRA_LIBS} hera-device-driver ${THRIFT})
 
 if(WITH_SLAM)
   message("STATUS" "Linking with libhera-slam")
   target_link_libraries(${PROJECT_NAME} hera-slam-result)
+endif()
+
+if(DEVICE_DRIVER_CAN)
+  target_link_libraries(${PROJECT_NAME} ${S32V_EXTRA_LIBS} hera-device-driver)
 endif()
 
 install(

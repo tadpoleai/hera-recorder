@@ -32,7 +32,7 @@ target_link_libraries(${PROJECT_NAME} hera-common hera-storage Threads::Threads
                       ${JPEG_TURBO_LIBS})
 
 # Build device (drivers)
-add_library(${PROJECT_NAME}-driver STATIC src/device_factory.cpp ${UTILS_SRC}
+add_library(${PROJECT_NAME}-driver SHARED src/device_factory.cpp ${UTILS_SRC}
                                           ${ALL_SRC})
 target_include_directories(
   ${PROJECT_NAME}-driver PRIVATE ${FLY_CAPTURE_INCLUDE_DIR}
