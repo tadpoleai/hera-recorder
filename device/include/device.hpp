@@ -62,7 +62,7 @@ using OutParametersMap = std::map<std::string, std::string>;
 /// Provides common interfaces and realizes common operations
 ///
 class Device {
-private:
+public:
     ///
     /// @brief Indicating a Device's status
     ///
@@ -369,8 +369,8 @@ private:
 
     std::atomic<DeviceStatus> status_;  ///< device status
     std::atomic<double> frequency_;     ///< data frequency
-    HeraErrno hera_errno_;  ///< device error code
-    std::string reason_;    ///< extra error reason
+    HeraErrno hera_errno_;              ///< device error code
+    std::string reason_;                ///< extra error reason
 
     std::atomic<bool> is_record_;             ///< if device is recording
     std::thread* thread_fetch_;               ///< fetching thread

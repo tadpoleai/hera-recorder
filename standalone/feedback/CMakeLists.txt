@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5.1)
 
-set(PROJECT_NAME mipi-record)
+set(PROJECT_NAME can-feedback)
 project(${PROJECT_NAME})
 
 # Require C++14
@@ -18,4 +18,4 @@ include_directories(${HERA_INCLUDE_DIRS} include)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
 
-target_link_libraries(${PROJECT_NAME} ${HERA_DRIVER_ARM_LIBS})
+target_link_libraries(${PROJECT_NAME} ${HERA_LIBS})

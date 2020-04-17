@@ -168,7 +168,23 @@ public:
     /// @param length memory size to allocate, in bytes
     /// @return SensorDataPtr shared pointer to SensorDataPtr
     ///
-    static SensorDataPtr create_from(const DeviceDataPtr& storage_data, SensorDataType type, uint32_t length);
+    static SensorDataPtr create_from(const DeviceDataPtr& storage_data,
+                                     const SensorDataType type,
+                                     const uint32_t length);
+
+    ///
+    /// @brief Create a SensorData from DeviceData
+    ///
+    /// @param type sensor data type
+    /// @param length memory size to allocate, in bytes
+    /// @param id device id
+    /// @param sequence sequence of sensor data
+    /// @return SensorDataPtr shared pointer to SensorDataPtr
+    ///
+    static SensorDataPtr create_direct(const SensorDataType type,
+                                       const uint32_t length,
+                                       const uint32_t id,
+                                       const uint32_t sequence);
 
     ///
     /// @brief Create a broken sensor_data
