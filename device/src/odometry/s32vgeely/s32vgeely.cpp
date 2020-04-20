@@ -11,6 +11,12 @@
 
 #include "s32vgeely.hpp"
 
+#ifdef WITH_DRIVER
+#ifdef DEVICE_DRIVER_S32VCAN
+#include "../feedback/feedback.hpp"
+#endif
+#endif
+
 namespace wayz {
 namespace hera {
 namespace device {
@@ -28,7 +34,7 @@ auto _ = DeviceFactory::register_type({.type = DeviceVendorType::OdometryS32VGee
                                        .essential_parameter_types = S32VGeely::EssentialParameterTypes,
                                        .optional_parameter_types = S32VGeely::OptionalParameterTypes,
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_CAN
+#ifdef DEVICE_DRIVER_S32VCAN
                                        .implemented = true
 #else
                                        .implemented = false
@@ -39,20 +45,24 @@ auto _ = DeviceFactory::register_type({.type = DeviceVendorType::OdometryS32VGee
 });
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_CAN
+#ifdef DEVICE_DRIVER_S32VCAN
+
 HeraErrno S32VGeely::connect()
 {
-    SALCanInit(nullptr);
+    uint32_t port_num = 0;
+    can_port_ = nullptr;
+
     try {
-        data_port_ = stoi(parameters_[DeviceParameterType::DataPort]);
+        port_num = stoi(parameters_[DeviceParameterType::DataPort]);
     } catch (const std::exception& e) {
         return handle_error(HeraErrno::InvalidParameterValue,
                             "S32VGeely:: invalid data port" + parameters_[DeviceParameterType::DataPort]);
     }
 
-    SALStatus status = SALCanOpenPort(data_port_);
-    if (status != SALStatus::SUCCESS) {
-        return handle_error(HeraErrno::CanNotOpenCanDevice, "Can not open CAN port: " + data_port_);
+    can_port_ = new driver::CANPort(port_num);
+
+    if (!can_port_->is_open()) {
+        return handle_error(HeraErrno::CanNotOpenCanDevice, "S32VGeely:: can not open");
     }
 
     thread_feedback_ = new std::thread(&S32VGeely::feedback_thread_function, this);
@@ -64,10 +74,9 @@ HeraErrno S32VGeely::connect()
 ///
 void S32VGeely::disconnect()
 {
-    SALStatus status = SALCanClosePort(data_port_);
-
-    if (status != SALStatus::SUCCESS) {
-        log::error << "S32VGeely: disconnect: SALCanClosePort returned " << int(status) << log::endl;
+    if (can_port_ != nullptr) {
+        delete can_port_;
+        can_port_ = nullptr;
     }
 
     if (thread_feedback_ != nullptr) {
@@ -81,25 +90,31 @@ void S32VGeely::disconnect()
 ///
 data::DeviceDataPtr S32VGeely::fetch()
 {
-    uint32_t recv_num = 0;
-    SALCanRecvPacket(data_port_, &can_packet_, &recv_num, MaxCanPacketReceiveNum_);
+    if (!can_port_) {
+        return nullptr;
+    }
 
-    if (recv_num == 0) {
-        usleep(500);
+    auto packet = can_port_->read();
+
+    if (!packet) {
         return nullptr;
     }
 
     // Total length of device data
-    auto length = sizeof(S32VGeelyData) + can_packet_.dlc;
+    auto length = sizeof(S32VGeelyData) + packet->dlc;
     auto data = data::DeviceData::create(length,
                                          id_,
                                          DeviceVendorType::OdometryS32VGeely,
                                          DeviceDataType::OdometryS32VGeelyCANFrame,
                                          sequence_++);
-
     auto derived_data = static_cast<S32VGeelyData*>(data.get());
+
+    derived_data->data.timestamp_ns = *(time::Timestamp*)&packet->timestamp;
+    derived_data->data.id_can = packet->id;
+    derived_data->data.dlc_can = packet->dlc;
+
     // Use Memcpy to directly fill buf
-    memcpy(derived_data->buf, &can_packet_, sizeof(S32VGeelyData::S32VGeelyCANPacket) + can_packet_.dlc);
+    memcpy(derived_data->data.data_can, &packet->data, packet->dlc);
 
     return data;
 }
@@ -128,6 +143,8 @@ void S32VGeely::feedback_thread_function()
         if (auto data = ipc_feedback_->read()) {
             if (data->sensor_data_type == SensorDataType::OdometryLocalizationResult) {
                 log::info << "S32VGeely:: Received LocalizationResult" << log::endl;
+                auto result = reinterpret_cast<data::LocalizationResult*>(data.get());
+                feedback::feedback(result, can_port_);
             }
         } else {
             usleep(1000);
@@ -170,10 +187,9 @@ data::SensorDataPtr S32VGeely::do_convert(data::DeviceDataPtr& storage_data)
         auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::OdometryFrontWheelSpeed, length);
         // Parse Data
         auto geely_data = static_cast<data::FrontWheelSpeed*>(sensor_data.get());
-        geely_data->timestamp_intrinsic_ns =
-                raw_data->data.timestamp_can.tv_sec * 1'000'000'000 + raw_data->data.timestamp_can.tv_usec * 1'000;
+        geely_data->timestamp_intrinsic_ns = raw_data->data.timestamp_ns;
 
-        uint64_t* value = reinterpret_cast<uint64_t*>(&raw_data->data.packet);
+        uint64_t* value = reinterpret_cast<uint64_t*>(&raw_data->data.data_can);
 
         uint16_t left_speed_msb = *value & 0x00ff;  // FL MSB 8bit
         left_speed_msb = (left_speed_msb << 5);
@@ -196,14 +212,14 @@ data::SensorDataPtr S32VGeely::do_convert(data::DeviceDataPtr& storage_data)
         char buffer[64];
         sprintf(buffer,
                 "%02X %02X %02X %02X %02X %02X %02X %02X",
-                raw_data->data.packet[0],
-                raw_data->data.packet[1],
-                raw_data->data.packet[2],
-                raw_data->data.packet[3],
-                raw_data->data.packet[4],
-                raw_data->data.packet[5],
-                raw_data->data.packet[6],
-                raw_data->data.packet[7]);
+                raw_data->data.data_can[0],
+                raw_data->data.data_can[1],
+                raw_data->data.data_can[2],
+                raw_data->data.data_can[3],
+                raw_data->data.data_can[4],
+                raw_data->data.data_can[5],
+                raw_data->data.data_can[6],
+                raw_data->data.data_can[7]);
         log::debug << "REAR_____SPD: RECV_TIME: " << raw_data->get_timestamp_receive_ns()
                    << ", CAN_TIME: " << geely_data->timestamp_intrinsic_ns << ", CAN_ID: " << raw_data->data.id_can
                    << ", CAN DLC: " << raw_data->data.dlc_can << ", PACKET: " << buffer
@@ -222,10 +238,9 @@ data::SensorDataPtr S32VGeely::do_convert(data::DeviceDataPtr& storage_data)
         auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::OdometryRearWheelSpeed, length);
         // Parse Data
         auto geely_data = static_cast<data::RearWheelSpeed*>(sensor_data.get());
-        geely_data->timestamp_intrinsic_ns =
-                raw_data->data.timestamp_can.tv_sec * 1'000'000'000 + raw_data->data.timestamp_can.tv_usec * 1'000;
+        geely_data->timestamp_intrinsic_ns = raw_data->data.timestamp_ns;
 
-        uint64_t* value = reinterpret_cast<uint64_t*>(&raw_data->data.packet);
+        uint64_t* value = reinterpret_cast<uint64_t*>(&raw_data->data.data_can);
 
         uint16_t left_speed_msb = *value & 0x00ff;  // RL MSB 8bit
         left_speed_msb = (left_speed_msb << 5);
@@ -248,14 +263,14 @@ data::SensorDataPtr S32VGeely::do_convert(data::DeviceDataPtr& storage_data)
         char buffer[64];
         sprintf(buffer,
                 "%02X %02X %02X %02X %02X %02X %02X %02X",
-                raw_data->data.packet[0],
-                raw_data->data.packet[1],
-                raw_data->data.packet[2],
-                raw_data->data.packet[3],
-                raw_data->data.packet[4],
-                raw_data->data.packet[5],
-                raw_data->data.packet[6],
-                raw_data->data.packet[7]);
+                raw_data->data.data_can[0],
+                raw_data->data.data_can[1],
+                raw_data->data.data_can[2],
+                raw_data->data.data_can[3],
+                raw_data->data.data_can[4],
+                raw_data->data.data_can[5],
+                raw_data->data.data_can[6],
+                raw_data->data.data_can[7]);
         log::debug << "FRONT____SPD: RECV_TIME: " << raw_data->get_timestamp_receive_ns()
                    << ", CAN_TIME: " << geely_data->timestamp_intrinsic_ns << ", CAN_ID: " << raw_data->data.id_can
                    << ", CAN DLC: " << raw_data->data.dlc_can << ", PACKET: " << buffer
@@ -274,10 +289,9 @@ data::SensorDataPtr S32VGeely::do_convert(data::DeviceDataPtr& storage_data)
         auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::OdometrySteeringAngle, length);
         // Parse Data
         auto geely_data = static_cast<data::SteeringAngle*>(sensor_data.get());
-        geely_data->timestamp_intrinsic_ns =
-                raw_data->data.timestamp_can.tv_sec * 1'000'000'000 + raw_data->data.timestamp_can.tv_usec * 1'000;
+        geely_data->timestamp_intrinsic_ns = raw_data->data.timestamp_ns;
 
-        uint64_t* value = reinterpret_cast<uint64_t*>(&raw_data->data.packet);
+        uint64_t* value = reinterpret_cast<uint64_t*>(&raw_data->data.data_can);
 
         uint16_t angle_msb = *value & 0x00ff;
         angle_msb = (angle_msb << 8);
@@ -290,14 +304,14 @@ data::SensorDataPtr S32VGeely::do_convert(data::DeviceDataPtr& storage_data)
         char buffer[64];
         sprintf(buffer,
                 "%02X %02X %02X %02X %02X %02X %02X %02X",
-                raw_data->data.packet[0],
-                raw_data->data.packet[1],
-                raw_data->data.packet[2],
-                raw_data->data.packet[3],
-                raw_data->data.packet[4],
-                raw_data->data.packet[5],
-                raw_data->data.packet[6],
-                raw_data->data.packet[7]);
+                raw_data->data.data_can[0],
+                raw_data->data.data_can[1],
+                raw_data->data.data_can[2],
+                raw_data->data.data_can[3],
+                raw_data->data.data_can[4],
+                raw_data->data.data_can[5],
+                raw_data->data.data_can[6],
+                raw_data->data.data_can[7]);
         log::debug << "STEER__ANGLE: RECV_TIME: " << raw_data->get_timestamp_receive_ns()
                    << ", CAN_TIME: " << geely_data->timestamp_intrinsic_ns << ", CAN_ID: " << raw_data->data.id_can
                    << ", CAN DLC: " << raw_data->data.dlc_can << ", PACKET: " << buffer
@@ -306,20 +320,19 @@ data::SensorDataPtr S32VGeely::do_convert(data::DeviceDataPtr& storage_data)
         return sensor_data;
     }
     default: {
-        auto timestamp_intrinsic_ns =
-                raw_data->data.timestamp_can.tv_sec * 1'000'000'000 + raw_data->data.timestamp_can.tv_usec * 1'000;
+        auto timestamp_intrinsic_ns = raw_data->data.timestamp_ns;
 
         char buffer[64];
         sprintf(buffer,
                 "%02X %02X %02X %02X %02X %02X %02X %02X",
-                raw_data->data.packet[0],
-                raw_data->data.packet[1],
-                raw_data->data.packet[2],
-                raw_data->data.packet[3],
-                raw_data->data.packet[4],
-                raw_data->data.packet[5],
-                raw_data->data.packet[6],
-                raw_data->data.packet[7]);
+                raw_data->data.data_can[0],
+                raw_data->data.data_can[1],
+                raw_data->data.data_can[2],
+                raw_data->data.data_can[3],
+                raw_data->data.data_can[4],
+                raw_data->data.data_can[5],
+                raw_data->data.data_can[6],
+                raw_data->data.data_can[7]);
         log::debug << "UNKNOWN DATA: RECV_TIME: " << raw_data->get_timestamp_receive_ns()
                    << ", CAN_TIME: " << timestamp_intrinsic_ns << ", CAN_ID: " << raw_data->data.id_can
                    << ", CAN DLC: " << raw_data->data.dlc_can << ", PACKET: " << buffer << log::endl;

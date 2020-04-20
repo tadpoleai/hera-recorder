@@ -34,6 +34,7 @@ auto _ = DeviceFactory::register_type({.type = DeviceVendorType::GnssSerial,
                                        .optional_parameter_types = Serial::OptionalParameterTypes,
                                        .implemented = true});
 
+#ifdef WITH_DRIVER
 HeraErrno Serial::connect()
 {
     try {
@@ -43,7 +44,7 @@ HeraErrno Serial::connect()
         return handle_error(HeraErrno::InvalidParameterValue);
     }
 
-    serial_port_ = new utils::SerialPortSentence(kernel_, utils::SerialConfig(baud_rate_));
+    serial_port_ = new driver::SerialPortSentence(kernel_, driver::SerialConfig(baud_rate_));
     if (!serial_port_->is_opened()) {
         return handle_error(HeraErrno::CanNotOpenTtyDevice, "Can not open primary device '" + kernel_ + "'");
     }
@@ -108,6 +109,7 @@ HeraErrno Serial::adjust_parameter(DeviceParameterType type, const std::string& 
     }
     return HeraErrno::Success;
 }
+#endif
 
 data::SensorDataPtr Serial::do_convert(data::DeviceDataPtr& storage_data)
 {

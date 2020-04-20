@@ -11,7 +11,7 @@
 namespace wayz {
 namespace hera {
 namespace device {
-namespace utils {
+namespace driver {
 
 SerialTransport* SerialTransport::instance_ = nullptr;
 int32_t SerialTransport::reference_count_ = 0;
@@ -196,7 +196,7 @@ size_t SerialTransportDecoder::decode(size_t encoded_len)
     return msg_length;
 }
 
-}  // namespace utils
+}  // namespace driver
 }  // namespace device
 }  // namespace hera
 }  // namespace wayz

@@ -17,7 +17,7 @@
 namespace wayz {
 namespace hera {
 namespace device {
-namespace utils {
+namespace driver {
 
 SerialConfig::SerialConfig(int32_t baud_rate,
                            int32_t data_bits,
@@ -201,7 +201,7 @@ std::string SerialPort::error_reason() const noexcept
     return reason_;
 }
 
-}  // namespace utils
+}  // namespace driver
 }  // namespace device
 }  // namespace hera
 }  // namespace wayz

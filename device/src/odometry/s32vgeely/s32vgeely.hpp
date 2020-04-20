@@ -16,13 +16,11 @@
 #include "device.hpp"
 #include "device_factory.hpp"
 
-
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_CAN
-#include "../../utils/can/can_interface.h"
+#ifdef DEVICE_DRIVER_S32VCAN
+#include "driver/can/can_port.hpp"
 #endif
 #endif
-
 
 namespace wayz {
 namespace hera {
@@ -41,10 +39,10 @@ public:
 
 public:
     struct S32VGeelyCANPacket {
-        struct timeval timestamp_can;  ///< Timestamp given by can driver
-        uint32_t id_can;               ///< CAN ID (Arbitration Id) of the message sender.
-        uint16_t dlc_can;              ///< CAN DLC, number of bytes of the payload.
-        uint8_t packet[0];             ///< CAN Packet payload.
+        uint64_t timestamp_ns;  ///< Timestamp given by can driver
+        uint32_t id_can;        ///< CAN ID (Arbitration Id) of the message sender.
+        uint16_t dlc_can;       ///< CAN DLC, number of bytes of the payload.
+        uint8_t data_can[0];    ///< CAN Packet payload.
     };
 
     ///
@@ -69,11 +67,11 @@ public:
     /// @note pass Kernel and BaudRate and SerialMsgType as essential parameters
     /// @see Device::Device()
     S32VGeely(const uint32_t id,
-          const std::string& vendor_type,
-          const std::string& name,
-          const bool forward,
-          ipc::IPCQueue<data::SensorData>* const ipc_queue,
-          storage::StorageManager* const storage) :
+              const std::string& vendor_type,
+              const std::string& name,
+              const bool forward,
+              ipc::IPCQueue<data::SensorData>* const ipc_queue,
+              storage::StorageManager* const storage) :
         Device(id, vendor_type, name, forward, ipc_queue, storage, HistoryDepth_, EssentialParameterTypes),
         thread_feedback_(nullptr)
     {}
@@ -100,7 +98,7 @@ public:
     }
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_CAN
+#ifdef DEVICE_DRIVER_S32VCAN
     virtual HeraErrno connect() override;
 
     virtual void disconnect() override;
@@ -135,13 +133,11 @@ private:
     void feedback_thread_function();
     std::unique_ptr<ipc::IPCQueue<data::SensorData>> ipc_feedback_;
 
-private:
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_CAN
-    struct SCANPacket can_packet_;
+#ifdef DEVICE_DRIVER_S32VCAN
+    driver::CANPort* can_port_;
 #endif
 #endif
-    int8_t data_port_;  ///< CAN data port
 };
 
 }  // namespace s32vgeely

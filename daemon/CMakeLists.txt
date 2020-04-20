@@ -34,7 +34,7 @@ if(WITH_SLAM)
   target_link_libraries(${PROJECT_NAME} hera-slam-result)
 endif()
 
-if(DEVICE_DRIVER_CAN)
+if(DEVICE_DRIVER_S32VCAN)
   target_link_libraries(${PROJECT_NAME} ${S32V_EXTRA_LIBS} hera-device-driver)
 endif()
 

@@ -12,10 +12,10 @@
 
 #include <cmath>
 
-#include "../../utils/serial_transport.hpp"
 #include "data/imu_data.hpp"
 #include "device.hpp"
 #include "device_factory.hpp"
+#include "driver/serial/serial_transport.hpp"
 
 namespace wayz {
 namespace hera {
@@ -96,6 +96,7 @@ public:
         stop();
     }
 
+#ifdef WITH_DRIVER
     virtual HeraErrno connect() override;
 
     virtual void disconnect() override;
@@ -103,6 +104,7 @@ public:
     virtual data::DeviceDataPtr fetch() override;
 
     virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
+#endif
 
     virtual data::SensorDataPtr convert(data::DeviceDataPtr& storage_data) override
     {
@@ -147,6 +149,7 @@ private:
     static constexpr double MagneticGranularity_ = 1.0 / 16000.0;
 
 private:
+#ifdef WITH_DRIVER
     std::string kernel_;  ///< kernel name (aka device name)
 
     ///
@@ -161,8 +164,9 @@ private:
     /// @see SerialTransport
     int32_t serial_msg_type_;
 
-    utils::SerialTransport* serial_port_;            ///< pointer to SerialTransport object, for receiving data
-    common::ThreadQueue<utils::SerialData>* queue_;  ///< queue of serial data
+    driver::SerialTransport* serial_port_;            ///< pointer to SerialTransport object, for receiving data
+    common::ThreadQueue<driver::SerialData>* queue_;  ///< queue of serial data
+#endif
 };
 
 }  // namespace aceinna

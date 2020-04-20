@@ -11,11 +11,10 @@
 
 #pragma once
 
-#include "../../utils/serial_port_sentence.hpp"
-#include "../../utils/serial_transport.hpp"
 #include "data/gnss_data.hpp"
 #include "device.hpp"
 #include "device_factory.hpp"
+#include "driver/serial/serial_port_sentence.hpp"
 
 namespace wayz {
 namespace hera {
@@ -74,9 +73,12 @@ public:
            const bool forward,
            ipc::IPCQueue<data::SensorData>* const ipc_queue,
            storage::StorageManager* const storage) :
-        Device(id, vendor_type, name, forward, ipc_queue, storage, HistoryDepth_, EssentialParameterTypes),
+        Device(id, vendor_type, name, forward, ipc_queue, storage, HistoryDepth_, EssentialParameterTypes)
+#ifdef WITH_DRIVER
+        ,
         serial_port_(nullptr),
         queue_(nullptr)
+#endif
     {}
     Serial(const Serial&) = delete;
     Serial& operator=(const Serial&) = delete;
@@ -100,6 +102,7 @@ public:
         stop();
     }
 
+#ifdef WITH_DRIVER
     virtual HeraErrno connect() override;
 
     virtual void disconnect() override;
@@ -107,6 +110,7 @@ public:
     virtual data::DeviceDataPtr fetch() override;
 
     virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value) override;
+#endif
 
     virtual data::SensorDataPtr convert(data::DeviceDataPtr& storage_data) override
     {
@@ -126,11 +130,13 @@ public:
 private:
     static constexpr size_t HistoryDepth_ = 1;  ///< History Depth, 1
 
+#ifdef WITH_DRIVER
     std::string kernel_;  ///< kernel name of primary serial
     int32_t baud_rate_;   ///< baud rate of primary serial
 
-    utils::SerialPortSentence* serial_port_;         ///< for receiving nmea data
-    common::ThreadQueue<utils::SerialData>* queue_;  ///< queue of nmea data
+    driver::SerialPortSentence* serial_port_;         ///< for receiving nmea data
+    common::ThreadQueue<driver::SerialData>* queue_;  ///< queue of nmea data
+#endif
 };
 
 }  // namespace serial

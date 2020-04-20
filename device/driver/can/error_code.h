@@ -36,4 +36,3 @@ typedef enum SALStatus {
 #ifdef __cplusplus
 }
 #endif
-

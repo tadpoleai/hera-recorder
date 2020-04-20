@@ -12,7 +12,7 @@
 namespace wayz {
 namespace hera {
 namespace device {
-namespace utils {
+namespace driver {
 
 class SerialConfig {
 public:
@@ -57,7 +57,7 @@ private:
     std::string reason_;
 };
 
-}  // namespace utils
+}  // namespace driver
 }  // namespace device
 }  // namespace hera
 }  // namespace wayz

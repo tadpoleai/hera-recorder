@@ -40,10 +40,16 @@ int main()
                                                             0,
                                                             sequence++);
         auto location_result = reinterpret_cast<device::data::LocalizationResult*>(data.get());
-        location_result->orientation[0] = 1;
+        location_result->position[0] = 123;
+        location_result->position[1] = -256;
+        location_result->position[2] = 5.5;
+
+        location_result->orientation[0] = 12;
+        location_result->orientation[1] = 34;
+        location_result->orientation[2] = 56;
 
         ipc_feedback_->write(data);
-        usleep(100000);
+        usleep(200000);
     }
 
     ipc_feedback_->close();
