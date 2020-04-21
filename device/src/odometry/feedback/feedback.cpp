@@ -21,7 +21,7 @@ namespace feedback {
 #ifdef WITH_DRIVER
 #ifdef DEVICE_DRIVER_S32VCAN
 
-inline double clamp(const double src, const double min, const int max)
+inline double clamp(const double src, const double min, const double max)
 {
     if (src < min) {
         return min;
