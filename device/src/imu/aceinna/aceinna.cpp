@@ -31,6 +31,8 @@ auto _ = DeviceFactory::register_type({.type = DeviceVendorType::ImuAceinna,
                                        .optional_parameter_types = Aceinna::OptionalParameterTypes,
                                        .implemented = true});
 
+#ifdef WITH_DRIVER
+
 /// Open serial port by kernel, baud rate, serial msg type,
 /// and get a thread-safe queue
 HeraErrno Aceinna::connect()
@@ -43,7 +45,7 @@ HeraErrno Aceinna::connect()
         return handle_error(HeraErrno::InvalidParameterValue);
     }
 
-    serial_port_ = utils::SerialTransport::create(kernel_, utils::SerialConfig(baud_rate_));
+    serial_port_ = driver::SerialTransport::create(kernel_, driver::SerialConfig(baud_rate_));
     if (!serial_port_->is_opened()) {
         return handle_error(HeraErrno::CanNotOpenTtyDevice, "Can not open device '" + kernel_ + "'");
     }
@@ -111,6 +113,7 @@ HeraErrno Aceinna::adjust_parameter(DeviceParameterType type, const std::string&
     }
     return HeraErrno::Success;
 }
+#endif
 
 /// Multiple raw data by defined granularity
 ///

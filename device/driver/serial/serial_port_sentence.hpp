@@ -17,7 +17,7 @@
 namespace wayz {
 namespace hera {
 namespace device {
-namespace utils {
+namespace driver {
 
 using SerialData = std::vector<uint8_t>;
 
@@ -49,7 +49,7 @@ private:
 };
 
 
-}  // namespace utils
+}  // namespace driver
 }  // namespace device
 }  // namespace hera
 }  // namespace wayz

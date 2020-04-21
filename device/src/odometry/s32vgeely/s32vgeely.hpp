@@ -16,67 +16,67 @@
 #include "device.hpp"
 #include "device_factory.hpp"
 
-
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_CAN
-#include "../../utils/can/can_interface.h"
+#ifdef DEVICE_DRIVER_S32VCAN
+#include "driver/can/can_port.hpp"
 #endif
 #endif
-
 
 namespace wayz {
 namespace hera {
 namespace device {
 namespace odometry {
-namespace geely {
+namespace s32vgeely {
 
 #pragma pack(push, 1)
 
 ///
-/// @brief Device data for Geely Series Car, Derived from Storage Data
+/// @brief Device data for S32VGeely Series Car, Derived from Storage Data
 ///
-class GeelyData final : public data::DeviceData {
+class S32VGeelyData final : public data::DeviceData {
 public:
-    GeelyData() = delete;
+    S32VGeelyData() = delete;
 
 public:
-    struct S32VCANData {
-        struct timeval timeStamp;
-        uint32_t arbitrationId;  ///< CAN ID (Arbitration Id) of the message sender.
-        uint16_t dlc;            ///< Number of bytes of the payload.
-        uint8_t packet[64];      ///< Packet Payload.
+    struct S32VGeelyCANPacket {
+        uint64_t timestamp_ns;  ///< Timestamp given by can driver
+        uint32_t id_can;        ///< CAN ID (Arbitration Id) of the message sender.
+        uint16_t dlc_can;       ///< CAN DLC, number of bytes of the payload.
+        uint8_t data_can[0];    ///< CAN Packet payload.
     };
+
     ///
     /// @brief Union to allow access by data or by bytes
     ///
     union {
-        S32VCANData data;                  ///< union entry: data with structure
-        uint8_t buf[sizeof(S32VCANData)];  ///< union entry: raw buffer of bytes
+        S32VGeelyCANPacket data;                  ///< union entry: data with structure
+        uint8_t buf[sizeof(S32VGeelyCANPacket)];  ///< union entry: raw buffer of bytes
     };
 };
 
 #pragma pack(pop)
 
 ///
-/// @brief For Geely Series Car, Derived from Device
+/// @brief For S32VGeely Series Car, Derived from Device
 ///
-class Geely final : public Device {
+class S32VGeely final : public Device {
 public:
     ///
-    /// @brief Construct a new Geely object
+    /// @brief Construct a new S32VGeely object
     ///
     /// @note pass Kernel and BaudRate and SerialMsgType as essential parameters
     /// @see Device::Device()
-    Geely(const uint32_t id,
-          const std::string& vendor_type,
-          const std::string& name,
-          const bool forward,
-          ipc::IPCQueue<data::SensorData>* const ipc_queue,
-          storage::StorageManager* const storage) :
-        Device(id, vendor_type, name, forward, ipc_queue, storage, HistoryDepth_, EssentialParameterTypes)
+    S32VGeely(const uint32_t id,
+              const std::string& vendor_type,
+              const std::string& name,
+              const bool forward,
+              ipc::IPCQueue<data::SensorData>* const ipc_queue,
+              storage::StorageManager* const storage) :
+        Device(id, vendor_type, name, forward, ipc_queue, storage, HistoryDepth_, EssentialParameterTypes),
+        thread_feedback_(nullptr)
     {}
-    Geely(const Geely&) = delete;
-    Geely& operator=(const Geely&) = delete;
+    S32VGeely(const S32VGeely&) = delete;
+    S32VGeely& operator=(const S32VGeely&) = delete;
 
     static DevicePtr create(const uint32_t id,
                             const std::string& vendor_type,
@@ -85,20 +85,20 @@ public:
                             ipc::IPCQueue<data::SensorData>* const ipc_queue,
                             storage::StorageManager* const storage)
     {
-        return std::make_unique<Geely>(id, vendor_type, name, forward, ipc_queue, storage);
+        return std::make_unique<S32VGeely>(id, vendor_type, name, forward, ipc_queue, storage);
     }
 
     ///
-    /// @brief Destroy the Geely object
+    /// @brief Destroy the S32VGeely object
     ///
     /// calls Device::stop()
-    virtual ~Geely()
+    virtual ~S32VGeely()
     {
         stop();
     }
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_CAN
+#ifdef DEVICE_DRIVER_S32VCAN
     virtual HeraErrno connect() override;
 
     virtual void disconnect() override;
@@ -125,21 +125,22 @@ public:
     static const std::vector<DeviceParameterType> OptionalParameterTypes;  ///< Optional Parameters for device
 
 private:
-    static constexpr size_t HistoryDepth_ = 1;                      ///< History Depth, 1
-    static constexpr int8_t MaxCanPacketReceiveNum_ = 1;            ///< Max num of receiving CAN packet
-    static constexpr int8_t CanPacketInnerSize_ = 8;                ///< inner size of one CAN packet
-    static constexpr int16_t CanPacketIDOfRearWheelSpeed_ = 0x123;  ///< CAN packet ID of front wheel speed
-    static constexpr int16_t CanPacketIDOfAngular_ = 0xE0;          ///< CAN packet ID of front wheel speed
+    static constexpr size_t HistoryDepth_ = 1;            ///< History Depth, 1
+    static constexpr int8_t MaxCanPacketReceiveNum_ = 1;  ///< Max num of receiving CAN packet, 1
+
+private:
+    std::thread* thread_feedback_;
+    void feedback_thread_function();
+    std::unique_ptr<ipc::IPCQueue<data::SensorData>> ipc_feedback_;
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_CAN
-    struct SCANPacket can_packet_;
+#ifdef DEVICE_DRIVER_S32VCAN
+    driver::CANPort* can_port_;
 #endif
 #endif
-    int8_t data_port_;  ///< CAN data port
 };
 
-}  // namespace geely
+}  // namespace s32vgeely
 }  // namespace odometry
 }  // namespace device
 }  // namespace hera

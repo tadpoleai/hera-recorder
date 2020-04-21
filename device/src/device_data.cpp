@@ -101,7 +101,9 @@ size_t DeviceData::write_to(std::ofstream& ofs) const
 /// @note This function is called by Device::convert()
 /// @see DeviceData
 /// @see Device::convert()
-SensorDataPtr SensorData::create_from(const DeviceDataPtr& storage_data, SensorDataType type, uint32_t length)
+SensorDataPtr SensorData::create_from(const DeviceDataPtr& storage_data,
+                                      const SensorDataType type,
+                                      const uint32_t length)
 {
     if (!storage_data) {
         return broken_data();
@@ -111,6 +113,30 @@ SensorDataPtr SensorData::create_from(const DeviceDataPtr& storage_data, SensorD
     data->sensor_id = storage_data->device_id;
     data->sensor_data_type = type;
     data->sequence = storage_data->sequence;
+    return SensorDataPtr(data, [](void* ptr) { delete[](uint8_t*)(ptr); });
+}
+
+///
+/// Allocate memory sized length, managed by a shares pointer,
+///
+/// @note Length should be assigned derived classes' implementation.
+/// @note Usually, for an derived class without variable-length buf,
+/// length should be sizeof(SomeInheritedSensorData).
+/// @note For an derived class with variable-length buf,
+/// length should be sizeof(SomeInheritedSensorData) added by
+/// size of [variable-length buf]
+/// @see DeviceData
+/// @see Device::convert()
+SensorDataPtr SensorData::create_direct(const SensorDataType type,
+                                        const uint32_t length,
+                                        const uint32_t id,
+                                        const uint32_t sequence)
+{
+    auto* data = reinterpret_cast<SensorData*>(new uint8_t[length]);
+    data->length = length;
+    data->sensor_id = id;
+    data->sensor_data_type = type;
+    data->sequence = sequence;
     return SensorDataPtr(data, [](void* ptr) { delete[](uint8_t*)(ptr); });
 }
 

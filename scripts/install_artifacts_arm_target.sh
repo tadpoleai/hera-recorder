@@ -60,7 +60,7 @@ if [[ $ans = [yY] ]]; then
     # Install client (web dist)
     sudo rm -rf /var/www/hera-client
     sudo mkdir -p /var/www/hera-client
-    sudo cp -r client /var/www/hera-client
+    sudo cp -r client/* /var/www/hera-client
 
     echo "Client installed to /var/www/hera-client"
 fi

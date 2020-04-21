@@ -36,7 +36,7 @@ enum class DeviceVendorType : uint16_t {
     DummyImage = 0x0102,         ///< A dummy category for testing, outputs dummy image
     ImuAceinna = 0x0201,         ///< An 9-axis Imu, vendor is Aceinna, embedded in Wayz Tron Sync Board
     GnssSerialsync = 0x0301,     ///< RTK-GNSS, outputs NavSatFix, vendor is any that outpus NMEA
-    GnssSerial = 0x0302,     ///< For Nmea Sentence with time sync
+    GnssSerial = 0x0302,         ///< For Nmea Sentence with time sync
     CameraFlir = 0x0401,         ///< Camera, outputs RawImage or CompressedImage, vendor is FLIR
     CameraS32VMipi = 0x0402,     ///< Camera, outputs RawImage, only for S32V, by mipi-csi
     LidarVelodyne = 0x0501,      ///< Lidar, outputs PointsXYZI, vendor is Velodyne
@@ -75,18 +75,19 @@ enum class DeviceDataType : uint16_t {
 /// @see SensorData
 ///
 enum class SensorDataType : uint16_t {
-    EndOfFile = 0xFFFE,                ///< Mark as end of file
-    Broken = 0xFFFF,                   ///< Mark for a broken data
-    Dummy = 0x0101,                    ///< A dummy message, no correspond ROS Message
-    DummyImage = 0x0102,               ///< A dummy message, no correspond ROS Message, only to debug image show
-    ImuMagneticField = 0x0201,         ///< ROS Imu and MagneticField
-    NavSatFix = 0x0301,                ///< ROS NavSatFix
-    CompressedImage = 0x0401,          ///< ROS CompressedImage
-    Image = 0x0402,                    ///< ROS Image, some minor format conversion needed
-    PointsXYZI = 0x0501,               ///< ROS PointCloud2, some PCL function needed
-    OdometryFrontWheelSpeed = 0x0601,  ///< For Odometry
-    OdometryRearWheelSpeed = 0x0602,   ///< For Odometry
-    OdometrySteeringAngle = 0x0603,    ///< For Odometry
+    EndOfFile = 0xFFFE,                   ///< Mark as end of file
+    Broken = 0xFFFF,                      ///< Mark for a broken data
+    Dummy = 0x0101,                       ///< A dummy message, no correspond ROS Message
+    DummyImage = 0x0102,                  ///< A dummy message, no correspond ROS Message, only to debug image show
+    ImuMagneticField = 0x0201,            ///< ROS Imu and MagneticField
+    NavSatFix = 0x0301,                   ///< ROS NavSatFix
+    CompressedImage = 0x0401,             ///< ROS CompressedImage
+    Image = 0x0402,                       ///< ROS Image, some minor format conversion needed
+    PointsXYZI = 0x0501,                  ///< ROS PointCloud2, some PCL function needed
+    OdometryFrontWheelSpeed = 0x0601,     ///< For Odometry
+    OdometryRearWheelSpeed = 0x0602,      ///< For Odometry
+    OdometrySteeringAngle = 0x0603,       ///< For Odometry
+    OdometryLocalizationResult = 0x0620,  ///< LocalizationResult, feedback by Localization Service to Hera
 };
 
 ///

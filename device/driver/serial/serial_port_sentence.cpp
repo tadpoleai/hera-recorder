@@ -9,7 +9,7 @@
 namespace wayz {
 namespace hera {
 namespace device {
-namespace utils {
+namespace driver {
 
 SerialPortSentence::SerialPortSentence(const std::string& kernel, const SerialConfig& serial_config) :
     port_(nullptr),
@@ -74,7 +74,7 @@ void SerialPortSentence::fetch_thread_function()
     }
 }
 
-}  // namespace utils
+}  // namespace driver
 }  // namespace device
 }  // namespace hera
 }  // namespace wayz
