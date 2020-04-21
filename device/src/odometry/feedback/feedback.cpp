@@ -10,7 +10,6 @@
 #include "feedback.hpp"
 
 #include <cmath>
-#include <iostream>
 
 namespace wayz {
 namespace hera {
