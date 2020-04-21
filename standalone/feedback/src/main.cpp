@@ -44,9 +44,12 @@ int main()
         location_result->position[1] = -256;
         location_result->position[2] = 5.5;
 
-        location_result->orientation[0] = 12;
-        location_result->orientation[1] = 34;
-        location_result->orientation[2] = 56;
+        location_result->orientation[0] = -1.4;
+        location_result->orientation[1] = 0.3;
+        location_result->orientation[2] = -0.2;
+
+        location_result->position_anchor[0] = 31.2;
+        location_result->position_anchor[0] = 121.2;
 
         ipc_feedback_->write(data);
         usleep(200000);
