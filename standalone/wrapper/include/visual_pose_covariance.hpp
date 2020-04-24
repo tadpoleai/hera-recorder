@@ -72,7 +72,7 @@ public:
 public:
     int64_t time_stamp;
     std::array<double, 3> translation{0.0};
-    std::array<double, 3> rotation{0.0};
+    std::array<double, 4> orientation{0.0};
     std::array<double, 36> covariance{0.0};  ///< T0 T1 T2 R0 R1 R2
 };
 
