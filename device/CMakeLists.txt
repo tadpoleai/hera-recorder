@@ -16,16 +16,10 @@ if(DEVICE_DRIVER_FLIR)
   include("../deploy/cmake/flycapture.cmake")
 endif()
 
-# Drivers - Camera/S32VMipi
-if(DEVICE_DRIVER_S32VMIPI)
-  set(S32V_VSDK_LIBS /opt/s32v/extra-depends/libvsdk_ov10635.so)
-endif()
-
-# Drivers - Odometry/S32V CAN @note see s32v_extra.cmake
-
-include_directories(${PROJECT_NAME} . .. include)
+# Drivers - Odometry/S32V Camera/S32V @note see s32vsal.cmake
 
 # Build device (core)
+include_directories(. .. include)
 add_library(${PROJECT_NAME} SHARED src/device_factory.cpp ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} hera-common hera-storage Threads::Threads
                       ${JPEG_TURBO_LIBS})
@@ -44,8 +38,8 @@ target_link_libraries(
   Threads::Threads
   ${JPEG_TURBO_LIBS}
   ${FLY_CAPTURE_LIBS}
-  ${S32V_VSDK_LIBS}
-  ${S32V_EXTRA_LIBS})
+  ${S32VSAL_LIBS}
+  ${S32VSAL_VSDK_LIBS})
 
 # Install shared libraries
 install(
@@ -59,25 +53,11 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
         DESTINATION include/hera/device/)
 
 # Build test
-add_executable(${PROJECT_NAME}-test unit_test/s32vgeely_test.cpp)
-target_link_libraries(
-  ${PROJECT_NAME}-test
-  hera-common
-  hera-storage
-  ${PROJECT_NAME}-driver
-  Threads::Threads
-  ${JPEG_TURBO_LIBS}
-  ${FLY_CAPTURE_LIBS})
+add_executable(${PROJECT_NAME}-test unit_test/dummy_test.cpp)
+target_link_libraries(${PROJECT_NAME}-test hera-common hera-storage
+                      ${PROJECT_NAME}-driver)
 
-if(target-arm)
-  # Build s32vgeely-test
-  add_executable(${PROJECT_NAME}-s32vgeely-test unit_test/s32vgeely_test.cpp)
-  target_link_libraries(
-    ${PROJECT_NAME}-s32vgeely-test
-    hera-common
-    hera-storage
-    ${PROJECT_NAME}-driver
-    Threads::Threads
-    ${JPEG_TURBO_LIBS}
-    ${FLY_CAPTURE_LIBS})
-endif()
+# Build record-test
+add_executable(${PROJECT_NAME}-record unit_test/record_test.cpp)
+target_link_libraries(${PROJECT_NAME}-record hera-common hera-storage
+                      ${PROJECT_NAME}-driver)

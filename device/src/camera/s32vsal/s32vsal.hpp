@@ -1,5 +1,5 @@
 ///
-/// @file s32vmipi.hpp
+/// @file s32vsal.hpp
 /// @author chunchen.wang (chunchen.wang@wayz.ai)
 /// @brief
 /// @version 0.1
@@ -12,8 +12,8 @@
 #pragma once
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VMIPI
-#include "vsdk.hpp"
+#ifdef DEVICE_DRIVER_S32VSAL_VSDK
+#include "S32vSAL/camera/vsdk.h"
 #endif
 #endif
 
@@ -25,19 +25,19 @@ namespace wayz {
 namespace hera {
 namespace device {
 namespace camera {
-namespace s32vmipi {
+namespace s32vsal {
 
 #pragma pack(push, 1)
 
 ///
-/// @brief Device data for S32VMipi, raw, Derived from Storage Data
+/// @brief Device data for S32VSal, raw, Derived from Storage Data
 ///
-class S32VMipiRawImage final : public data::DeviceData {
+class S32VSalRawImage final : public data::DeviceData {
 public:
-    S32VMipiRawImage() = delete;
+    S32VSalRawImage() = delete;
 
 public:
-    struct S32VMipiRawData {
+    struct S32VSalRawData {
         ///
         /// @brief timestamp of capture start, UTC, in ns
         ///
@@ -56,33 +56,33 @@ public:
     /// @brief Union to allow access by data or by bytes
     ///
     union {
-        S32VMipiRawData data;                  ///< union entry: data with structure
-        uint8_t buf[sizeof(S32VMipiRawData)];  ///< union entry: raw buffer of bytes
+        S32VSalRawData data;                  ///< union entry: data with structure
+        uint8_t buf[sizeof(S32VSalRawData)];  ///< union entry: raw buffer of bytes
     };
 };
 
 #pragma pack(pop)
 
 ///
-/// @brief S32VMipi (former PointGrey) Camera, Derived from Device
+/// @brief S32VSal (former PointGrey) Camera, Derived from Device
 ///
-class S32VMipi final : public Device {
+class S32VSal final : public Device {
 public:
     ///
-    /// @brief Construct a new S32VMipi object
+    /// @brief Construct a new S32VSal object
     ///
     /// @note pass IpAddress as essential parameters
     /// @see Device::Device()
-    S32VMipi(const uint32_t id,
-             const std::string& vendor_type,
-             const std::string& name,
-             const bool forward,
-             ipc::IPCQueue<data::SensorData>* const ipc_queue,
-             storage::StorageManager* const storage) :
+    S32VSal(const uint32_t id,
+            const std::string& vendor_type,
+            const std::string& name,
+            const bool forward,
+            ipc::IPCQueue<data::SensorData>* const ipc_queue,
+            storage::StorageManager* const storage) :
         Device(id, vendor_type, name, forward, ipc_queue, storage, HistoryDepth_, EssentialParameterTypes)
     {}
-    S32VMipi(const S32VMipi&) = delete;
-    S32VMipi& operator=(const S32VMipi&) = delete;
+    S32VSal(const S32VSal&) = delete;
+    S32VSal& operator=(const S32VSal&) = delete;
 
     static DevicePtr create(const uint32_t id,
                             const std::string& vendor_type,
@@ -91,20 +91,20 @@ public:
                             ipc::IPCQueue<data::SensorData>* const ipc_queue,
                             storage::StorageManager* const storage)
     {
-        return std::make_unique<S32VMipi>(id, vendor_type, name, forward, ipc_queue, storage);
+        return std::make_unique<S32VSal>(id, vendor_type, name, forward, ipc_queue, storage);
     }
 
     ///
-    /// @brief Destroy the S32VMipi object
+    /// @brief Destroy the S32VSal object
     ///
     /// calls Device::stop()
-    virtual ~S32VMipi()
+    virtual ~S32VSal()
     {
         stop();
     }
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VMIPI
+#ifdef DEVICE_DRIVER_S32VSAL_VSDK
     virtual HeraErrno connect() override;
 
     virtual void disconnect() override;
@@ -144,14 +144,14 @@ private:
     std::mutex mutex_;
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VMIPI
+#ifdef DEVICE_DRIVER_S32VSAL_VSDK
     AppContext app_context_;
 
 #endif
 #endif
 };
 
-}  // namespace s32vmipi
+}  // namespace s32vsal
 }  // namespace camera
 }  // namespace device
 }  // namespace hera

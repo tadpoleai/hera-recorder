@@ -35,10 +35,12 @@ enum class DeviceVendorType : uint16_t {
     DummyFoobar = 0x0101,        ///< A dummy category for testing, vendor is Wayz
     DummyImage = 0x0102,         ///< A dummy category for testing, outputs dummy image
     ImuAceinna = 0x0201,         ///< An 9-axis Imu, vendor is Aceinna, embedded in Wayz Tron Sync Board
+    ImuS32VSal = 0x0202,         ///< IMU, driver is provided by S32VSal
     GnssSerialsync = 0x0301,     ///< RTK-GNSS, outputs NavSatFix, vendor is any that outpus NMEA
-    GnssSerial = 0x0302,         ///< For Nmea Sentence with time sync
+    GnssSerial = 0x0302,         ///< For Nmea Sentence with it's UTC time already synced to system time
+    GnssS32VSal = 0x0303,        ///< GNSS, driver is provided by S32VSal
     CameraFlir = 0x0401,         ///< Camera, outputs RawImage or CompressedImage, vendor is FLIR
-    CameraS32VMipi = 0x0402,     ///< Camera, outputs RawImage, only for S32V, by mipi-csi
+    CameraS32VSal = 0x0402,      ///< Camera, outputs RawImage, only for S32V, by mipi-csi, library provided by S32VSal
     LidarVelodyne = 0x0501,      ///< Lidar, outputs PointsXYZI, vendor is Velodyne
     OdometryS32VGeely = 0x0601,  ///< Odometry, only for S32V, by CAN-bus, only for Car vendorGeely
 };
@@ -54,11 +56,13 @@ enum class DeviceDataType : uint16_t {
     DummyFoobarData = 0x0101,            ///< A dummy device's device data
     DummyImageData = 0x0102,             ///< A dummy image device's data
     ImuAceinnaData = 0x0201,             ///< For Wayz Tron Sync Board's serial output
+    ImuS32VSalData = 0x0202,             ///< IMU Data from S32VSal
     GnssSerialsyncNmea = 0x0301,         ///< For Nmea Sentence
     GnssSerialNmea = 0x0302,             ///< For Nmea Sentence with time sync
+    GnssS32VSalData = 0x0303,            ///< GNSS Data from S32VSal
     CameraFlirCompressedImage = 0x0401,  ///< For Flir's camera's compressed image
     CameraFlirRawImage = 0x0402,         ///< For Flir's camera's raw image
-    CameraS32VMipiRawImage = 0x0403,     ///< For S32vMipi's camera's raw image
+    CameraS32VSalRawImage = 0x0403,      ///< For S32vMipi's camera's raw image
     LidarVelodynePacket = 0x0501,        ///< For Velodyne's raw UDP packet
     OdometryS32VGeelyCANFrame = 0x0601,  ///< For OdometryS32V Geely
 };
@@ -104,6 +108,7 @@ BETTER_ENUM(DeviceParameterType,
             IpAddress,
             DataPort,
             TelemetryPort,
+            SubVendorType,
             Kernel,
             KernelAuxiliary,
             BaudRate,

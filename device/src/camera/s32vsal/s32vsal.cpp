@@ -1,5 +1,5 @@
 ///
-/// @file s32vmipi.cpp
+/// @file s32vsal.cpp
 /// @author chunchen.wang (chunchen.wang@wayz.ai)
 /// @brief
 /// @version 0.1
@@ -9,7 +9,7 @@
 ///
 ///
 
-#include "s32vmipi.hpp"
+#include "s32vsal.hpp"
 
 #ifdef WITH_DRIVER
 #include <turbojpeg.h>
@@ -21,20 +21,20 @@ namespace wayz {
 namespace hera {
 namespace device {
 namespace camera {
-namespace s32vmipi {
+namespace s32vsal {
 
-const std::vector<DeviceParameterType> S32VMipi::EssentialParameterTypes = {};
+const std::vector<DeviceParameterType> S32VSal::EssentialParameterTypes = {};
 
-const std::vector<DeviceParameterType> S32VMipi::OptionalParameterTypes = {};
+const std::vector<DeviceParameterType> S32VSal::OptionalParameterTypes = {};
 
-auto _ = DeviceFactory::register_type({.type = DeviceVendorType::CameraS32VMipi,
-                                       .type_name = "camera/s32vmipi",
-                                       .create = &S32VMipi::create,
-                                       .do_convert = &S32VMipi::do_convert,
-                                       .essential_parameter_types = S32VMipi::EssentialParameterTypes,
-                                       .optional_parameter_types = S32VMipi::OptionalParameterTypes,
+auto _ = DeviceFactory::register_type({.type = DeviceVendorType::CameraS32VSal,
+                                       .type_name = "camera/s32vsal",
+                                       .create = &S32VSal::create,
+                                       .do_convert = &S32VSal::do_convert,
+                                       .essential_parameter_types = S32VSal::EssentialParameterTypes,
+                                       .optional_parameter_types = S32VSal::OptionalParameterTypes,
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VMIPI
+#ifdef DEVICE_DRIVER_S32VSAL_VSDK
                                        .implemented = true
 #else
                                        .implemented = false
@@ -45,7 +45,7 @@ auto _ = DeviceFactory::register_type({.type = DeviceVendorType::CameraS32VMipi,
 });
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VMIPI
+#ifdef DEVICE_DRIVER_S32VSAL_VSDK
 
 /*用户自定义回调函数*/
 static void SeqEventCallBack(uint32_t aEventType, void* apUserVal)
@@ -67,7 +67,7 @@ static void SeqEventCallBack(uint32_t aEventType, void* apUserVal)
     }      // if user pointer is NULL
 }  // SeqEventCallBack()
 
-HeraErrno S32VMipi::connect()
+HeraErrno S32VSal::connect()
 {
     app_context_.mError = false;
     app_context_.mFrmCnt = 0;
@@ -92,9 +92,9 @@ HeraErrno S32VMipi::connect()
     return HeraErrno::Success;
 }
 
-void S32VMipi::disconnect()
+void S32VSal::disconnect()
 {
-    log::debug << "S32VMipi: Disconnect" << log::endl;
+    log::debug << "S32VSal: Disconnect" << log::endl;
     VisionSdk_Release(app_context_);
 
     if (frame_data_ != nullptr) {
@@ -105,34 +105,34 @@ void S32VMipi::disconnect()
 ///
 /// @note U/V Channel is abandon
 /// Only Y Channel is saved to storage
-data::DeviceDataPtr S32VMipi::fetch()
+data::DeviceDataPtr S32VSal::fetch()
 {
     // Fetch rawdata from camera;
     uint64_t get_length = 0;
     uint32_t msTimeout = 10;
     if (VisionSdk_ReadFrame(app_context_, &frame_data_, &get_length, msTimeout) != AY_SUCCESS) {
-        // log::warn << "S32VMipi: Can not read frame, read aborted" << log::endl;
+        // log::warn << "S32VSal: Can not read frame, read aborted" << log::endl;
         return nullptr;
     }
     VisionSdk_Display();
     if (VisionSDK_FramePush(app_context_) != AY_SUCCESS) {
-        log::warn << "S32VMipi: Can not display frame, read aborted" << log::endl;
+        log::warn << "S32VSal: Can not display frame, read aborted" << log::endl;
         return nullptr;
     }
-    log::info << "S32VMipi: read frame successfully, get_length: " << get_length << log::endl;
+    log::info << "S32VSal: read frame successfully, get_length: " << get_length << log::endl;
 
     // if (app_context_.mFrmCnt % FrameSkipStep_ != 0) {
     //     return nullptr;
     // }
 
     // Total length of device data
-    auto length = sizeof(S32VMipiRawImage) + ImageMonoDataSize_;
+    auto length = sizeof(S32VSalRawImage) + ImageMonoDataSize_;
     auto data = data::DeviceData::create(length,
                                          id_,
-                                         DeviceVendorType::CameraS32VMipi,
-                                         DeviceDataType::CameraS32VMipiRawImage,
+                                         DeviceVendorType::CameraS32VSal,
+                                         DeviceDataType::CameraS32VSalRawImage,
                                          sequence_++);
-    auto derived_data = static_cast<S32VMipiRawImage*>(data.get());
+    auto derived_data = static_cast<S32VSalRawImage*>(data.get());
 
     // Copy data
     derived_data->data.timestamp_capture_start_ns = time::Timestamp::now();
@@ -156,7 +156,7 @@ data::DeviceDataPtr S32VMipi::fetch()
     // return nullptr;
 }
 
-HeraErrno S32VMipi::adjust_parameter(DeviceParameterType type, const std::string& value)
+HeraErrno S32VSal::adjust_parameter(DeviceParameterType type, const std::string& value)
 {
     switch (type) {
     default:
@@ -167,11 +167,11 @@ HeraErrno S32VMipi::adjust_parameter(DeviceParameterType type, const std::string
 #endif
 #endif
 
-data::SensorDataPtr S32VMipi::do_convert(data::DeviceDataPtr& storage_data)
+data::SensorDataPtr S32VSal::do_convert(data::DeviceDataPtr& storage_data)
 {
-    if (storage_data->is_type(DeviceDataType::CameraS32VMipiRawImage)) {
+    if (storage_data->is_type(DeviceDataType::CameraS32VSalRawImage)) {
         // Raw DeviceData of Derived Type
-        auto raw_data = static_cast<S32VMipiRawImage*>(storage_data.get());
+        auto raw_data = static_cast<S32VSalRawImage*>(storage_data.get());
 
         // Create a SensorData from DeviceData
         uint32_t image_data_size = raw_data->data.image_data_size;
@@ -187,13 +187,13 @@ data::SensorDataPtr S32VMipi::do_convert(data::DeviceDataPtr& storage_data)
         memcpy(camera_sensor_data->image_data, raw_data->data.image_data, image_data_size);
         return sensor_data;
     } else {
-        log::warn << "S32VMipi: Unknown DeviceData Format" << log::endl;
+        log::warn << "S32VSal: Unknown DeviceData Format" << log::endl;
         return data::SensorData::broken_data();
     }
     return data::SensorData::broken_data();
 }
 
-}  // namespace s32vmipi
+}  // namespace s32vsal
 }  // namespace camera
 }  // namespace device
 }  // namespace hera

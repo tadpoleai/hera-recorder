@@ -10,8 +10,8 @@
 #include "can_port.hpp"
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
-#include "s32v_can.h"
+#ifdef DEVICE_DRIVER_S32VSAL
+#include "S32vSAL/can/CANIterface.h"
 #endif
 #endif
 
@@ -30,7 +30,7 @@ CANPort::CANPort(const uint32_t data_port)
     port_opened_ = false;
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
     {
         std::unique_lock<std::mutex> _(mutex_);
         if (reference_count_++ == 0) {
@@ -50,7 +50,7 @@ CANPort::CANPort(const uint32_t data_port)
 CANPort::~CANPort()
 {
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
     SALCanClosePort(port_);
 
     {
@@ -66,7 +66,7 @@ CANPort::~CANPort()
 CANPacketPtr CANPort::read()
 {
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
     if (!port_opened_) {
         return nullptr;
     }
@@ -96,7 +96,7 @@ CANPacketPtr CANPort::read()
 bool CANPort::write(const CANPacketPtr& data)
 {
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
     if (!port_opened_) {
         return false;
     }

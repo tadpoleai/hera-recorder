@@ -1,0 +1,8 @@
+{
+  "storage": "s32v.hera",
+  "record": 1,
+  "devices": [
+    { "type": "dummy/foobar", "name": "0", "parameters": [] },
+    { "type": "dummy/foobar", "name": "1", "parameters": [] }
+  ]
+}
