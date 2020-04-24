@@ -12,7 +12,7 @@
 #include "s32vgeely.hpp"
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
 #include "../feedback/feedback.hpp"
 #endif
 #endif
@@ -34,7 +34,7 @@ auto _ = DeviceFactory::register_type({.type = DeviceVendorType::OdometryS32VGee
                                        .essential_parameter_types = S32VGeely::EssentialParameterTypes,
                                        .optional_parameter_types = S32VGeely::OptionalParameterTypes,
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
                                        .implemented = true
 #else
                                        .implemented = false
@@ -45,7 +45,7 @@ auto _ = DeviceFactory::register_type({.type = DeviceVendorType::OdometryS32VGee
 });
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
 
 HeraErrno S32VGeely::connect()
 {

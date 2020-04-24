@@ -17,7 +17,7 @@
 #include "device_factory.hpp"
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
 #include "driver/can/can_port.hpp"
 #endif
 #endif
@@ -98,7 +98,7 @@ public:
     }
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
     virtual HeraErrno connect() override;
 
     virtual void disconnect() override;
@@ -134,7 +134,7 @@ private:
     std::unique_ptr<ipc::IPCQueue<data::SensorData>> ipc_feedback_;
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
     driver::CANPort* can_port_;
 #endif
 #endif

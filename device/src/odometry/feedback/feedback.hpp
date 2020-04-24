@@ -12,7 +12,7 @@
 #include "data/odometry_data.hpp"
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
 #include "driver/can/can_port.hpp"
 
 namespace wayz {

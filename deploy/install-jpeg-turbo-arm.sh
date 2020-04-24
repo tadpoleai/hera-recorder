@@ -16,9 +16,9 @@ cd build
 
 unset LD_LIBRARY_PATH
 . /opt/s32v/environment-setup-aarch64-fsl-linux
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt/s32v/extra-depends/3rd/libjpeg-turbo
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt/s32v/libjpeg-turbo
 make -j
-sudo mkdir -p /opt/s32v/extra-depends/3rd/libjpeg-turbo
+sudo mkdir -p /opt/s32v/libjpeg-turbo
 sudo make install
 
 cd ../..

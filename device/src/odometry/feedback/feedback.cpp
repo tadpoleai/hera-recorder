@@ -18,7 +18,7 @@ namespace odometry {
 namespace feedback {
 
 #ifdef WITH_DRIVER
-#ifdef DEVICE_DRIVER_S32VCAN
+#ifdef DEVICE_DRIVER_S32VSAL
 
 inline double clamp(const double src, const double min, const double max)
 {
