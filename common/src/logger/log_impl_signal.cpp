@@ -5,6 +5,7 @@
 #include <regex>
 
 #include "logger/logger.hpp"
+#include "version.hpp"
 
 namespace wayz {
 namespace hera {
@@ -129,7 +130,7 @@ void Logger::back_trace(int signo)
 {
     if (instance_) {
         auto logger = log::error << "Backtrace:\e[0m\n";
-        logger << "    commit head = " << get_commit_head() << "\n";
+        logger << "    commit head = " << common::get_version() << "\n";
 
         constexpr size_t MaxTraceDepth = 128;
         void* trace_ptrs[MaxTraceDepth] = {0};

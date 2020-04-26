@@ -5,7 +5,10 @@
 
 #include "common/include/logger/logger.hpp"
 #include "common/include/utils/remapper.hpp"
+#include "common/include/version.hpp"
 #include "converter.hpp"
+#include "device/include/version.hpp"
+#include "storage/include/version.hpp"
 
 using namespace wayz::hera;
 using namespace wayz::hera::convert;
@@ -28,7 +31,9 @@ void print_help(char** argv)
 void print_version(char** argv)
 {
     std::cout << argv[0] << std::endl;
-    std::cout << "Built " << log::get_commit_head() << std::endl;
+    std::cout << "libhera-common: " << common::get_version() << std::endl;
+    std::cout << "libhera-device: " << device::get_version() << std::endl;
+    std::cout << "libhera-storage: " << storage::get_version() << std::endl;
     std::cout << "Copyright 2018 Wayz.ai. All Rights Reserved." << std::endl;
 }
 

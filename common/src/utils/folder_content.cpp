@@ -41,6 +41,20 @@ std::ostream& operator<<(std::ostream& os, const FileSize& size)
     return os;
 }
 
+FileSize get_file_size(const std::string& filename)
+{
+    struct stat stat_result;
+    if (stat(filename.c_str(), &stat_result)) {
+        return 0;
+    }
+
+    if (S_ISREG(stat_result.st_mode)) {
+        return stat_result.st_size;
+    } else {
+        return 0;
+    }
+}
+
 FolderContent get_folder_content(const std::string& parent)
 {
     FolderContent content;

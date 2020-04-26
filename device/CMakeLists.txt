@@ -19,10 +19,13 @@ endif()
 # Drivers - Odometry/S32V Camera/S32V @note see s32vsal.cmake
 
 # Build device (core)
-include_directories(. .. include)
+include_directories(. include .. ${CMAKE_BINARY_DIR})
 add_library(${PROJECT_NAME} SHARED src/device_factory.cpp ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} hera-common hera-storage Threads::Threads
                       ${JPEG_TURBO_LIBS})
+if(GIT_INFO_ENABLED)
+  target_link_libraries(${PROJECT_NAME} hera-git-info)
+endif()
 
 # Build device (drivers)
 add_library(${PROJECT_NAME}-driver SHARED src/device_factory.cpp ${DRIVERS_SRC}
@@ -40,6 +43,9 @@ target_link_libraries(
   ${FLY_CAPTURE_LIBS}
   ${S32VSAL_LIBS}
   ${S32VSAL_VSDK_LIBS})
+if(GIT_INFO_ENABLED)
+  target_link_libraries(${PROJECT_NAME}-driver hera-git-info)
+endif()
 
 # Install shared libraries
 install(

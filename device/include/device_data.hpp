@@ -121,6 +121,15 @@ public:
     }
 
     ///
+    /// @brief Get the device id of DeviceData
+    ///
+    /// @return uint32_t device id
+    inline uint32_t get_device_id() const noexcept
+    {
+        return device_id;
+    }
+
+    ///
     /// @brief Check if device data type is specific type
     ///
     /// @param type device data type to compare with

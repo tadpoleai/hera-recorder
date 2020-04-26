@@ -5,10 +5,10 @@
 #pragma once
 
 #include <iostream>
+
 #ifndef LOG_LINE
 #define LOG_LINE std::cout << "file: " << __FILE__ << " , line: " << __LINE__ << std::endl;
 #endif
-//#define LOG_LINE
 
 #include <cstdint>
 namespace wayz {

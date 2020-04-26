@@ -2,9 +2,9 @@
 // Copyright 2018 Wayz.ai. All Rights Reserved.
 //
 
-#include <regex>
-
 #include "logger/log_impl.hpp"
+
+#include <regex>
 
 namespace wayz {
 namespace hera {
@@ -22,15 +22,6 @@ void Logger::flush()
 {
     while (!instance_->flushed_)
         ;
-}
-
-std::string Logger::get_commit_head()
-{
-#ifdef GIT_INFO_ENABLED
-    return std::string(GIT_COMMIT_HEAD);
-#else
-    return "Unknown Commit Head";
-#endif
 }
 
 bool Logger::init(const std::string& file)
