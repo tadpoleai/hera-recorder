@@ -56,6 +56,7 @@ cp -rL /opt/s32v/thrift/lib/libthrift.so ../artifacts/arm/lib
 cp -r daemon/hera-daemon ../artifacts/arm/bin
 cp -r device/hera-device-record ../artifacts/arm/bin
 cp -r device/hera-device*test ../artifacts/arm/bin
+cp -r storage/hera-storage-tool ../artifacts/arm/bin
 cp -r replay/hera-replay ../artifacts/arm/bin
 
 # Shared

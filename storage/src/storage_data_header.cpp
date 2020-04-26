@@ -51,6 +51,10 @@ StorageDataHeaderPtr StorageDataHeader::read_from(std::ifstream& ifs)
         if (ifs.gcount() != sizeof(header->timestamp_end)) {
             throw std::runtime_error("Can not read");
         }
+        if (header->timestamp_end == 0) {
+            log::error << "Storage: timestamp_end invalid, storage header is broken. \n\t Run `hera-storage-tool -i "
+                          "<storage_file> -b` to rebuild header";
+        }
 
         uint32_t device_num;
         ifs.read((char*)&device_num, sizeof(device_num));
@@ -148,7 +152,7 @@ std::ostream& operator<<(std::ostream& os, const StorageDataHeader& rhs)
     os << "\n";
     os << "- From " << time::Timestamp(rhs.timestamp_start) << "\n";
     os << "- To   " << time::Timestamp(rhs.timestamp_end) << "\n";
-    os << "- time::Duration: " << time::Duration(rhs.timestamp_end - rhs.timestamp_start) << "\n";
+    os << "- Duration: " << time::Duration(rhs.timestamp_end - rhs.timestamp_start) << "\n";
     os << "\n";
     os << "- Containing data of " << rhs.device_names.size() << " devices:"
        << "\n";

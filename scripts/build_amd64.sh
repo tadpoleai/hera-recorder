@@ -3,10 +3,10 @@ mkdir -p build
 cd build
 
 if [ -z "$1" ]; then
-    cmake .. -Dwith-all=1 -Dwith-driver-all=1
+    cmake .. -Dwith-all=1 -Dwith-driver-all=0
 else
     echo "git version is $1"
-    cmake .. -Dwith-all=1 -Dwith-driver-all=1 -Dforce-git-info=$1
+    cmake .. -Dwith-all=1 -Dwith-driver-all=0 -Dforce-git-info=$1
 fi
 
 if [ $? -ne 0 ]; then
@@ -56,6 +56,7 @@ cp -r storage/libhera-storage.so ../artifacts/amd64/lib
 cp -r convert/hera-convert ../artifacts/amd64/bin
 cp -r device/hera-device-record ../artifacts/amd64/bin
 cp -r daemon/hera-daemon ../artifacts/amd64/bin
+cp -r storage/hera-storage-tool ../artifacts/amd64/bin
 cp -r replay/hera-replay ../artifacts/amd64/bin
 cp -r slam/bridge/hera-slam-bridge \
     slam/caller/hera-slam-caller-start \

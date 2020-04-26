@@ -51,6 +51,8 @@ struct FilesystemStatus {
     FilesystemStatus() : opened(false), total_space(0), free_space(0), used_space(0) {}
 };
 
+FileSize get_file_size(const std::string& filename);
+
 FolderContent get_folder_content(const std::string& parent);
 
 FilesystemStatus get_filesystem_status(const std::string& path);

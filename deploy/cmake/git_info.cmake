@@ -3,17 +3,22 @@ string(ASCII 27 Escape)
 
 set(GIT_INFO_CPPSRC "${CMAKE_CURRENT_BINARY_DIR}/git_info.cpp")
 
+string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%S")
+message(STATUS "BUILD TIME: " ${BUILD_TIMESTAMP})
+
 if(force-git-info)
   message(STATUS "${Escape}[32m" "Git version set to ${force-git-info}"
                  "${Escape}[m")
   set(GIT_INFO_ENABLED 1)
   add_definitions(-DGIT_INFO_ENABLED)
 
-  file(WRITE ${GIT_INFO_CPPSRC}
-       "const char *GIT_COMMIT_HEAD = \"${force-git-info}\";")
+  file(
+    WRITE ${GIT_INFO_CPPSRC}
+    "const char *GIT_COMMIT_HEAD = \"${force-git-info} - built ${BUILD_TIMESTAMP}\";"
+  )
 
   include(deploy/cmake/cpp_common.cmake)
-  add_library(hera-common-git-info STATIC ${GIT_INFO_CPPSRC})
+  add_library(hera-git-info STATIC ${GIT_INFO_CPPSRC})
 
 else()
   execute_process(
@@ -40,9 +45,9 @@ else()
       COMMAND
         "git" "log" "--decorate=short" "-1" "|" "head" "-1" "|" "sed"
         "s/^/const\ char\ *GIT_COMMIT_HEAD\ =\ \\\"/" "|" "sed"
-        "s/\\)/\\)\\\"\;/" ">" "${GIT_INFO_CPPSRC}")
+        "s/\\)/\\) - built ${BUILD_TIMESTAMP}\\\"\;/" ">" "${GIT_INFO_CPPSRC}")
 
     include(deploy/cmake/cpp_common.cmake)
-    add_library(hera-common-git-info STATIC ${GIT_INFO_CPPSRC})
+    add_library(hera-git-info STATIC ${GIT_INFO_CPPSRC})
   endif()
 endif()
