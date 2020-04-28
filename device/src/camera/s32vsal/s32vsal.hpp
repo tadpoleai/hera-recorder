@@ -61,6 +61,36 @@ public:
     };
 };
 
+class S32VSalCompressedImage final : public data::DeviceData {
+public:
+    S32VSalCompressedImage() = delete;
+
+public:
+    struct S32VSalCompressedData {
+        ///
+        /// @brief timestamp of capture start, UTC, in ns
+        ///
+        uint64_t timestamp_capture_start_ns;
+        ///
+        /// @brief timestamp of capture ebd, UTC, in ns
+        ///
+        /// @note not implenmented yet
+        uint64_t timestamp_capture_end_ns;
+
+        data::CompressedImage::CompressFormat compress_format;  ///< format of compression
+        uint32_t image_data_size;                               ///< size of image_data, in bytes
+        uint8_t image_data[0];                                  ///< compressed image data
+    };
+
+    ///
+    /// @brief Union to allow access by data or by bytes
+    ///
+    union {
+        S32VSalCompressedData data;                  ///< union entry: data with structure
+        uint8_t buf[sizeof(S32VSalCompressedData)];  ///< union entry: raw buffer of bytes
+    };
+};
+
 #pragma pack(pop)
 
 ///
@@ -79,7 +109,8 @@ public:
             const bool forward,
             ipc::IPCQueue<data::SensorData>* const ipc_queue,
             storage::StorageManager* const storage) :
-        Device(id, vendor_type, name, forward, ipc_queue, storage, HistoryDepth_, EssentialParameterTypes)
+        Device(id, vendor_type, name, forward, ipc_queue, storage, HistoryDepth_, EssentialParameterTypes),
+        frame_rate_(0)
     {}
     S32VSal(const S32VSal&) = delete;
     S32VSal& operator=(const S32VSal&) = delete;
@@ -137,7 +168,12 @@ private:
     static constexpr size_t ImageMonoDataSize_ = ImageWidth_ * ImageHeight_;     ///< Mono, i.e., only Y channel
     static constexpr size_t ImageYUVDataSize_ = ImageWidth_ * ImageHeight_ * 2;  ///< YUV 4:2:2
     static constexpr size_t CsiPort_ = 0;
-    static constexpr size_t FrameSkipStep_ = 30;
+
+    uint32_t frame_rate_;
+    time::Timestamp last_time_;
+
+    bool compress_;
+    double compress_quality_;
 
     uint8_t* frame_data_;
 
