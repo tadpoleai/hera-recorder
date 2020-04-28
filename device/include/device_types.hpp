@@ -53,18 +53,19 @@ enum class DeviceVendorType : uint16_t {
 /// @see DeviceData
 ///
 enum class DeviceDataType : uint16_t {
-    DummyFoobarData = 0x0101,            ///< A dummy device's device data
-    DummyImageData = 0x0102,             ///< A dummy image device's data
-    ImuAceinnaData = 0x0201,             ///< For Wayz Tron Sync Board's serial output
-    ImuS32VSalData = 0x0202,             ///< IMU Data from S32VSal
-    GnssSerialsyncNmea = 0x0301,         ///< For Nmea Sentence
-    GnssSerialNmea = 0x0302,             ///< For Nmea Sentence with time sync
-    GnssS32VSalData = 0x0303,            ///< GNSS Data from S32VSal
-    CameraFlirCompressedImage = 0x0401,  ///< For Flir's camera's compressed image
-    CameraFlirRawImage = 0x0402,         ///< For Flir's camera's raw image
-    CameraS32VSalRawImage = 0x0403,      ///< For S32vMipi's camera's raw image
-    LidarVelodynePacket = 0x0501,        ///< For Velodyne's raw UDP packet
-    OdometryS32VGeelyCANFrame = 0x0601,  ///< For OdometryS32V Geely
+    DummyFoobarData = 0x0101,               ///< A dummy device's device data
+    DummyImageData = 0x0102,                ///< A dummy image device's data
+    ImuAceinnaData = 0x0201,                ///< For Wayz Tron Sync Board's serial output
+    ImuS32VSalData = 0x0202,                ///< IMU Data from S32VSal
+    GnssSerialsyncNmea = 0x0301,            ///< For Nmea Sentence
+    GnssSerialNmea = 0x0302,                ///< For Nmea Sentence with time sync
+    GnssS32VSalData = 0x0303,               ///< GNSS Data from S32VSal
+    CameraFlirCompressedImage = 0x0401,     ///< For Flir's camera's compressed image
+    CameraFlirRawImage = 0x0402,            ///< For Flir's camera's raw image
+    CameraS32VSalRawImage = 0x0403,         ///< For S32vMipi's camera's raw image
+    CameraS32VSalCompressedImage = 0x0404,  ///< For S32vMipi's camera's compressed image
+    LidarVelodynePacket = 0x0501,           ///< For Velodyne's raw UDP packet
+    OdometryS32VGeelyCANFrame = 0x0601,     ///< For OdometryS32V Geely
 };
 
 ///
@@ -114,6 +115,8 @@ BETTER_ENUM(DeviceParameterType,
             BaudRate,
             BaudRateAuxiliary,
             SerialMsgType,
+            Compress,
+            CompressQuality,
             Exposure,
             WhiteBalanceRed,
             WhiteBalanceBlue,
