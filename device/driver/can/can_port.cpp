@@ -56,7 +56,7 @@ CANPort::~CANPort()
     {
         std::unique_lock<std::mutex> _(mutex_);
         if (--reference_count_ == 0) {
-            // SALCanDeInit();
+            SALCanDeInit();
         }
     }
 #endif

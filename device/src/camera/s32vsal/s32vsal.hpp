@@ -13,7 +13,7 @@
 
 #ifdef WITH_DRIVER
 #ifdef DEVICE_DRIVER_S32VSAL_VSDK
-#include "S32vSAL/camera/vsdk.h"
+#include "S32vSAL/camera/vsdk.hpp"
 #endif
 #endif
 

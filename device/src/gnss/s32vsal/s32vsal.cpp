@@ -108,11 +108,16 @@ data::DeviceDataPtr S32VSal::fetch()
     derived_data->data.altitude = nav.altitude;
     derived_data->data.speed = nav.speed;
     derived_data->data.quality = static_cast<S32VSalData::QualityType>(nav.signal);
+    derived_data->data.pdop = nav.pdop;
+    derived_data->data.hdop = nav.hdop;
+    derived_data->data.vdop = nav.vdop;
     derived_data->data.latitude_valid = (nav.flags & GNSS_LAT) != 0;
     derived_data->data.longitude_valid = (nav.flags & GNSS_LON) != 0;
     derived_data->data.altitude_valid = (nav.flags & GNSS_ALT) != 0;
     derived_data->data.speed_valid = (nav.flags & GNSS_SPEED) != 0;
-
+    derived_data->data.pdop_valid = (nav.flags & GNSS_PDOP) != 0;
+    derived_data->data.hdop_valid = (nav.flags & GNSS_HDOP) != 0;
+    derived_data->data.vdop_valid = (nav.flags & GNSS_VDOP) != 0;
     return data;
 }
 

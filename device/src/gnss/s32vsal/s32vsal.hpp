@@ -59,10 +59,16 @@ public:
         double altitude;                  ///< Altitude over sea level, represented following WGS84 [m].
         double speed;                     ///< Horizontal speed [m/s].
         QualityType quality;              ///< Quality Indicators
+        double pdop;                      ///< Position Dilution of Precision
+        double hdop;                      ///< Horizontal Dilution of Precision
+        double vdop;                      ///< Vertical Dilution of Precision
         uint8_t latitude_valid;
         uint8_t longitude_valid;
         uint8_t altitude_valid;
         uint8_t speed_valid;
+        uint8_t pdop_valid;
+        uint8_t hdop_valid;
+        uint8_t vdop_valid;
     };
 
     ///

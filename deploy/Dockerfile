@@ -2,7 +2,7 @@
 # Copyright 2018 Wayz.ai. All Rights Reserved.
 #
 
-# TAG: v0.7
+# TAG: v0.8
 # Everytime this file is modified, please add TAG by 0.1
 
 FROM registry.newayz.com/autonomy/leta-localization_core:latest
@@ -67,6 +67,12 @@ COPY ./s32vsal.tar.xz ./
 COPY ./install-s32vsal.sh ./
 RUN ./install-s32vsal.sh && \
     rm -rf ./s32vsal.tar.xz
+
+# install s32v-libfast
+COPY ./libfast.tar.xz ./
+COPY ./install-s32v-libfast.sh ./
+RUN ./install-s32v-libfast.sh && \
+    rm -rf ./libfast.tar.xz
 
 # install git
 RUN apt-get update && \
