@@ -320,8 +320,6 @@ data::SensorDataPtr S32VGeely::do_convert(data::DeviceDataPtr& storage_data)
         return sensor_data;
     }
     default: {
-        auto timestamp_intrinsic_ns = raw_data->data.timestamp_ns;
-
         char buffer[64];
         sprintf(buffer,
                 "%02X %02X %02X %02X %02X %02X %02X %02X",
@@ -333,9 +331,7 @@ data::SensorDataPtr S32VGeely::do_convert(data::DeviceDataPtr& storage_data)
                 raw_data->data.data_can[5],
                 raw_data->data.data_can[6],
                 raw_data->data.data_can[7]);
-        log::debug << "UNKNOWN DATA: RECV_TIME: " << raw_data->get_timestamp_receive_ns()
-                   << ", CAN_TIME: " << timestamp_intrinsic_ns << ", CAN_ID: " << raw_data->data.id_can
-                   << ", CAN DLC: " << raw_data->data.dlc_can << ", PACKET: " << buffer << log::endl;
+
         return data::SensorData::broken_data();
     }
     }

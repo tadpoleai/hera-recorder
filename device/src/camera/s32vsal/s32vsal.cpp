@@ -196,7 +196,8 @@ data::DeviceDataPtr S32VSal::fetch()
         derived_data->data.image_data_size = ImageMonoDataSize_;
         log::debug << "Camrea/s32vsal frame count:" << frameSyncTimes.mFrmDoneCnt
                    << " , timestamp_capture_start_ns: " << derived_data->data.timestamp_capture_start_ns
-                   << " , timestamp_capture_end_ns: " << derived_data->data.timestamp_capture_end_ns << log::endl;
+                   << " , timestamp_capture_end_ns: " << derived_data->data.timestamp_capture_end_ns
+                   << " ,delta_ns: " << frameSyncTimes.delta_ns << log::endl;
         uint8_t* dst_ptr = derived_data->data.image_data;
         uint8_t* src_ptr = frame_data_;
         const uint8_t* SrcPtrEnd = frame_data_ + ImageYUVDataSize_;
@@ -263,7 +264,8 @@ data::DeviceDataPtr S32VSal::fetch()
         memcpy(derived_data->data.image_data, jpeg_image, jpeg_image_size);
         log::debug << "Camrea/s32vsal frame count:" << frameSyncTimes.mFrmDoneCnt
                    << " , timestamp_capture_start_ns: " << derived_data->data.timestamp_capture_start_ns
-                   << " , timestamp_capture_end_ns: " << derived_data->data.timestamp_capture_end_ns << log::endl;
+                   << " , timestamp_capture_end_ns: " << derived_data->data.timestamp_capture_end_ns
+                   << " ,delta_ns: " << frameSyncTimes.delta_ns << log::endl;
         tjDestroy(tj_instance);
         tjFree(jpeg_image);
         delete[] gray_image;

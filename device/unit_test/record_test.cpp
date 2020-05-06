@@ -1,4 +1,6 @@
 #include <atomic>
+#include <iostream>
+#include <string>
 
 #include "common/include/third_party/json.hpp"
 #include "device/include/device_factory.hpp"
@@ -53,19 +55,34 @@ int main(int argc, char** argv)
         auto storage = storage::StorageManager::open(storage_name, false);
         log::info << "Openned Storage '" << storage_name << "'" << log::endl;
 
-        auto ipc_queue = ipc::IPCQueue<device::data::SensorData>::create();
-        ipc_queue->open(0, ipc::OpenMode::Write, false);
+        std::vector<std::unique_ptr<ipc::IPCQueue<device::data::SensorData>>> ipc_queues;
+        for (const auto& ipc : profile_json["ipcs"]) {
+            auto ipc_queue = ipc::IPCQueue<device::data::SensorData>::create();
+            ipc_queue->open(ipc["key"], ipc::OpenMode::Write, true, ipc["length"], ipc["size"]);
+            log::info << "Create IPC, ipc key: " << ipc["key"] << " ipc length: " << ipc["length"]
+                      << " ipc size: " << ipc["size"] << log::endl;
+            ipc_queues.emplace_back(std::move(ipc_queue));
+        }
 
         uint32_t id = 0;
         std::vector<device::DevicePtr> devices;
         for (const auto& device : profile_json["devices"]) {
             std::string type = device["type"];
             std::string name = device["name"];
-            bool forward = device["forward"];
+            int32_t forward_index = device["forward"];
+            bool forward_bool = false;
+            ipc::IPCQueue<device::data::SensorData>* ipc_ptr = nullptr;
 
             log::info << "Adding device " << type << "/" << name << log::endl;
-            devices.emplace_back(
-                    device::DeviceFactory::create(id++, type, name, forward, ipc_queue.get(), storage.get()));
+
+            if (forward_index >= 0 && forward_index < (int32_t)ipc_queues.size()) {
+                ipc_ptr = ipc_queues[forward_index].get();
+                forward_bool = true;
+
+                log::info << "Registering ipc " << forward_index << " to device " << type << "/" << name << log::endl;
+            }
+
+            devices.emplace_back(device::DeviceFactory::create(id++, type, name, forward_bool, ipc_ptr, storage.get()));
 
             for (const auto& parameter : device["parameters"]) {
                 std::string type = parameter["type"];
@@ -106,7 +123,6 @@ int main(int argc, char** argv)
         }
 
         storage.reset();
-        ipc_queue.reset();
         log::flush();
         exit(0);
     } catch (std::exception& e) {
