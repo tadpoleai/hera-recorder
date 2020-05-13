@@ -60,6 +60,14 @@ public:
     }
 
     ///
+    /// @brief Force stop
+    ///
+    inline void stop() noexcept
+    {
+        running_ = false;
+    }
+
+    ///
     /// @brief Get member progress_
     ///
     inline time::Duration progress() const noexcept

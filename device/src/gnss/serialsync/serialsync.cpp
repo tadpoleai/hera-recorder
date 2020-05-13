@@ -279,6 +279,54 @@ data::SensorDataPtr Serialsync::do_convert(data::DeviceDataPtr& storage_data)
             throw std::runtime_error("Can not tokenize token 2");
         }
 
+        // Valid time info
+        if (token.size() == 0) {
+            throw std::runtime_error("Can not tokenize gpts '" + token + "'");
+        }
+
+        // Tokenize GPTS
+        auto hours = std::stoull(token.substr(0, 2));
+        auto minutes = std::stoull(token.substr(2, 2));
+        auto seconds = std::stoull(token.substr(4, 2));
+        uint64_t nanoseconds = 0;
+        if (token.size() != 6) {
+            if (token[6] != '.') {
+                throw std::runtime_error("Can not tokenize gpts '" + token + "'");
+            }
+            nanoseconds = std::stoull(token.substr(7));
+            switch (token.size()) {
+            case 8:                             // e.g. 121212.4
+                nanoseconds *= 100'000'000ULL;  // 100ms
+                break;
+            case 9:                            // e.g. 121212.45
+                nanoseconds *= 10'000'000ULL;  // 10ms
+                break;
+            case 10:                          // e.g. 121212.450
+                nanoseconds *= 1'000'000ULL;  // 1ms
+                break;
+            default:
+                throw std::runtime_error("Can not tokenize gpts '" + token + "'");
+            }
+        }
+
+        // Calculate original timestamp
+        uint64_t timestamp_nmea_original =
+                hours * time::OneHour + minutes * time::OneMinute + seconds * time::OneSecond + nanoseconds;
+        uint64_t days = raw_data->data.timestamp_intrinsic_ns / time::OneDay;
+        int64_t now_residual = int64_t(raw_data->data.timestamp_intrinsic_ns) - days * time::OneDay;
+
+        if (int64_t(timestamp_nmea_original) - now_residual > time::OneDay / 2) {
+            days -= 1;
+        } else if (int64_t(timestamp_nmea_original) - now_residual < -time::OneDay / 2) {
+            days += 1;
+        }
+
+        timestamp_nmea_original += days * time::OneDay;
+
+        log::debug << "SerialSync: TRON Time(t_i): " << raw_data->data.timestamp_intrinsic_ns
+                   << " GPS Time(T): " << timestamp_nmea_original << ", δ(t_i - T): "
+                   << ((int64_t)raw_data->data.timestamp_intrinsic_ns - (int64_t)timestamp_nmea_original) << log::endl;
+
         // Latitude (Token 3)
         if (!getline(nmea, token, ',')) {
             throw std::runtime_error("Can not tokenize token 3");

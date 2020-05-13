@@ -105,7 +105,7 @@ Converter::~Converter()
 void Converter::read_thread_function()
 {
     decltype(storage_->read()) data = nullptr;
-    while ((data = storage_->read())) {
+    while (running_ && (data = storage_->read())) {
         auto sensor_data = device::DeviceFactory::convert(data);
         if (sensor_data->sensor_data_type != device::SensorDataType::Broken) {
             try {
@@ -127,7 +127,7 @@ void Converter::read_thread_function()
 
 void Converter::bag_thread_function()
 {
-    while (true) {
+    while (running_) {
         auto message = std::move(receive());
         if (message->type != ROSMessageType::EndOfFile) {
             bag_ << std::move(message);
