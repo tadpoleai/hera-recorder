@@ -8,6 +8,8 @@
 using namespace wayz::hera;
 using namespace wayz::hera::replay;
 
+Replayer* g_replayer_ptr = nullptr;
+
 void print_help(char** argv)
 {
     std::cout << "usage:\t" << argv[0] << " -i <source_data> [-r <replay_rate>] [-pld] [-hv]" << std::endl;
@@ -16,6 +18,7 @@ void print_help(char** argv)
               << "\t-p\tFlag to really play\n"
               << "\t-l\tFlag to output log file\n"
               << "\t-d\tFlag to debug output\n"
+              << "\t-q\tFlag to off progress output\n"
               << "\t-h\tPrint this help and exit\n"
               << "\t-v\tPrint version and exit\n"
               << std::endl;
@@ -30,17 +33,33 @@ void print_version(char** argv)
     std::cout << "Copyright 2018 Wayz.ai. All Rights Reserved." << std::endl;
 }
 
+void sig_int_handler_func(int s)
+{
+    log::info << "Convert: Sigint Received, Stopping" << log::endl;
+    if (g_replayer_ptr) {
+        g_replayer_ptr->stop();
+    }
+    exit(0);
+}
+
 int main(int argc, char** argv)
 {
+    struct sigaction sig_int_handler;
+    sig_int_handler.sa_handler = sig_int_handler_func;
+    sigemptyset(&sig_int_handler.sa_mask);
+    sig_int_handler.sa_flags = 0;
+    sigaction(SIGINT, &sig_int_handler, NULL);
+
     std::string filename;
     bool islog = false;
     bool isverbose = false;
     bool isplay = false;
+    bool isquiet = false;
     double replay_rate = 1.0;
 
     // opterr = 0;
     while (true) {
-        switch (getopt(argc, argv, "i:o:r:pldhv")) {
+        switch (getopt(argc, argv, "i:o:r:pldqhv")) {
         case 'i':
             filename = optarg;
             continue;
@@ -60,6 +79,9 @@ int main(int argc, char** argv)
             continue;
         case 'd':
             isverbose = true;
+            continue;
+        case 'q':
+            isquiet = true;
             continue;
         case -1:
             break;
@@ -98,11 +120,16 @@ int main(int argc, char** argv)
 
     log::debug << "Replayer Start" << log::endl;
     auto handler = std::make_unique<Replayer>(filename, replay_rate, !isplay);
+    g_replayer_ptr = handler.get();
 
     log::flush();
 
     while (handler->running()) {
         usleep(1000);
+        if (isquiet) {
+            continue;
+        }
+
         time::Duration progress = handler->progress();
         std::cout << "\r";
         std::cout << "Replayer: " << progress << " of " << handler->total_duration();
