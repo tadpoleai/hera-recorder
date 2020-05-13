@@ -11,7 +11,6 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include <common/include/logger/logger.hpp>
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/server/TThreadedServer.h>
 #include <thrift/transport/TBufferTransports.h>
@@ -19,6 +18,12 @@
 #include <thrift/transport/THttpTransport.h>
 #include <thrift/transport/TServerSocket.h>
 
+#include "common/include/logger/logger.hpp"
+#include "common/include/third_party/json.hpp"
+#include "common/include/version.hpp"
+#include "device/include/version.hpp"
+#include "storage/include/version.hpp"
+//
 #include "service.hpp"
 
 using namespace ::apache::thrift;
@@ -52,23 +57,53 @@ int main(int argc, char** argv)
     sig_int_handler.sa_flags = 0;
     sigaction(SIGINT, &sig_int_handler, NULL);
 
-    std::string filename_prefix = "./";
-    std::string profile_json = "./profiles.json";
-    std::string log_file = "hera-daemon";
-    if (argc >= 2) {
-        filename_prefix = argv[1];
-    }
-    if (argc >= 3) {
-        profile_json = argv[2];
-    }
-    if (argc >= 4) {
-        log_file = argv[3];
+    if (argc != 2) {
+        std::cout << "Usage: " << argv[0] << " config.json" << std::endl;
+        exit(-1);
     }
 
-    log::init(log_file);
+    std::string storage_folder = "./";
+    std::string profile_json = "./profiles.json";
+    std::string log_prefix = "hera-daemon";
+    std::vector<daemon::RemoteServerType> remote_servers;
+
+    try {
+        std::ifstream i(argv[1]);
+        json config;
+        i >> config;
+
+        storage_folder = config["storageFolder"];
+        std::cout << "StorageFolder = " << storage_folder << std::endl;
+
+        profile_json = config["profileJson"];
+        std::cout << "ProfileJson = " << profile_json << std::endl;
+
+        log_prefix = config["logPrefix"];
+        std::cout << "LogPrefix = " << log_prefix << std::endl;
+
+        log::init(log_prefix);
+
+        log::info << "libhera-common: " << common::get_version() << log::endl;
+        log::info << "libhera-device: " << device::get_version() << log::endl;
+        log::info << "libhera-storage: " << storage::get_version() << log::endl;
+        log::info << "Copyright 2018 Wayz.ai. All Rights Reserved." << log::endl;
+
+        for (const auto& ur_json : config["remoteServers"]) {
+            daemon::RemoteServerType ur;
+            ur.remark = ur_json["remark"];
+            ur.protocol = ur_json["protocol"];
+            ur.destination = ur_json["destination"];
+
+            std::cout << "RemoteServer: " << ur_json << std::endl;
+            remote_servers.emplace_back(std::move(ur));
+        }
+    } catch (std::exception& e) {
+        std::cout << "Error occured when parsing json file " << argv[1] << ": " << e.what() << std::endl;
+        exit(-1);
+    }
 
     int port = 9090;
-    std::shared_ptr<daemon::Service> handler(new daemon::Service(filename_prefix, profile_json));
+    std::shared_ptr<daemon::Service> handler(new daemon::Service(storage_folder, profile_json, remote_servers));
     g_handler_ptr = handler.get();
     std::shared_ptr<TProcessor> processor(new daemon::ServiceProcessor(handler));
     std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));

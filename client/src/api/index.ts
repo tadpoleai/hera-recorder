@@ -36,21 +36,38 @@ const status = {
       devices: []
     }),
     profileAddOrEdit: false,
-    executor: 'NoName',
-    place: 'NoPlace',
-    useSlam: true
+    operatorInfo: new Hera.OperatorInfo({
+      storagePath: '',
+      operatorName: '',
+      place: '',
+      slam: false
+    })
   },
   remoteConnected: false,
   remoteStatus: new Hera.Status({
     started: false,
     recording: false,
-    storageName: '',
+    operatorInfo: new Hera.OperatorInfo({
+      storagePath: '',
+      operatorName: '',
+      place: '',
+      slam: false
+    }),
     diskUsedSpaceKB: 0,
     diskTotalSpaceKB: 0,
     devices: [],
     profiles: [],
     profileIndex: 0,
     meta: new Hera.Meta({ deviceTypeMetas: [] })
+  }),
+  storageInfo: new Hera.StorageInfo({
+    storageRecordFiles: [],
+    diskTotalSpaceKB: 0,
+    diskUsedSpaceKB: 0
+  }),
+  uploadInfo: new Hera.UploadInfo({
+    uploadProcesses: [],
+    remoteServers: []
   }),
   deviceDatas: new Array<Hera.DeviceData>(),
   slamResultValid: false,
@@ -94,6 +111,7 @@ function apiWrapper<T0, T1>(apiName: string) {
         case 'get':
           result = await client.get();
           if (((arg0 as unknown) as boolean) == true) {
+            status.local.operatorInfo = result.status.operatorInfo;
             status.local.profiles = result.status.profiles;
             status.local.profileIndex = result.status.profileIndex;
           }
@@ -102,7 +120,7 @@ function apiWrapper<T0, T1>(apiName: string) {
           resolve({ error: result.error, reason: result.reason });
           break;
         case 'start':
-          result = await client.start((arg0 as unknown) as string, (arg1 as unknown) as boolean);
+          result = await client.start((arg0 as unknown) as Hera.OperatorInfo);
           status.remoteStatus = result.status;
           status.remoteConnected = true;
           resolve({ error: result.error, reason: result.reason });
@@ -145,7 +163,55 @@ function apiWrapper<T0, T1>(apiName: string) {
           }
           resolve({ error: resultData.error, reason: resultData.reason });
           break;
+        case 'getStorage':
+          status.storageInfo = await client.getStorage();
+          console.log(status.storageInfo);
+          resolve({ error: 0, reason: '' });
+          break;
+        case 'deleteStorage':
+          status.storageInfo = await client.deleteStorage((arg0 as unknown) as string);
+          console.log(status.storageInfo);
+          resolve({ error: 0, reason: '' });
+          break;
+        case 'getUploadInfo':
+          status.uploadInfo = await client.getUploadInfo();
+          console.log(status.uploadInfo);
+          resolve({ error: 0, reason: '' });
+          break;
+        case 'startUpload':
+          status.uploadInfo = await client.operateUpload(
+            Hera.UploadOperationType.Start,
+            (arg0 as unknown) as Hera.UploadRequest
+          );
+          console.log(status.uploadInfo);
+          resolve({ error: 0, reason: '' });
+          break;
+        case 'completeUpload':
+          status.uploadInfo = await client.operateUpload(
+            Hera.UploadOperationType.Complete,
+            (arg0 as unknown) as Hera.UploadRequest
+          );
+          console.log(status.uploadInfo);
+          resolve({ error: 0, reason: '' });
+          break;
+        case 'retryUpload':
+          status.uploadInfo = await client.operateUpload(
+            Hera.UploadOperationType.Retry,
+            (arg0 as unknown) as Hera.UploadRequest
+          );
+          console.log(status.uploadInfo);
+          resolve({ error: 0, reason: '' });
+          break;
+        case 'abortUpload':
+          status.uploadInfo = await client.operateUpload(
+            Hera.UploadOperationType.Abort,
+            (arg0 as unknown) as Hera.UploadRequest
+          );
+          console.log(status.uploadInfo);
+          resolve({ error: 0, reason: '' });
+          break;
         default:
+          console.log('Invalid Operation');
           break;
       }
       resolve({ error: 20, reason: '非法操作' });
@@ -161,12 +227,19 @@ export function formatResult(result: PureResult) {
 
 const Api = {
   get: apiWrapper<boolean, void>('get'),
-  start: apiWrapper<string, boolean>('start'),
+  start: apiWrapper<Hera.OperatorInfo, void>('start'),
   stop: apiWrapper<void, void>('stop'),
   record: apiWrapper<boolean, void>('record'),
   adjustParameters: apiWrapper<number, Array<Hera.Parameter>>('adjustParameters'),
   updateProfiles: apiWrapper<void, void>('updateProfiles'),
   getData: apiWrapper<void, void>('getData'),
+  getStorage: apiWrapper<void, void>('getStorage'),
+  deleteStorage: apiWrapper<string, void>('deleteStorage'),
+  getUploadInfo: apiWrapper<void, void>('getUploadInfo'),
+  startUpload: apiWrapper<Hera.UploadRequest, void>('startUpload'),
+  completeUpload: apiWrapper<Hera.UploadRequest, void>('completeUpload'),
+  retryUpload: apiWrapper<Hera.UploadRequest, void>('retryUpload'),
+  abortUpload: apiWrapper<Hera.UploadRequest, void>('abortUpload'),
   config,
   formatResult
 };

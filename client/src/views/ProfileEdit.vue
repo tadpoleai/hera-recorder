@@ -1,7 +1,5 @@
 <template lang="pug">
 div
-  van-nav-bar(title="编辑配置" left-arrow @click-left="clickNavBack()")
-
   van-cell-group(title="基本信息")
     van-field(v-model="status.local.profileToEdit.author"
       placeholder="请输入创建人" label="创建人")
@@ -74,7 +72,7 @@ export default class ProfileEdit extends Vue {
     this.deviceTypeMetas = this.status.remoteStatus.meta.deviceTypeMetas.slice();
   }
 
-  async clickNavBack() {
+  async beforeDestroy() {
     if (this.status.local.profileAddOrEdit) {
       if (this.status.local.profileToEdit.name) {
         this.status.local.profiles.push(Object.assign(this.status.local.profileToEdit));
@@ -90,7 +88,6 @@ export default class ProfileEdit extends Vue {
     } else {
       Toast.success('配置更新成功');
     }
-    this.$router.back();
   }
 
   clickSelectDeviceType(meta: Hera.DeviceTypeMeta) {

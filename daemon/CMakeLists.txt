@@ -47,5 +47,9 @@ install(
   PERMISSIONS OWNER_EXECUTE OWNER_READ
   DESTINATION bin)
 install(
+  FILES config/daemon.json
+  PERMISSIONS OWNER_READ
+  DESTINATION /var/hera)
+install(
   CODE "execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/script/install-extra.sh)"
 )

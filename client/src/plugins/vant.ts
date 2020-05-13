@@ -5,6 +5,7 @@ import {
   Button,
   Cell,
   CellGroup,
+  Col,
   Collapse,
   CollapseItem,
   Dialog,
@@ -16,11 +17,15 @@ import {
   Image,
   NavBar,
   NoticeBar,
+  Overlay,
   Panel,
   Picker,
+  Popup,
   Progress,
   Radio,
   RadioGroup,
+  Row,
+  Sticky,
   SwipeCell,
   Switch,
   Toast
@@ -30,6 +35,7 @@ Vue.use(ActionSheet);
 Vue.use(Button);
 Vue.use(Cell);
 Vue.use(CellGroup);
+Vue.use(Col);
 Vue.use(Collapse);
 Vue.use(CollapseItem);
 Vue.use(Dialog);
@@ -41,11 +47,15 @@ Vue.use(Icon);
 Vue.use(Image);
 Vue.use(NavBar);
 Vue.use(NoticeBar);
+Vue.use(Overlay);
 Vue.use(Panel);
 Vue.use(Picker);
+Vue.use(Popup);
 Vue.use(Progress);
 Vue.use(Radio);
 Vue.use(RadioGroup);
+Vue.use(Row);
+Vue.use(Sticky);
 Vue.use(SwipeCell);
 Vue.use(Switch);
 Vue.use(Toast);

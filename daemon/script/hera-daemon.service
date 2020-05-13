@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 PIDFile=/run/hera-daemon.pid
-ExecStart=/usr/local/bin/hera-daemon /var/hera/data/ /var/hera/profiles.json /var/hera/logs/hera-daemon > /dev/null 2>&1 & 
+ExecStart=/usr/local/bin/hera-daemon /var/hera/daemon.json > /dev/null 2>&1 & 
 Restart=on-failure
 RestartSec=42s
 User=root

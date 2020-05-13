@@ -89,6 +89,9 @@ if [[ $ans = [yY] ]]; then
     sudo mkdir -p /var/hera/data
     sudo mkdir -p /var/hera/logs
 
+    # Copy Config json
+    sudo cp shared/config/daemon.json /var/hera
+
     # Enable boot-up hera-daemon
     sudo systemctl enable hera-daemon.service
 fi

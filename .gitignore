@@ -73,6 +73,10 @@ gen-js/
 gen-ts/
 gen-cpp/
 
+# Git Info
+git_info.ts
+git_info.cpp
+
 # MacOS
 .DS_Store
 

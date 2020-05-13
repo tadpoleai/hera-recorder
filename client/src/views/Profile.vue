@@ -1,7 +1,5 @@
 <template lang="pug">
 div
-  van-nav-bar(title="选择配置" left-arrow @click-left="clickNavBack()")
-
   van-cell-group
     template(slot="title")
       div(style="display: flex; justify-content: space-between;")
@@ -20,7 +18,8 @@ div
         template(slot="right")
           van-button(square type="danger" text="删除" @click="clickDeleteProfile(index)")
         template(slot="left")
-          van-button(square type="primary" text="编辑" @click="clickEditProfile(index)")
+          van-button(square type="info" text="编辑" @click="clickEditProfile(index)")
+          van-button(square type="primary" text="复制" @click="clickDuplicateProfile(index)")
 </template>
 
 <script lang="ts">
@@ -29,10 +28,6 @@ import { Hera, Api, status } from '@/api';
 
 @Component({})
 export default class Profile extends Vue {
-  clickNavBack() {
-    this.$router.back();
-  }
-
   clickAddProfile() {
     this.status.local.profileToEdit = new Hera.Profile({
       author: '',
@@ -47,6 +42,13 @@ export default class Profile extends Vue {
     this.status.local.profileToEdit = this.status.local.profiles[index];
     this.status.local.profileAddOrEdit = false;
     this.$router.push('profile/edit');
+  }
+
+  clickDuplicateProfile(index: number) {
+    const profile = new Hera.Profile(Object.assign(this.status.local.profiles[index]));
+    profile.name = profile.name + '_Duplicate';
+    this.status.local.profiles.splice(index + 1, 0, profile);
+    Api.updateProfiles();
   }
 
   clickDeleteProfile(index: number) {
