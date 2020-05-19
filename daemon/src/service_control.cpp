@@ -16,9 +16,10 @@ namespace wayz {
 namespace hera {
 namespace daemon {
 
-void Service::start(Result& result, const std::string& storageName, const bool useSlam)
+void Service::start(Result& result, const OperatorInfo& operator_info)
 {
-    log::info << "Daemon::start called with storageName = " << storageName << log::endl;
+    log::info << "Daemon::start called with op = " << operator_info.operatorName << ", place = " << operator_info.place
+              << log::endl;
 
     std::unique_lock<std::mutex> _(mutex_);
     // Check if already started
@@ -37,16 +38,22 @@ void Service::start(Result& result, const std::string& storageName, const bool u
         return handle_error(result, HeraErrno::EmptyDeviceList, "Devices in given profile is empty");
     }
 
-    // Check if storage filename is valid
-    std::regex storage_name_regex("[a-zA-Z0-9_]{1,64}");
-    if (!std::regex_match(storageName, storage_name_regex)) {
+    // Check if filename is valid
+    std::regex name_regex("[a-zA-Z0-9_]{1,64}");
+    if (!std::regex_match(operator_info.operatorName, name_regex)) {
         return handle_error(result,
                             HeraErrno::InvalidStorageFileName,
-                            "StorageName given '" + storageName + "' is invalid");
+                            "OperatorName given '" + operator_info.operatorName + "' is not safe, use [a-zA-Z0-9_]");
     }
+    if (!std::regex_match(operator_info.place, name_regex)) {
+        return handle_error(result,
+                            HeraErrno::InvalidStorageFileName,
+                            "Place given '" + operator_info.place + "' is not safe, use [a-zA-Z0-9_]");
+    }
+
     auto now = time::Timestamp::now();
     start_time_sec_ = now.tv_sec;
-    storage_name_ = now.to_datetime() + "_" + storageName;
+    auto storage_name = now.to_datetime() + "_" + operator_info.operatorName + "_" + operator_info.place;
 
     // Precheck device list for type and name
     std::regex device_name_regex("[a-zA-Z0-9_]{1,32}");
@@ -72,7 +79,7 @@ void Service::start(Result& result, const std::string& storageName, const bool u
 
     // Start calling factory function
     auto device_id = 0;
-    std::string full_storage_name = FileNamePrefix_ + storage_name_ + FileNameSuffix_;
+    std::string full_storage_name = StorageFolder_ + "/" + storage_name + FileNameSuffix_;
     storage_ = storage::StorageManager::open(full_storage_name, false);
     for (const auto& device : profile.devices) {
         devices_.emplace_back(device::DeviceFactory::create(
@@ -113,12 +120,13 @@ void Service::start(Result& result, const std::string& storageName, const bool u
         }
     }
 
-    use_slam_ = useSlam;
+    operator_info_ = operator_info;
+    operator_info_.storagePath = storage_name;
 
     if (failed) {
         return handle_error(result, HeraErrno::CanNotConnectDevices, std::move(reason), true);
     } else {
-        if (use_slam_) {
+        if (operator_info_.slam) {
 #ifdef WITH_SLAM
             if (system("hera-slam-caller-start") != 0) {
                 log::warn << "Daemon:: Something wrong with slam start" << log::endl;
@@ -144,7 +152,7 @@ void Service::stop(Result& result)
     log::debug << "Daemon::calling device reset" << log::endl;
     reset();
 
-    if (use_slam_) {
+    if (operator_info_.slam) {
 #ifdef WITH_SLAM
         log::debug << "Daemon:: calling slam stop" << log::endl;
         if (system("hera-slam-caller-stop") != 0) {

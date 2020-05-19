@@ -1,7 +1,5 @@
 <template lang="pug">
 .home
-  van-nav-bar(title="HERA采集软件")
-
   van-cell-group(title="控制")
     van-cell(title="连接传感器" center)
       van-switch(
@@ -20,17 +18,21 @@
         :loading="isSwitchRecordLoading"
         size="24")
 
-  van-cell-group(
-    v-if="status.remoteStatus.started"
-    title="监视")
+  van-cell-group(title="数据")
     van-cell(
-      title="监视数据"
+      v-if="status.remoteStatus.started"
+      title="数据监视"
       is-link
       to="monitor")
-
-  van-cell-group(title="设置")
     van-cell(
-      title="配置"
+      v-else
+      title="数据管理"
+      is-link
+      to="storage")
+
+  van-cell-group(title="采集设置")
+    van-cell(
+      title="传感器配置"
       :is-link="!status.remoteStatus.started"
       :value="profileName"
       @click="clickProfile()"
@@ -38,21 +40,22 @@
     van-cell(title="在线建图" center)
       van-switch(
         slot="right-icon"
-        v-model="status.local.useSlam"
+        v-model="status.local.operatorInfo.slam"
         :disabled="status.remoteStatus.started"
         size="24")
     van-field(
-      v-model="status.local.executor"
+      v-model="status.local.operatorInfo.operatorName"
       :disabled="status.remoteStatus.started"
       placeholder="请输入采集人"
       label="采集人"
       input-align="right")
     van-field(
-      v-model="status.local.place"
+      v-model="status.local.operatorInfo.place"
       :disabled="status.remoteStatus.started"
       placeholder="请输入采集地点"
       label="采集地点"
       input-align="right")
+
 </template>
 
 <script lang="ts">
@@ -63,9 +66,21 @@ import { Toast } from 'vant';
 @Component({})
 export default class Home extends Vue {
   onClickSwitchStart(checked: boolean) {
-    this.isSwitchStartLoading = true;
     if (checked) {
-      Api.start(this.status.local.executor + '_' + this.status.local.place, this.status.local.useSlam).then(result => {
+      if (!this.status.local.operatorInfo.operatorName) {
+        return Toast.fail({
+          message: '请输入采集人'
+        });
+      }
+
+      if (!this.status.local.operatorInfo.place) {
+        return Toast.fail({
+          message: '请输入采集地点'
+        });
+      }
+
+      this.isSwitchStartLoading = true;
+      Api.start(this.status.local.operatorInfo).then(result => {
         if (result.error !== 0) {
           Toast.fail({
             message: Api.formatResult(result),
@@ -78,6 +93,7 @@ export default class Home extends Vue {
         this.isSwitchStartLoading = false;
       });
     } else {
+      this.isSwitchStartLoading = true;
       Api.stop().then(result => {
         this.isSwitchStartLoading = false;
       });

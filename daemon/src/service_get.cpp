@@ -24,7 +24,7 @@ void Service::append_status(Result& result)
 {
     result.status.started = started_;
     result.status.recording = recording_;
-    result.status.storageName = storage_name_;
+    result.status.operatorInfo = operator_info_;
     result.status.meta = meta_;
 
     std::vector<std::future<DeviceStatus>> promises;
@@ -52,7 +52,7 @@ void Service::append_status(Result& result)
         log::error << "Daemon::Can not get profiles" << log::endl;
     }
 
-    auto statfs = file::get_filesystem_status(FileNamePrefix_);
+    auto statfs = file::get_filesystem_status(StorageFolder_);
     if (statfs.opened) {
         result.status.diskUsedSpaceKB = statfs.used_space / 1024;
         result.status.diskTotalSpaceKB = statfs.total_space / 1024;

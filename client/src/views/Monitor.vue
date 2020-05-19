@@ -1,7 +1,5 @@
 <template lang="pug">
-.monitor
-  van-nav-bar(title="HERA监视数据" left-arrow @click-left="clickNavBack()")
-
+.monitor(v-resize:throttle="onResize")
   van-cell-group(title="采集信息")
     van-cell
       div(style="display: flex; justify-content: space-between;")
@@ -18,9 +16,10 @@
         stroke-width="8")
 
   van-cell-group(title="传感器数据")
-    van-grid(column-num="2")
+    van-grid(:column-num="columnNum")
       van-grid-item.device-grid-item(
         v-for="(dd, index) in status.deviceDatas"
+        @click="onClickData(index)"
       )
         van-panel.device-panel
           van-cell(slot="header")
@@ -36,22 +35,55 @@
             p.pdata(v-for="line in renderStringData(dd.data)") {{line}}
 
   van-cell-group(
-    v-if="status.slamResultValid"
-    title="实时建图")
-    img.device-data-image(:ref="'imageslam'")
+    v-if="status.local.operatorInfo.slam"
+    title="实时建图"
+  )
+    img.device-data-image(
+      v-if="status.slamResultValid"
+      :ref="'imageslam'"
+    )
+    van-empty(
+      v-else
+      image="error"
+      description="尚无建图结果"
+    )
+  
+  van-overlay(
+    v-if="dataDetailIndex >= 0"
+    :show="showDataDetail"
+    @click="onClickData(-1)"
+  )
+    .data-detail-wrapper
+      .data-detail
+        van-panel.device-panel
+          van-cell(slot="header")
+            div()
+              span {{status.deviceDatas[dataDetailIndex].type + '/' + status.deviceDatas[dataDetailIndex].name}}
+            div(style="display: flex; justify-content: space-between;")
+              span(style="font-size: 90%;") {{status.deviceDatas[dataDetailIndex].sequence}}
+              span(style="font-size: 90%;") {{renderFrequency(status.deviceDatas[dataDetailIndex].frequency)}}
+              span(style="font-size: 90%;") {{(status.deviceDatas[dataDetailIndex].dataSizeKB / 1024).toFixed(1) + 'M'}}
+
+          img.device-data-image(
+            v-if="status.deviceDatas[dataDetailIndex].isJpeg"
+            :ref="'imageDetail'")
+          template(v-else)
+            p.pdata(
+              v-for="line in renderStringData(status.deviceDatas[dataDetailIndex].data)"
+            ) {{line}}
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Hera, Api, status } from '@/api';
 import { Toast } from 'vant';
+import { durationFormat } from '@/utils';
+import resize from 'vue-resize-directive';
 
-@Component({})
-export default class Home extends Vue {
-  clickNavBack() {
-    this.$router.back();
-  }
-
+@Component({
+  directives: { resize: resize }
+})
+export default class Monitor extends Vue {
   constructor() {
     super();
     this.updateData();
@@ -62,15 +94,36 @@ export default class Home extends Vue {
     clearInterval(this.intervalHandler);
   }
 
+  onResize() {
+    if (document.body.clientWidth < 600) {
+      this.columnNum = 2;
+    } else if (document.body.clientWidth < 1200) {
+      this.columnNum = 3;
+    } else if (document.body.clientWidth < 1600) {
+      this.columnNum = 4;
+    } else {
+      this.columnNum = 6;
+    }
+  }
+
+  onClickData(index: number) {
+    this.dataDetailIndex = index;
+  }
+
   async updateData() {
     await Api.getData();
     for (let i = 0; i < this.status.deviceDatas.length; i += 1) {
       if (this.status.deviceDatas[i].isJpeg) {
-        let img = new Image();
+        const img = new Image();
         img.src = 'data:image/jpg;base64,' + this.status.deviceDatas[i].data.toString('base64');
         img.onload = () => {
           if (this.$refs['image' + i] && (this.$refs['image' + i] as Element[])[0]) {
             ((this.$refs['image' + i] as Element[])[0] as any).src = img.src;
+          }
+          if (i == this.dataDetailIndex) {
+            if (this.$refs['imageDetail']) {
+              ((this.$refs['imageDetail'] as Element) as any).src = img.src;
+            }
           }
         };
       }
@@ -106,23 +159,8 @@ export default class Home extends Vue {
   }
 
   get timeFromStart() {
-    const totalSec = this.status.nowTimeSec - this.status.startTimeSec;
-    const s = totalSec % 60;
-    let ret = s + '秒 ';
-    if (totalSec > 60) {
-      const m = Math.floor(totalSec / 60) % 60;
-      ret = m + '分 ' + ret;
-    }
-    if (totalSec > 3600) {
-      const h = Math.floor(totalSec / 3600) % 24;
-      ret = h + '小时 ' + ret;
-    }
-    if (totalSec > 86400) {
-      const d = Math.floor(totalSec / 86400);
-      ret = d + '天 ' + ret;
-    }
-
-    return ret;
+    const duration = this.status.nowTimeSec - this.status.startTimeSec;
+    return durationFormat(duration);
   }
 
   get diskVolumePercent() {
@@ -136,19 +174,25 @@ export default class Home extends Vue {
   get diskVolume() {
     return (
       (this.status.remoteStatus.diskUsedSpaceKB / 1024 / 1024).toFixed(3) +
-      'GB / ' +
+      'GiB / ' +
       (this.status.remoteStatus.diskTotalSpaceKB / 1024 / 1024).toFixed(3) +
-      'GB'
+      'GiB'
     );
   }
+
+  columnNum = 2;
 
   status = status;
 
   intervalHandler!: NodeJS.Timeout;
+
+  showDataDetail = true;
+
+  dataDetailIndex = -1;
 }
 </script>
 
-<style lang="stylus">
+<style lang="stylus" scoped>
 .van-grid-item__content
   padding 0 0 0 0 !important
 
@@ -162,4 +206,15 @@ export default class Home extends Vue {
 
 .device-data-image
   width 100%
+
+.data-detail-wrapper
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+
+.data-detail {
+    width: 95vw;
+    background-color: #fff;
+  }
 </style>

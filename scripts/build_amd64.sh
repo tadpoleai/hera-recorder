@@ -69,6 +69,7 @@ cp -r ../daemon/script/* ../artifacts/amd64/script/daemon
 
 # Shared
 cp -r ../convert/config ../artifacts/amd64/shared
+cp -r ../daemon/config ../artifacts/amd64/shared
 cp -r ../slam/carto ../artifacts/amd64/shared
 cp -r ../cmake/FindHera.cmake ../artifacts/amd64/shared
 

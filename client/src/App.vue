@@ -7,23 +7,47 @@ div
     color="black"
   )
 
+  van-sticky
+    van-nav-bar(
+      :title="'HERA' + $router.history.current.name"
+      :left-arrow="$router.history.current.path != '/'"
+      @click-left="onClickNavBack()"
+      @click-right="onClickInfo()"
+    )
+      van-icon(
+        slot="right"
+        name="question-o"
+        size="18"
+      )
+
   router-view(v-if="status.remoteConnected")
 
   template(v-else)
-    van-nav-bar(title="HERA采集软件")
-    van-empty(image="network"
-    :description="messageConnection")
+    van-empty(
+      image="network"
+      :description="messageConnection"
+    )
+  
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { Api, status } from '@/api';
-import { Toast } from 'vant';
+import { Toast, Dialog } from 'vant';
+import { GitVersion } from '../git_info';
 
 @Component({})
 export default class ProfileEdit extends Vue {
   created() {
-    this.$router.replace({ path: '/' });
+    (this.$router as any).history.current!.path !== '/' && this.$router.replace({ path: '/' });
+  }
+
+  onClickNavBack() {
+    this.$router.back();
+  }
+
+  onClickInfo() {
+    Dialog({ title: 'HERA采集软件', message: '客户端版本\n' + GitVersion + '\n版权信息\nCopyright 2018 Wayz.ai. All Rights Reserved.' });
   }
 
   async mounted() {
@@ -49,9 +73,9 @@ export default class ProfileEdit extends Vue {
 
   get noticeBarText() {
     if (this.status.remoteStatus.recording) {
-      return '保存中 > ' + this.status.remoteStatus.storageName;
+      return '保存中 > ' + this.status.remoteStatus.operatorInfo.storagePath;
     } else {
-      return '未保存 > ' + this.status.remoteStatus.storageName;
+      return '未保存 > ' + this.status.remoteStatus.operatorInfo.storagePath;
     }
   }
 
@@ -72,12 +96,15 @@ export default class ProfileEdit extends Vue {
 </script>
 
 <style lang="stylus">
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+html
+  height: 100%
+  background-color: #f7f8fa
+
+#app
+  font-family: Avenir, Helvetica, Arial, sans-serif
+  -webkit-font-smoothing: antialiased
+  -moz-osx-font-smoothing: grayscale
+  text-align: center
+  color: #2c3e50
+  margin-top: 60px
 </style>

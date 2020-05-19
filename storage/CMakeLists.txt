@@ -8,7 +8,7 @@ include("../deploy/cmake/cpp_common.cmake")
 find_package(Threads REQUIRED)
 include_directories(include .. ${CMAKE_BINARY_DIR})
 
-file(GLOB_RECURSE ALL_SRC "src/*.cpp")
+file(GLOB_RECURSE ALL_SRC "src/*.cpp" "src/**/*.cpp")
 add_library(${PROJECT_NAME} SHARED ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} hera-common Threads::Threads)
 
