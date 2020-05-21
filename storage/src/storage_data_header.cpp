@@ -24,24 +24,38 @@ namespace wayz {
 namespace hera {
 namespace storage {
 
-constexpr std::array<char, 16> StorageDataHeader::Magic = {"HERA_STORAGE_V3"};
+constexpr std::array<char, 16> StorageDataHeader::MagicV3 = {"HERA_STORAGE_V3"};
 
-StorageDataHeader::StorageDataHeader() : timestamp_start(0), timestamp_end(0) {}
+constexpr std::array<char, 16> StorageDataHeader::MagicV4 = {"HERA_STORAGE_V4"};
 
-StorageDataHeaderPtr StorageDataHeader::read_from(std::ifstream& ifs)
+StorageDataHeader::StorageDataHeader(const int32_t version, const bool is_extra, const bool is_logs) :
+    Version(version),
+    IsExtra(is_extra || is_logs),
+    IsLogs(is_logs),
+    timestamp_start(0),
+    timestamp_end(0),
+    extra_info(nlohmann::json::parse("{}"))
+{}
+
+StorageDataHeaderPtr StorageDataHeader::read_from(std::ifstream& ifs, const bool is_extra, const bool is_logs)
 {
     try {
-        std::remove_const_t<decltype(Magic)> magic;
+        std::remove_const_t<decltype(MagicV3)> magic;
         ifs.read(magic.data(), magic.size());
         if (ifs.gcount() != sizeof(magic)) {
             throw std::runtime_error("Can not read magic");
         }
 
-        if (magic != Magic) {
+        int32_t version = 0;
+        if (magic == MagicV3) {
+            version = 3;
+        } else if (magic == MagicV4) {
+            version = 4;
+        } else {
             throw std::runtime_error("Magic does not match. This does not appear to be a wayz-hera record file");
         }
 
-        auto header = std::make_shared<StorageDataHeader>();
+        auto header = std::make_shared<StorageDataHeader>(version, is_extra, is_logs);
 
         ifs.read((char*)&header->timestamp_start, sizeof(header->timestamp_start));
         if (ifs.gcount() != sizeof(header->timestamp_start)) {
@@ -96,8 +110,72 @@ StorageDataHeaderPtr StorageDataHeader::read_from(std::ifstream& ifs)
             header->device_names.emplace_back(std::move(device_name));
         }
 
-        return header;
+        if (version == 3) {
+            return header;
+        }
 
+        // V4
+
+        // Read Extra Info
+        if (!is_extra && !is_logs) {
+            ifs.seekg(ReservedLength, std::ios::beg);
+            return header;
+        }
+
+        uint32_t extra_info_size = 0;
+        ifs.read((char*)&extra_info_size, sizeof(extra_info_size));
+        if (ifs.gcount() != sizeof(extra_info_size)) {
+            throw std::runtime_error("Can not read extra info size");
+        }
+        if (extra_info_size > ReservedLength) {
+            throw std::runtime_error("Invalid Extra Info Size");
+        }
+
+        std::string extra_info_str;
+        extra_info_str.resize(extra_info_size);
+        ifs.read((char*)(extra_info_str.data()), extra_info_size);
+        header->extra_info = nlohmann::json::parse(extra_info_str);
+
+        // Read Log Info
+        if (!is_logs) {
+            ifs.seekg(ReservedLength, std::ios::beg);
+            return header;
+        }
+
+        while (true) {
+            log::impl::LogString log_string;
+
+            ifs.read((char*)(&log_string.level), sizeof(log_string.level));
+            if (ifs.gcount() != sizeof(log_string.level)) {
+                throw std::runtime_error("Can not read log");
+            }
+            if (log::LogLevel::Reserved == log_string.level) {
+                break;
+            }
+
+            uint64_t ts;
+            ifs.read((char*)(&ts), sizeof(ts));
+            if (ifs.gcount() != sizeof(ts)) {
+                throw std::runtime_error("Can not read log");
+            }
+            log_string.ts = ts;
+
+            int32_t str_length;
+            ifs.read((char*)(&str_length), sizeof(str_length));
+            if (ifs.gcount() != sizeof(str_length)) {
+                throw std::runtime_error("Can not read log");
+            }
+
+            log_string.str.resize(str_length);
+            ifs.read((char*)log_string.str.data(), str_length);
+            if (ifs.gcount() != str_length) {
+                throw std::runtime_error("Can not read log");
+            }
+
+            header->logs.emplace_back(std::move(log_string));
+        }
+
+        return header;
     } catch (std::exception& e) {
         log::error << "Storage: Error read from storage. " << e.what() << log::endl;
         return nullptr;
@@ -108,8 +186,15 @@ size_t StorageDataHeader::write_to(std::ofstream& ofs) const
 {
     try {
         uint32_t length_written = 0;
-        ofs.write((char*)Magic.data(), Magic.size());  // Magic;
-        length_written += Magic.size();
+        if (Version == 3) {
+            ofs.write((char*)MagicV3.data(), MagicV3.size());  // Magic;
+            length_written += MagicV3.size();
+        } else if (Version == 4) {
+            ofs.write((char*)MagicV4.data(), MagicV4.size());  // Magic;
+            length_written += MagicV4.size();
+        } else {
+            throw std::runtime_error("Invalid Storage Version");
+        }
 
         ofs.write((char*)&timestamp_start, sizeof(timestamp_start));
         length_written += sizeof(timestamp_start);
@@ -138,17 +223,77 @@ size_t StorageDataHeader::write_to(std::ofstream& ofs) const
             length_written += device_name_length;
         }
 
-        return length_written;
+        if (Version == 3) {
+            return length_written;
+        }
 
+        if (!IsExtra) {
+            ofs.seekp(ReservedLength, std::ios::beg);
+            return length_written;
+        }
+
+        // Write V4
+
+        // Write Extra Info
+        std::string extra_info_str = extra_info.dump(-1, 0, false, nlohmann::json::error_handler_t::ignore);
+        uint32_t extra_info_size = extra_info_str.size();
+        if (extra_info_str.size() + length_written > ReservedLength) {
+            log::error << "Storage: Too long extra info when calling write_to" << log::endl;
+            extra_info_size = ReservedLength;
+            ofs.write((char*)&extra_info_size, sizeof(extra_info_size));
+            ofs.seekp(ReservedLength, std::ios::beg);
+            return length_written;
+        }
+
+        ofs.write((char*)&extra_info_size, sizeof(extra_info_size));
+        ofs.write((char*)extra_info_str.data(), extra_info_size);
+        length_written += extra_info_size + sizeof(extra_info_size);
+
+        if (!IsLogs) {
+            ofs.seekp(ReservedLength, std::ios::beg);
+            return length_written;
+        }
+
+        // Write Log Info
+        for (const auto& log_string : logs) {
+            uint32_t log_string_size = log_string.str.size();
+
+            if (log_string_size + length_written + 64 > ReservedLength) {
+                uint64_t Zero = 0;
+                ofs.write((char*)(&Zero), sizeof(Zero));
+                break;
+            }
+
+            ofs.write((char*)(&log_string.level), sizeof(log_string.level));
+            length_written += sizeof(log_string.level);
+
+            uint64_t ts = log_string.ts;
+            ofs.write((char*)(&ts), sizeof(ts));
+            length_written += sizeof(ts);
+
+            ofs.write((char*)(&log_string_size), sizeof(log_string_size));
+            ofs.write((char*)(log_string.str.data()), log_string_size);
+            length_written += log_string_size + sizeof(log_string_size);
+        }
+
+        ofs.seekp(ReservedLength, std::ios::beg);
+        return length_written;
     } catch (std::exception& e) {
-        log::error << "Storage: Error read from storage since " << e.what() << log::endl;
+        log::error << "Storage: Error write to storage since " << e.what() << log::endl;
         return 0;
     }
 }
 
 std::ostream& operator<<(std::ostream& os, const StorageDataHeader& rhs)
 {
-    os << "- Hera Binary Storage V3\n";
+    if (rhs.Version == 3) {
+        os << "- Hera Binary Storage V3\n";
+    } else if (rhs.Version == 4) {
+        os << "- Hera Binary Storage V4\n";
+    } else {
+        os << "- Hera Binary Storage V?\n";
+    }
+
     os << "\n";
     os << "- From " << time::Timestamp(rhs.timestamp_start) << "\n";
     os << "- To   " << time::Timestamp(rhs.timestamp_end) << "\n";
@@ -175,6 +320,19 @@ std::ostream& operator<<(std::ostream& os, const StorageDataHeader& rhs)
     }
     os << "\n";
     os << "- Total data size: " << file::FileSize(total_size) << "\n";
+
+    if (rhs.IsExtra) {
+        os << "\n- Extra Infos:\n";
+        os << rhs.extra_info.dump(2) << "\n";
+    }
+
+    if (rhs.IsLogs) {
+        os << "\n- Logs:\n";
+        for (auto& log : rhs.logs) {
+            os << "  " << log.level.to_color_prefix() << log::impl::Logger::format(log) << log.level.to_color_suffix()
+               << "\n";
+        }
+    }
 
     return os;
 }

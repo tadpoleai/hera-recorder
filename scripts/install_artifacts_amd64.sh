@@ -35,8 +35,11 @@ sudo cp -r lib/lib*.so $install_path/lib/
 sudo ldconfig
 
 echo "Installing Headers"
-sudo mkdir -p $install_path/include/hera
-sudo cp -r include/* $install_path/include/hera
+sudo mkdir -p ${install_path}/include/hera
+sudo cp -r include/hera/* ${install_path}/include/hera
+echo "Headers installed to ${install_path}/include/hera"
+ls ${install_path}/include/hera
+echo
 
 read -p "Install CMake Package (y/N): " ans
 if [[ $ans = [yY] ]]; then

@@ -149,7 +149,11 @@ void Logger::back_trace(int signo)
             auto left_pos = trace.find('[');
             auto right_pos = trace.find(']');
             auto offset_str = trace.substr(left_pos + 1, right_pos - left_pos - 1);
-            std::string cmd_line = "addr2line -Cifp -e `which " + obj_name + "` " + offset_str;
+
+            if (obj_name.size() > 0 && obj_name[0] != '/') {
+                obj_name = "`which " + obj_name + "`";
+            }
+            std::string cmd_line = "addr2line -Cifp -e " + obj_name + " " + offset_str;
 
             if (auto fp = popen(cmd_line.c_str(), "r")) {
                 auto result = fgets(trace_fileline, sizeof(trace_fileline), fp);

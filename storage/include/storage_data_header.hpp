@@ -16,6 +16,9 @@
 #include <ostream>
 #include <vector>
 
+#include "common/include/logger/log_string.hpp"
+#include "common/include/third_party/json.hpp"
+
 namespace wayz {
 namespace hera {
 namespace storage {
@@ -37,15 +40,18 @@ public:
     ///
     /// @brief Construct a new Storage Data object
     ///
-    StorageDataHeader();
+    StorageDataHeader(const int32_t version, const bool is_extra = true, const bool is_logs = true);
 
     ///
     /// @brief Read a StorageDataHeader from ifstream
     ///
     /// @param ifs ifstream to read from
+    /// @param is_extra bool read extra information
+    /// @param is_logs bool read logs
+    ///
     /// @return StorageDataHeaderPtr shared pointer to StorageDataHeader
     /// @return nullptr when either data read is invalid or ifs is closed/empty/ended
-    static StorageDataHeaderPtr read_from(std::ifstream& ifs);
+    static StorageDataHeaderPtr read_from(std::ifstream& ifs, const bool is_extra = true, const bool is_logs = true);
 
     ///
     /// @brief Write a StorageDataHeader to ofstream
@@ -56,14 +62,82 @@ public:
     size_t write_to(std::ofstream& ofs) const;
 
 public:
-    static const std::array<char, 16> Magic;
+    ///
+    /// @brief Magic Header of Storage Version V3
+    ///
+    static const std::array<char, 16> MagicV3;
+
+    ///
+    /// @brief Magic Header of Storage Version V4
+    ///
+    static const std::array<char, 16> MagicV4;
+
+    ///
+    /// @brief Max Header Length in V4
+    ///
+    static constexpr size_t ReservedLength = (4 << 20);
 
 public:
+    ///
+    /// @brief version of hera storage
+    /// @note V3 = only contains Common Info
+    /// @note V4 = additional json info
+    ///
+    const int32_t Version;
+
+    ///
+    /// @brief If extra info is read into header
+    ///
+    const bool IsExtra;
+
+    ///
+    /// @brief If logs is read into header
+    ///
+    const bool IsLogs;
+
+    ///
+    /// @defgroup commonInfo Common Info in V3
+    ///
+
+    ///
+    /// @addtogroup commonInfo
+    /// @brief timestamp when record starts
+    ///
     uint64_t timestamp_start;
+
+    ///
+    /// @addtogroup commonInfo
+    /// @brief timestamp when record stops
+    ///
     uint64_t timestamp_end;
+
+    ///
+    /// @addtogroup commonInfo
+    /// @brief message nums of devices
+    ///
     std::vector<uint32_t> device_message_nums;
+
+    ///
+    /// @addtogroup commonInfo
+    /// @brief data sizes in bytes of devices
+    ///
     std::vector<uint64_t> device_data_sizes;
+
+    ///
+    /// @addtogroup commonInfo
+    /// @brief data sizes in bytes of devices
+    ///
     std::vector<std::string> device_names;
+
+    ///
+    /// @brief Extra informations
+    ///
+    nlohmann::json extra_info;
+
+    ///
+    /// @brief Logs
+    ///
+    std::vector<log::impl::LogString> logs;
 };
 
 }  // namespace storage

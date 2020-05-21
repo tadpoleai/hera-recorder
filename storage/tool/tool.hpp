@@ -33,11 +33,18 @@ public:
     /// @brief Construct a new Tool object
     ///
     /// @param filename filename of input storage data
+    /// @param print_extra flag to print extra info
+    /// @param print_logs flag to print logs
     /// @param rebuild flag to rebuild broken header
     /// @param reindex flag to reindex out-of-ordered timestamp
     /// @param outfilename filename of output storage data (after reindexing)
     ///
-    Tool(const std::string& filename, const bool rebuild, const bool reindex, const std::string& outfilename);
+    Tool(const std::string& filename,
+         const bool print_extra,
+         const bool print_logs,
+         const bool rebuild,
+         const bool reindex,
+         const std::string& outfilename);
 
     ///
     /// @brief Destroy the Tool object

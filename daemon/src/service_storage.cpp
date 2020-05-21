@@ -65,7 +65,7 @@ void Service::append_storage_info(StorageInfo& result)
         if (!in_file.is_open()) {
             continue;
         }
-        auto header = storage::StorageDataHeader::read_from(in_file);
+        auto header = storage::StorageDataHeader::read_from(in_file, false, false);
         in_file.close();
 
         StorageRecordFile info;

@@ -8,7 +8,7 @@
 
 #include "service.hpp"
 
-#if 1
+#if WITH_SLAM
 #include "slam/caller/include/caller.hpp"
 #endif
 
@@ -103,6 +103,12 @@ void Service::start(Result& result, const OperatorInfo& operator_info)
         }
     }
     storage_->finish_add_device();
+
+    // Write Extra Info
+    storage_->header->extra_info["profile"] = profiles_json_[profile_index_];
+    storage_->header->extra_info["operator"] = operator_info.operatorName;
+    storage_->header->extra_info["place"] = operator_info.place;
+    storage_->header->extra_info["slam"] = operator_info.slam;
 
     // Async start
     bool failed = false;

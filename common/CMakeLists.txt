@@ -9,11 +9,20 @@ find_package(Threads REQUIRED)
 
 file(GLOB_RECURSE ALL_SRC "src/*.cpp")
 include_directories(include .. ${CMAKE_BINARY_DIR})
+
+if(BUILD_STATIC)
+  add_library(${PROJECT_NAME}-static STATIC ${ALL_SRC})
+  target_link_libraries(${PROJECT_NAME}-static Threads::Threads)
+endif()
+
 add_library(${PROJECT_NAME} SHARED ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} Threads::Threads)
 
 if(GIT_INFO_ENABLED)
   target_link_libraries(${PROJECT_NAME} hera-git-info)
+  if(BUILD_STATIC)
+    target_link_libraries(${PROJECT_NAME}-static hera-git-info)
+  endif()
 endif()
 
 # Install shared libraries

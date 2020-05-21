@@ -57,9 +57,16 @@ public:
     ///
     /// @param filename filename of storage data
     /// @param read_mode true if to read out from storage, otherwise write
+    /// @param is_extra bool write/read extra information
+    /// @param is_logs bool write/read extra information
+    /// @param read_aligned bool read SensorData instead of DeviceData in timestamp aligned mode
     ///
     /// @return StorageManagerPtr the unique pointer to StorageManager
-    static StorageManagerPtr open(const std::string& filename, const bool read_mode);
+    static StorageManagerPtr open(const std::string& filename,
+                                  const bool read_mode,
+                                  const bool is_extra = true,
+                                  const bool is_logs = true,
+                                  const bool read_aligned = false);
 
 public:
     ///
@@ -127,7 +134,11 @@ private:
     ///
     /// @brief Construct a new Storage Manager object
     ///
-    StorageManager(const std::string& filename, const bool read_mode);
+    StorageManager(const std::string& filename,
+                   const bool read_mode,
+                   const bool is_extra = true,
+                   const bool is_logs = true,
+                   const bool read_aligned = false);
 
     ///
     /// @brief Create the folder for this storage object
@@ -158,7 +169,9 @@ private:
     std::string filename_;      ///< Storage folder name
     size_t file_size_counter_;  ///< Size of current storage file, in bytes
 
-    bool read_mode_;          ///< indicating if storage is in read mode
+    bool read_mode_;          ///< Indicating if storage is in read mode
+    bool read_aligned_;       ///< Read sensor data messages aligned by timestamp_intrinsic
+                              /// @todo (WIP)
     std::ofstream out_file_;  ///< Current output file, used in write mode
     bool out_file_opened_;    ///< output file (write mode) opened
     std::ifstream in_file_;   ///< Current input file, used in read mode

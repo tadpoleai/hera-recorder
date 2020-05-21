@@ -124,6 +124,7 @@ private:
 
     const std::string ProfilesFileName_;
     std::vector<Profile> profiles_;
+    json profiles_json_;
     int32_t profile_index_;
 
 #ifdef WITH_SLAM

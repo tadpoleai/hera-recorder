@@ -14,8 +14,10 @@ void print_help(char** argv)
 {
     std::cout << argv[0] << ": "
               << "Tool to view / rebuild header of hera storage data" << std::endl;
-    std::cout << "usage:\t" << argv[0] << " -i <source_data> [-b] [-r [-o <output_data>]] [-hv]" << std::endl;
+    std::cout << "usage:\t" << argv[0] << " -i <source_data> [-el] [-b] [-r [-o <output_data>]] [-hv]" << std::endl;
     std::cout << "\t-i\tSource data file\n"
+              << "\t-e\tFlag to print extra info in storage file\n"
+              << "\t-l\tFlag to print logs in storage file\n"
               << "\t-b\tFlag to rebuild damaged storage header\n"
               << "\t-r\tFlag to reindex timestamp using intrinsic timestamp (not implemented)\n"
               << "\t-o\tOutput data file (only for reindexing)\n"
@@ -39,18 +41,26 @@ int main(int argc, char** argv)
     std::string outfilename;
     bool rebuild = false;
     bool reindex = false;
+    bool print_extra = false;
+    bool print_logs = false;
 
     log::onlyprint();
     log::set_level(log::LogLevel::Info);
 
     // opterr = 0;
     while (true) {
-        switch (getopt(argc, argv, "i:o:r:brhv")) {
+        switch (getopt(argc, argv, "i:o:r:elbrhv")) {
         case 'i':
             filename = optarg;
             continue;
         case 'o':
             outfilename = optarg;
+            continue;
+        case 'e':
+            print_extra = true;
+            continue;
+        case 'l':
+            print_logs = true;
             continue;
         case 'b':
             rebuild = true;
@@ -84,7 +94,7 @@ int main(int argc, char** argv)
         outfilename = filename + ".reindex.hera";
     }
 
-    auto handler = std::make_unique<Tool>(filename, rebuild, reindex, outfilename);
+    auto handler = std::make_unique<Tool>(filename, print_extra, print_logs, rebuild, reindex, outfilename);
 
     log::flush();
 

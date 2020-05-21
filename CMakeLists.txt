@@ -15,6 +15,11 @@ if(target-arm)
   message(STATUS "Hera will build for arm")
 endif()
 
+if(build-static)
+  set(BUILD_STATIC 1)
+  message(STATUS "Hera will build static library")
+endif()
+
 if(NOT without-git-info)
   message(STATUS "Hera will build with git info")
   include(deploy/cmake/git_info.cmake)
