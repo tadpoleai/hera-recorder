@@ -20,10 +20,10 @@ void Service::load_profiles()
         ifs >> profile_outer_json;
         ifs.close();
 
-        auto profiles_json = profile_outer_json["profiles"];
+        profiles_json_ = profile_outer_json["profiles"];
         profile_index_ = profile_outer_json["index"];
 
-        for (const auto& profile_json : profiles_json) {
+        for (const auto& profile_json : profiles_json_) {
             Profile profile;
             profile.name = profile_json["name"];
             profile.author = profile_json["author"];
@@ -73,7 +73,7 @@ void Service::dump_profiles()
 
     try {
         json profile_outer_json = json::parse("{}");
-        json profiles_json = json::parse("[]");
+        profiles_json_ = json::parse("[]");
         for (const auto& profile : profiles_) {
             json profile_json;
             profile_json["name"] = profile.name;
@@ -100,10 +100,10 @@ void Service::dump_profiles()
                 }
                 profile_json["devices"].emplace_back(device_json);
             }
-            profiles_json.emplace_back(profile_json);
+            profiles_json_.emplace_back(profile_json);
         }
 
-        profile_outer_json["profiles"] = profiles_json;
+        profile_outer_json["profiles"] = profiles_json_;
         profile_outer_json["index"] = profile_index_;
 
         std::ofstream ofs;
@@ -117,7 +117,6 @@ void Service::dump_profiles()
 
     log::debug << "Daemon::profiles dumped" << log::endl;
 }
-
 
 void Service::updateProfiles(Result& result, const std::vector<Profile>& profiles, const int32_t profileIndex)
 {

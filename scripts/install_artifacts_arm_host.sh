@@ -44,7 +44,7 @@ echo
 
 echo "Installing Headers"
 sudo mkdir -p ${install_path}/include/hera
-sudo cp -r include/* ${install_path}/include/hera
+sudo cp -r include/hera/* ${install_path}/include/hera
 echo "Headers installed to ${install_path}/include/hera"
 ls ${install_path}/include/hera
 echo

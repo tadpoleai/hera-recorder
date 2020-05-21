@@ -13,13 +13,19 @@
 #include <mutex>
 #include <semaphore.h>
 
+#include "common/include/logger/logger.hpp"
 #include "device/include/include.hpp"
 
 namespace wayz {
 namespace hera {
 namespace storage {
 
-Tool::Tool(const std::string& filename, const bool rebuild, const bool reindex, const std::string& outfilename) :
+Tool::Tool(const std::string& filename,
+           const bool print_extra,
+           const bool print_logs,
+           const bool rebuild,
+           const bool reindex,
+           const std::string& outfilename) :
     read_thread_(nullptr),
     running_(false),
     progess_size_(0),
@@ -39,9 +45,10 @@ Tool::Tool(const std::string& filename, const bool rebuild, const bool reindex, 
     }
     total_size_ = filesize;
 
-    storage_ = storage::StorageManager::open(filename_, true);
+    storage_ = storage::StorageManager::open(filename_, true, print_extra, print_logs);
     if (storage_->header != nullptr) {
-        log::info << *storage_->header << log::endl;
+        log::flush();
+        std::cout << *storage_->header << std::endl;
         if (rebuild || reindex) {
             log::info << "Storage: Start reading '" << filename_ << "'" << log::endl;
             read_thread_ = new std::thread(&Tool::read_thread_function, this);

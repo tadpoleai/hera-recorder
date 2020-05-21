@@ -1,0 +1,11 @@
+{
+  "storageFolder": "/var/hera/data",
+  "profileJson": "/var/hera/profiles.json",
+  "logPrefix": "/var/hera/logs/hera-daemon",
+  "remoteServers": []
+}
+{
+  "remark": "公司测试机",
+  "protocol": "RSYNC",
+  "destination": "wayz@192.168.1.63:/media/wayz/0F6C0D540F6C0D545/lyu"
+}

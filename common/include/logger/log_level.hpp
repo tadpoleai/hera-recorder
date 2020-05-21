@@ -13,7 +13,7 @@ namespace log {
 
 class LogLevel {
 public:
-    enum ValueType : uint8_t { Debug = 0, Info, Warn, Error };
+    enum ValueType : uint8_t { Reserved = 0x00u, Debug = 0x10u, Info = 0x11u, Warn = 0x12u, Error = 0x13u };
 
     LogLevel() = default;
     constexpr LogLevel(ValueType value) noexcept : value_(value) {}

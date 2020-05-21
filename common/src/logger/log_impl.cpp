@@ -43,16 +43,21 @@ void Logger::set_level(LogLevel level)
     instance_->level_ = level;
 }
 
-bool Logger::open_aux(const std::string& file)
+bool Logger::open_aux(std::vector<LogString>* aux_vector)
 {
-    instance_->aux_file_.close();
-    instance_->aux_file_.open(file);
-    return instance_->aux_file_.is_open();
+    if (aux_vector != nullptr) {
+        instance_->aux_vector_ = aux_vector;
+        return true;
+    }
+
+    return false;
 }
 
 void Logger::close_aux()
 {
-    instance_->aux_file_.close();
+    if (instance_->aux_vector_ != nullptr) {
+        instance_->aux_vector_ = nullptr;
+    }
 }
 
 LogStringStream Logger::create_string(LogLevel level)
@@ -66,6 +71,7 @@ LogStringStream Logger::create_string(LogLevel level)
 
 Logger::Logger() :
     inited_(false),
+    aux_vector_(nullptr),
     level_(LogLevel::Debug),
     queue_(0, 0, 5ms),
     running_(true),
@@ -80,7 +86,6 @@ Logger::~Logger()
     running_ = false;
     thread_.join();
     file_.close();
-    aux_file_.close();
 }
 
 void Logger::write_thread_function()
@@ -90,14 +95,14 @@ void Logger::write_thread_function()
         data = queue_.wait_pop();
         if (data != nullptr) {
             flushed_ = false;
-            write(*data);
+            write(std::move(*data));
         } else {
             flushed_ = true;
         }
     };
 }
 
-void Logger::write(const LogString& data)
+void Logger::write(LogString&& data)
 {
     auto str = format(data);
     if (!inited_) {
@@ -108,8 +113,8 @@ void Logger::write(const LogString& data)
     if (file_.is_open()) {
         file_ << str << std::endl;
     }
-    if (aux_file_.is_open()) {
-        aux_file_ << str << std::endl;
+    if (aux_vector_ != nullptr) {
+        aux_vector_->emplace_back(std::move(data));
     }
 }
 
@@ -119,6 +124,7 @@ std::string Logger::format(const LogString& data)
     ss << data.ts << " | " << data.level.to_string() << " | " << data.str;
     return ss.str();
 }
+
 }  // namespace impl
 }  // namespace log
 }  // namespace hera

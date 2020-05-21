@@ -28,9 +28,9 @@ echo "Packaging artifacts/arm/"
 mkdir -p ../artifacts/arm/client
 mkdir -p ../artifacts/arm/lib
 mkdir -p ../artifacts/arm/bin
-mkdir -p ../artifacts/arm/include/common
-mkdir -p ../artifacts/arm/include/storage
-mkdir -p ../artifacts/arm/include/device
+mkdir -p ../artifacts/arm/include/hera/common
+mkdir -p ../artifacts/arm/include/hera/storage
+mkdir -p ../artifacts/arm/include/hera/device
 mkdir -p ../artifacts/arm/manual
 mkdir -p ../artifacts/arm/script
 mkdir -p ../artifacts/arm/script/daemon
@@ -40,14 +40,17 @@ mkdir -p ../artifacts/arm/shared
 cp -r ../client/dist/* ../artifacts/arm/client
 
 # Headers
-cp -r ../common/include/* ../artifacts/arm/include/common
-cp -r ../device/include/* ../artifacts/arm/include/device
-cp -r ../storage/include/* ../artifacts/arm/include/storage
+cp -r ../common/include/* ../artifacts/arm/include/hera/common
+cp -r ../device/include/* ../artifacts/arm/include/hera/storage
+cp -r ../storage/include/* ../artifacts/arm/include/hera/device
 
 # Libraries
 cp -r common/libhera-common.so ../artifacts/arm/lib
+cp -r common/libhera-common*.a ../artifacts/arm/lib
 cp -r device/libhera-device*.so ../artifacts/arm/lib
+cp -r device/libhera-device*.a ../artifacts/arm/lib
 cp -r storage/libhera-storage.so ../artifacts/arm/lib
+cp -r storage/libhera-storage*.a ../artifacts/arm/lib
 
 # Copy Dependency
 cp -rL /opt/s32v/thrift/lib/libthrift.so ../artifacts/arm/lib

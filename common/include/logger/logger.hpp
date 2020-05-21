@@ -41,9 +41,14 @@ inline void set_level(LogLevel level)
     return impl::Logger::set_level(level);
 }
 
-inline bool open_aux(const std::string& file)
+inline bool open_aux(const std::string& aux_file)
 {
-    return impl::Logger::open_aux(file);
+    return impl::Logger::open_aux(aux_file);
+}
+
+inline bool open_aux(std::vector<impl::LogString>* aux_vector)
+{
+    return impl::Logger::open_aux(aux_vector);
 }
 
 inline void close_aux()

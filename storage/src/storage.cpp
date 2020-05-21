@@ -19,12 +19,20 @@ namespace wayz {
 namespace hera {
 namespace storage {
 
-StorageManagerPtr StorageManager::open(const std::string& filename, const bool read_mode)
+StorageManagerPtr StorageManager::open(const std::string& filename,
+                                       const bool read_mode,
+                                       const bool is_extra,
+                                       const bool is_logs,
+                                       const bool read_aligned)
 {
-    return StorageManagerPtr(new StorageManager(filename, read_mode));
+    return StorageManagerPtr(new StorageManager(filename, read_mode, is_extra, is_logs));
 }
 
-StorageManager::StorageManager(const std::string& filename, const bool read_mode) :
+StorageManager::StorageManager(const std::string& filename,
+                               const bool read_mode,
+                               const bool is_extra,
+                               const bool is_logs,
+                               const bool read_aligned) :
     header(nullptr),
     filename_(filename),
     file_size_counter_(0),
@@ -37,12 +45,13 @@ StorageManager::StorageManager(const std::string& filename, const bool read_mode
     if (read_mode) {
         in_file_.open(filename, std::ios::binary);
         if (in_file_.is_open()) {
-            header = StorageDataHeader::read_from(in_file_);
+            header = StorageDataHeader::read_from(in_file_, is_extra, is_logs);
         } else {
             log::error << "StorageManager: Can not open " << filename << log::endl;
         }
     } else {
-        header = StorageDataHeaderPtr(new StorageDataHeader());
+        header = StorageDataHeaderPtr(new StorageDataHeader(4));
+        log::open_aux(&header->logs);
         thread_running_ = true;
         thread_ = new std::thread(&StorageManager::write_thread_function, this);
     }
@@ -70,6 +79,7 @@ void StorageManager::close()
         log::debug << "StorageManager: closing file" << log::endl;
         out_file_.close();
         out_file_opened_ = false;
+        log::close_aux();
     }
 }
 

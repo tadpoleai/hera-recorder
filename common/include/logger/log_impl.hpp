@@ -34,9 +34,11 @@ public:
     static bool init(const std::string& file);
     static void set_level(LogLevel level);
     static void stop();
-    static bool open_aux(const std::string& file);
+    static bool open_aux(const std::string& aux_file);
+    static bool open_aux(std::vector<LogString>* aux_vector);
     static void close_aux();
     static LogStringStream create_string(LogLevel level);
+    static std::string format(const LogString& data);
 
 private:
     static std::unique_ptr<Logger> instance_;
@@ -50,8 +52,8 @@ public:
 
 private:
     void write_thread_function();
-    void write(const LogString& data);
-    std::string format(const LogString& data);
+    void write(LogString&& data);
+
 
     void register_back_trace();
     static void singal_handler(int signo);
@@ -61,7 +63,7 @@ private:
     bool inited_;
 
     std::ofstream file_;
-    std::ofstream aux_file_;
+    std::vector<LogString>* aux_vector_;
 
     LogLevel level_;
     LogQueue queue_;

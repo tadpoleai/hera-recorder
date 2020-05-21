@@ -9,8 +9,22 @@ find_package(Threads REQUIRED)
 include_directories(include .. ${CMAKE_BINARY_DIR})
 
 file(GLOB_RECURSE ALL_SRC "src/*.cpp" "src/**/*.cpp")
+
+if(BUILD_STATIC)
+  add_library(${PROJECT_NAME}-static STATIC ${ALL_SRC})
+  target_link_libraries(${PROJECT_NAME}-static hera-common-static
+                        hera-device-static Threads::Threads)
+endif()
+
 add_library(${PROJECT_NAME} SHARED ${ALL_SRC})
 target_link_libraries(${PROJECT_NAME} hera-common Threads::Threads)
+
+if(GIT_INFO_ENABLED)
+  target_link_libraries(${PROJECT_NAME} hera-git-info)
+  if(BUILD_STATIC)
+    target_link_libraries(${PROJECT_NAME}-static hera-git-info)
+  endif()
+endif()
 
 file(GLOB_RECURSE TOOL_SRC "tool/*.cpp")
 add_executable(${PROJECT_NAME}-tool ${TOOL_SRC})

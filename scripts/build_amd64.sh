@@ -28,9 +28,9 @@ echo "Packaging artifacts/amd64"
 mkdir -p ../artifacts/amd64/client
 mkdir -p ../artifacts/amd64/lib
 mkdir -p ../artifacts/amd64/bin
-mkdir -p ../artifacts/amd64/include/common/include
-mkdir -p ../artifacts/amd64/include/storage/include
-mkdir -p ../artifacts/amd64/include/device/include
+mkdir -p ../artifacts/amd64/include/hera/common
+mkdir -p ../artifacts/amd64/include/hera/storage
+mkdir -p ../artifacts/amd64/include/hera/device
 mkdir -p ../artifacts/amd64/script
 mkdir -p ../artifacts/amd64/script/daemon
 mkdir -p ../artifacts/amd64/shared
@@ -43,14 +43,17 @@ mkdir -p ../artifacts/amd64/manual/convert
 cp -r ../client/dist/* ../artifacts/amd64/client
 
 # Headers
-cp -r ../common/include/* ../artifacts/amd64/include/common/include
-cp -r ../device/include/* ../artifacts/amd64/include/device/include
-cp -r ../storage/include/* ../artifacts/amd64/include/storage/include
+cp -r ../common/include/* ../artifacts/amd64/include/hera/common
+cp -r ../device/include/* ../artifacts/amd64/include/hera/storage
+cp -r ../storage/include/* ../artifacts/amd64/include/hera/device
 
 # Libraries
 cp -r common/libhera-common.so ../artifacts/amd64/lib
+cp -r common/libhera-common*.a ../artifacts/amd64/lib
 cp -r device/libhera-device*.so ../artifacts/amd64/lib
+cp -r device/libhera-device*.a ../artifacts/amd64/lib
 cp -r storage/libhera-storage.so ../artifacts/amd64/lib
+cp -r storage/libhera-storage*.a ../artifacts/amd64/lib
 
 # Binaries
 cp -r convert/hera-convert ../artifacts/amd64/bin

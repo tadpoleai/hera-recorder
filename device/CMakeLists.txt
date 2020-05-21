@@ -20,12 +20,15 @@ endif()
 
 # Build device (core)
 include_directories(. include .. ${CMAKE_BINARY_DIR})
-add_library(${PROJECT_NAME} SHARED src/device_factory.cpp ${ALL_SRC})
-target_link_libraries(${PROJECT_NAME} hera-common hera-storage Threads::Threads
-                      ${JPEG_TURBO_LIBS})
-if(GIT_INFO_ENABLED)
-  target_link_libraries(${PROJECT_NAME} hera-git-info)
+
+if(BUILD_STATIC)
+  add_library(${PROJECT_NAME}-static STATIC src/device_factory.cpp ${ALL_SRC})
+  target_link_libraries(${PROJECT_NAME}-static hera-common-static
+                        hera-storage-static Threads::Threads)
 endif()
+
+add_library(${PROJECT_NAME} SHARED src/device_factory.cpp ${ALL_SRC})
+target_link_libraries(${PROJECT_NAME} hera-common hera-storage Threads::Threads)
 
 # Build device (drivers)
 add_library(${PROJECT_NAME}-driver SHARED src/device_factory.cpp ${DRIVERS_SRC}
@@ -43,8 +46,13 @@ target_link_libraries(
   ${FLY_CAPTURE_LIBS}
   ${S32VSAL_LIBS}
   ${S32VSAL_VSDK_LIBS})
+
 if(GIT_INFO_ENABLED)
+  target_link_libraries(${PROJECT_NAME} hera-git-info)
   target_link_libraries(${PROJECT_NAME}-driver hera-git-info)
+  if(BUILD_STATIC)
+    target_link_libraries(${PROJECT_NAME}-static hera-git-info)
+  endif()
 endif()
 
 # Install shared libraries
