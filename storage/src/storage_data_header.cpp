@@ -150,6 +150,7 @@ StorageDataHeaderPtr StorageDataHeader::read_from(std::ifstream& ifs, const bool
                 throw std::runtime_error("Can not read log");
             }
             if (log::LogLevel::Reserved == log_string.level) {
+                log::info << "End of log in hera file" << log::endl;
                 break;
             }
 
@@ -175,6 +176,7 @@ StorageDataHeaderPtr StorageDataHeader::read_from(std::ifstream& ifs, const bool
             header->logs.emplace_back(std::move(log_string));
         }
 
+        ifs.seekg(ReservedLength, std::ios::beg);
         return header;
     } catch (std::exception& e) {
         log::error << "Storage: Error read from storage. " << e.what() << log::endl;
