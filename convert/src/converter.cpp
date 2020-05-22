@@ -29,7 +29,7 @@ Converter::Converter(const std::string& src_filename,
     remapper_(std::move(remapper)),
     progress_(0),
     total_duration_(0),
-    storage_(storage::StorageManager::open(src_filename, true)),
+    storage_(storage::StorageManager::open(src_filename, true, false, false)),
     publish_sem_(new sem_t),
     receive_sem_(new sem_t),
     message(std::move(ROSMessage::create<ROSMessageType::BrokenData>()))
