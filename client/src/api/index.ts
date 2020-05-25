@@ -148,6 +148,10 @@ function apiWrapper<T0, T1>(apiName: string) {
           break;
         case 'updateProfiles':
           result = await client.updateProfiles(status.local.profiles, status.local.profileIndex);
+          if (((arg0 as unknown) as boolean) == true) {
+            result = await client.get();
+            status.local.profiles = result.status.profiles;
+          }
           status.remoteStatus = result.status;
           status.remoteConnected = true;
           resolve({ error: result.error, reason: result.reason });
@@ -231,7 +235,7 @@ const Api = {
   stop: apiWrapper<void, void>('stop'),
   record: apiWrapper<boolean, void>('record'),
   adjustParameters: apiWrapper<number, Array<Hera.Parameter>>('adjustParameters'),
-  updateProfiles: apiWrapper<void, void>('updateProfiles'),
+  updateProfiles: apiWrapper<void | boolean, void>('updateProfiles'),
   getData: apiWrapper<void, void>('getData'),
   getStorage: apiWrapper<void, void>('getStorage'),
   deleteStorage: apiWrapper<string, void>('deleteStorage'),
