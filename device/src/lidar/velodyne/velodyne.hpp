@@ -102,10 +102,14 @@ private:
     static constexpr int64_t MaxDelayToleranceUs_ = 30ULL * SecondToUs_;  ///< Max valid transmission delay, in us
 
 private:
+    static constexpr int32_t NominalRPM_ = 600;   ///< Default Rotational Speed, 600rpm, 10Hz
+    static constexpr int32_t MinimumRPM_ = 300;   ///< Minimum Rotational Speed, 300rpm, 5Hz
+    static constexpr int32_t MaximumRPM_ = 1200;  ///< Maximum Rotational Speed, 1200rpm, 20Hz
     static constexpr size_t EthernetMTU_ = 1500;  ///< MTU/PacketSize of ethernet interface
     static const timeval TimeOut_;                ///< Timeout for UDP recvform
 
     ::sockaddr_in addr_in_;                 ///< Ip Address and Data Port of Lidar
+    int32_t rotational_speed_;              ///< [rpm] Rotational Speed
     int socket_;                            ///< Socket handler
     uint8_t receive_buffer_[EthernetMTU_];  ///< UDP Receive buffer
 };
