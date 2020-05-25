@@ -64,7 +64,7 @@ HeraErrno Velodyne::connect()
                                     ", is greater than MaximumRPM = " + std::to_string(MaximumRPM_) + "rpm");
     }
 
-    int ret = system(("curl -m 0.2 --data \"laser=on&rpm=" + std::to_string(rotational_speed_) + "\" http://" +
+    int ret = system(("curl -m 0.2 --data \"motor=on&laser=on&rpm=" + std::to_string(rotational_speed_) + "\" http://" +
                       parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
                              .c_str());
     if (ret == 0) {
@@ -98,8 +98,8 @@ void Velodyne::disconnect()
     log::debug << "Velodyne:: socket closing" << log::endl;
     ::close(socket_);
 
-    int ret = system(("curl -m 0.2 --data \"laser=off&rpm=300\" http://" + parameters_[DeviceParameterType::IpAddress] +
-                      "/cgi/setting")
+    int ret = system(("curl -m 0.2 --data \"motor=off&laser=off&rpm=300\" http://" +
+                      parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
                              .c_str());
     if (ret == 0) {
         log::info << "Velodyne::Succeeded to power off lidar " << get_name() << log::endl;
