@@ -19,7 +19,7 @@ namespace velodyne {
 const std::vector<DeviceParameterType> Velodyne::EssentialParameterTypes = {DeviceParameterType::IpAddress,
                                                                             DeviceParameterType::DataPort};
 
-const std::vector<DeviceParameterType> Velodyne::OptionalParameterTypes = {};
+const std::vector<DeviceParameterType> Velodyne::OptionalParameterTypes = {DeviceParameterType::RotationalSpeed};
 
 auto _ = DeviceFactory::register_type({.type = DeviceVendorType::LidarVelodyne,
                                        .type_name = "lidar/velodyne",
@@ -37,6 +37,42 @@ HeraErrno Velodyne::connect()
 {
     log::debug << "Velodyne:: Connecting to velodyne by binding port: " << parameters_[DeviceParameterType::DataPort]
                << log::endl;
+
+    rotational_speed_ = NominalRPM_;
+    if (parameters_.count(DeviceParameterType::RotationalSpeed)) {
+        try {
+            rotational_speed_ = std::stoi(parameters_[DeviceParameterType::RotationalSpeed]);
+            log::info << "Velodyne: Set RotationalSpeed to " << rotational_speed_ << "rpm" << log::endl;
+        } catch (...) {
+            return handle_error(HeraErrno::InvalidParameterValue,
+                                "Velodyne::" + get_name() + "Can not parse parameter RotationalSpeed = '" +
+                                        parameters_[DeviceParameterType::RotationalSpeed] + "'");
+        }
+    }
+
+    if (rotational_speed_ < MinimumRPM_) {
+        return handle_error(HeraErrno::InvalidParameterValue,
+                            "Velodyne::" + get_name() + "Invalid Parameter RotationalSpeed = " +
+                                    parameters_[DeviceParameterType::RotationalSpeed] +
+                                    ", is less than MinimumRPM = " + std::to_string(MinimumRPM_) + "rpm");
+    }
+
+    if (rotational_speed_ > MaximumRPM_) {
+        return handle_error(HeraErrno::InvalidParameterValue,
+                            "Velodyne::" + get_name() + "Invalid Parameter RotationalSpeed = " +
+                                    parameters_[DeviceParameterType::RotationalSpeed] +
+                                    ", is greater than MaximumRPM = " + std::to_string(MaximumRPM_) + "rpm");
+    }
+
+    int ret = system(("curl -m 0.2 --data \"laser=on&rpm=" + std::to_string(rotational_speed_) + "\" http://" +
+                      parameters_[DeviceParameterType::IpAddress] + "/cgi/setting")
+                             .c_str());
+    if (ret == 0) {
+        log::info << "Velodyne::Succeeded to power on lidar " << get_name() << log::endl;
+    } else {
+        return handle_error(HeraErrno::CanNotOpenEthernetDevice, "Velodyne::Failed to power on " + get_name());
+    }
+
     try {
         addr_in_.sin_family = AF_INET;
         addr_in_.sin_port = htons(std::stoi(parameters_[DeviceParameterType::DataPort]));
@@ -44,7 +80,7 @@ HeraErrno Velodyne::connect()
 
         socket_ = ::socket(AF_INET, SOCK_DGRAM, 0);
         if (::bind(socket_, (::sockaddr*)&addr_in_, sizeof(addr_in_)) < 0) {
-            return handle_error(HeraErrno::CanNotOpenEthernetDevice, "Can not bind");
+            return handle_error(HeraErrno::CanNotOpenEthernetDevice, "Velodyne::Bind port, can not bind");
         }
         setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &TimeOut_, sizeof(TimeOut_));
     } catch (...) {
@@ -61,6 +97,15 @@ void Velodyne::disconnect()
 {
     log::debug << "Velodyne:: socket closing" << log::endl;
     ::close(socket_);
+
+    int ret = system(("curl -m 0.2 --data \"laser=off&rpm=300\" http://" + parameters_[DeviceParameterType::IpAddress] +
+                      "/cgi/setting")
+                             .c_str());
+    if (ret == 0) {
+        log::info << "Velodyne::Succeeded to power off lidar " << get_name() << log::endl;
+    } else {
+        log::error << "Velodyne::Failed to power off " << get_name();
+    }
     log::debug << "Velodyne:: socket closed successfullly " << log::endl;
 }
 
