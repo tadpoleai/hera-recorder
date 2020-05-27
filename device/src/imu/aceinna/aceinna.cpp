@@ -83,6 +83,11 @@ data::DeviceDataPtr Aceinna::fetch()
     }
     auto received_length = serial_data->size();
 
+    if (received_length != sizeof(AceinnaData::buf)) {
+        log::warn << "Aceinna: Received size does not match" << log::endl;
+        return nullptr;
+    }
+
     // Total length of device data
     auto length = sizeof(AceinnaData);
     auto data = data::DeviceData::create(length,
@@ -92,10 +97,6 @@ data::DeviceDataPtr Aceinna::fetch()
                                          sequence_++);
     auto derived_data = static_cast<AceinnaData*>(data.get());
 
-    if (received_length != sizeof(derived_data->buf)) {
-        log::warn << "Aceinna: Received size does not match" << log::endl;
-        return nullptr;
-    }
     // Use Memcpy to directly fill buf
     memcpy(derived_data->buf, serial_data->data(), received_length);
 

@@ -39,7 +39,8 @@ HeraErrno Velodyne::connect()
                << log::endl;
 
     rotational_speed_ = NominalRPM_;
-    if (parameters_.count(DeviceParameterType::RotationalSpeed)) {
+    if (parameters_.count(DeviceParameterType::RotationalSpeed) &&
+        !parameters_[DeviceParameterType::RotationalSpeed].empty()) {
         try {
             rotational_speed_ = std::stoi(parameters_[DeviceParameterType::RotationalSpeed]);
             log::info << "Velodyne: Set RotationalSpeed to " << rotational_speed_ << "rpm" << log::endl;
@@ -115,6 +116,10 @@ data::DeviceDataPtr Velodyne::fetch()
 {
     auto received_length = ::recv(socket_, receive_buffer_, sizeof(receive_buffer_), 0);
 
+    if (received_length != sizeof(VelodynePacket::buf)) {
+        return nullptr;
+    }
+
     // Total length of device data
     auto length = sizeof(VelodynePacket);
     auto data = data::DeviceData::create(length,
@@ -124,9 +129,6 @@ data::DeviceDataPtr Velodyne::fetch()
                                          sequence_++);
     auto derived_data = static_cast<VelodynePacket*>(data.get());
 
-    if (received_length != sizeof(derived_data->buf)) {
-        return nullptr;
-    }
     // Use Memcpy to directly fill buf
     memcpy(derived_data->buf, &receive_buffer_, received_length);
 
