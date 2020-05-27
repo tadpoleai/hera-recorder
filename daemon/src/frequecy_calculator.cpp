@@ -50,10 +50,16 @@ void FrequecyCalculator::thread_function()
     log::debug << "FrequecyCalculator: Start running" << log::endl;
 
     while (running_) {
-        auto t1 = time::Timestamp::now();
         for (size_t i = 0; i < NumDevices; ++i) {
             seq[i][0] = seq[i][1];
+        }
+
+        auto t1 = time::Timestamp::now();
+        for (size_t i = 0; i < NumDevices; ++i) {
             seq[i][1] = (*devices_ptr_)[i]->get_sequence();
+        }
+
+        for (size_t i = 0; i < NumDevices; ++i) {
             float input_value = seq[i][1] - seq[i][0];
             float duration = float(t1 - t0) / float(time::OneSecond);
             input_value /= duration;
@@ -90,7 +96,7 @@ void FrequecyCalculator::thread_function()
     }
 
     log::debug << "FrequecyCalculator: Stop running" << log::endl;
-}
+}  // namespace daemon
 
 }  // namespace daemon
 }  // namespace hera
