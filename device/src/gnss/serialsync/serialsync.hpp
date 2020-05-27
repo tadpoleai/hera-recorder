@@ -190,12 +190,6 @@ private:
     /// before calculation of primary GNSS's time, to ensure
     /// we are using a fresh value of shifation_value_ns_
     time::Timestamp shiftation_timestamp_;
-
-    ///
-    /// @brief The tolerance of shiftation_timestamp_ and now();
-    ///
-    /// @see shiftation_timestamp_
-    static constexpr time::Duration ShifationDelayTolerance_ = 10 * time::OneSecond;
 #endif
 };
 

@@ -161,7 +161,8 @@ data::DeviceDataPtr Serialsync::fetch()
             uint64_t timestamp_nmea_original =
                     hours * time::OneHour + minutes * time::OneMinute + seconds * time::OneSecond + nanoseconds;
 
-            if (now - shiftation_timestamp_ < ShifationDelayTolerance_) {
+            constexpr time::Duration ShifationDelayTolerance = 10 * time::OneSecond;
+            if (now - shiftation_timestamp_ < ShifationDelayTolerance) {
                 timestamp_nmea_original += shifation_value_ns_;
 
                 uint64_t days = now / time::OneDay;
