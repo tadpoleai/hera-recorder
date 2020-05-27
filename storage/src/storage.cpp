@@ -63,23 +63,29 @@ void StorageManager::close()
     if (thread_ != nullptr) {
         thread_running_ = false;
         thread_->join();
+        log::debug << "StorageManager: Joined Thread " << log::endl;
         delete thread_;
         thread_ = nullptr;
         if (header != nullptr) {
+            log::debug << "StorageManager: Updating Header" << log::endl;
             header->timestamp_end = time::Timestamp::now();
         }
     }
+
     if (!read_mode_ && out_file_opened_) {
         out_file_.flush();
         if (header != nullptr) {
             out_file_.seekp(0, std::ios::beg);
             header->write_to(out_file_);
+            log::close_aux();
             header.reset();
         }
         log::debug << "StorageManager: closing file" << log::endl;
         out_file_.close();
         out_file_opened_ = false;
+    } else {
         log::close_aux();
+        header.reset();
     }
 }
 
