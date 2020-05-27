@@ -126,6 +126,9 @@ void Service::start(Result& result, const OperatorInfo& operator_info)
         }
     }
 
+    // Frequency Calculate
+    frequecy_calculator_ = std::make_unique<FrequecyCalculator>(&devices_);
+
     operator_info_ = operator_info;
     operator_info_.storagePath = storage_name;
 

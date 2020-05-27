@@ -29,7 +29,7 @@ void Service::getData(ResultData& result)
             data.type = device->get_vendor_type();
             data.name = device->get_name();
             data.dataSizeKB = device->get_volume() / 1024;
-            data.frequency = device->get_frequency();
+            // data.frequency = device->get_frequency();
 
             data.valid = false;
             auto disp_data = device::data::DisplayData::create_from(device->history());
@@ -62,6 +62,10 @@ void Service::getData(ResultData& result)
 
     for (auto& promise : promises) {
         result.deviceDatas.emplace_back(promise.get());
+    }
+
+    for (size_t i = 0; i < result.deviceDatas.size(); ++i) {
+        result.deviceDatas[i].frequency = frequecy_calculator_->get_result(i);
     }
 
     result.startTimeSec = start_time_sec_;

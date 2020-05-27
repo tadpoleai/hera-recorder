@@ -54,6 +54,7 @@ void Service::reset()
     for (auto& promise : promises) {
         promise.get();
     }
+    frequecy_calculator_.reset();
     devices_.clear();
     storage_.reset();
     ipc_queue_.reset();

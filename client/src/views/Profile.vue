@@ -48,7 +48,7 @@ export default class Profile extends Vue {
     const profile = new Hera.Profile(Object.assign(this.status.local.profiles[index]));
     profile.name = profile.name + '_Duplicate';
     this.status.local.profiles.splice(index + 1, 0, profile);
-    Api.updateProfiles();
+    Api.updateProfiles(true);
   }
 
   clickDeleteProfile(index: number) {
