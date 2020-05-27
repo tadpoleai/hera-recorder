@@ -13,6 +13,7 @@
 #include "common/include/third_party/json.hpp"
 #include "daemon/rpc/gen-cpp/Service.h"
 #include "device/include/include.hpp"
+#include "frequecy_calculator.hpp"
 #include "storage/include/upload.hpp"
 
 #ifdef WITH_SLAM
@@ -112,6 +113,7 @@ private:
     OperatorInfo operator_info_;
 
     std::vector<device::DevicePtr> devices_;
+    std::unique_ptr<FrequecyCalculator> frequecy_calculator_;
     bool started_;
     bool recording_;
     int32_t start_time_sec_;
