@@ -21,6 +21,38 @@ void Logger::ignore_signal(int signo)
 
 void Logger::register_back_trace()
 {
+    std::set_unexpected([]() {
+        log::error << "Unexpceted Exception" << log::endl;
+        auto ep = std::current_exception();
+        try {
+            if (ep) {
+                std::rethrow_exception(ep);
+            } else {
+                log::error << "Can not get current_exception" << log::endl;
+            }
+        } catch (const std::exception& e) {
+            log::error << "what(): " << e.what() << log::endl;
+        }
+        log::error << "Aborting" << log::endl;
+        ::abort();
+    });
+
+    std::set_terminate([]() {
+        log::error << "Uncaughted Exception" << log::endl;
+        auto ep = std::current_exception();
+        try {
+            if (ep) {
+                std::rethrow_exception(ep);
+            } else {
+                log::error << "Can not get current_exception" << log::endl;
+            }
+        } catch (const std::exception& e) {
+            log::error << "what(): " << e.what() << log::endl;
+        }
+        log::error << "Aborting" << log::endl;
+        ::abort();
+    });
+
     static const std::set<int> SignalsToIgnore = {SIGCONT, SIGURG, SIGIO, SIGPOLL, SIGCHLD, SIGWINCH};
     for (auto i = 0; i <= SIGRTMAX; i++) {
         if (SignalsToIgnore.count(i) == 0) {

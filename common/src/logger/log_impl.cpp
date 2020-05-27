@@ -4,7 +4,9 @@
 
 #include "logger/log_impl.hpp"
 
+#include <exception>
 #include <regex>
+#include <stdexcept>
 
 namespace wayz {
 namespace hera {
