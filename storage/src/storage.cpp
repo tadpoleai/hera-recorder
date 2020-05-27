@@ -72,20 +72,19 @@ void StorageManager::close()
         }
     }
 
+    log::flush();
+    log::close_aux();
+
     if (!read_mode_ && out_file_opened_) {
         out_file_.flush();
+        log::flush();
         if (header != nullptr) {
             out_file_.seekp(0, std::ios::beg);
             header->write_to(out_file_);
-            log::close_aux();
-            header.reset();
         }
         log::debug << "StorageManager: closing file" << log::endl;
         out_file_.close();
         out_file_opened_ = false;
-    } else {
-        log::close_aux();
-        header.reset();
     }
 }
 
