@@ -24,6 +24,7 @@
 #include "device/include/version.hpp"
 #include "storage/include/version.hpp"
 //
+#include "broadcast.hpp"
 #include "service.hpp"
 
 using namespace ::apache::thrift;
@@ -32,8 +33,9 @@ using namespace ::apache::thrift::transport;
 using namespace ::apache::thrift::server;
 using namespace ::wayz::hera;
 
-TThreadedServer* g_server_ptr = nullptr;   ///< global pointer to TSimpleServer
-daemon::Service* g_handler_ptr = nullptr;  ///< global pointer to Service
+TThreadedServer* g_server_ptr = nullptr;       ///< global pointer to TSimpleServer
+daemon::Service* g_handler_ptr = nullptr;      ///< global pointer to Service
+daemon::Broadcast* g_broadcast_ptr = nullptr;  ///< global pointer to Broadcast
 
 ///
 /// @brief Handler Ctrl+C(SIGINT)
@@ -41,11 +43,15 @@ daemon::Service* g_handler_ptr = nullptr;  ///< global pointer to Service
 /// @param s signal
 void sig_int_handler_func(int s)
 {
+    log::info << "HeraMain: Sigint Received, Stopping" << log::endl;
     if (g_server_ptr) {
         g_server_ptr->stop();
         g_handler_ptr->reset();
     }
-    log::info << "HeraMain: Sigint Received, Stopping" << log::endl;
+    if (g_broadcast_ptr) {
+        delete g_broadcast_ptr;
+    }
+    exit(1);
 }
 
 /// Main process
@@ -62,15 +68,21 @@ int main(int argc, char** argv)
         exit(-1);
     }
 
+    std::string name = "Hera Default Daemon";
     std::string storage_folder = "./";
     std::string profile_json = "./profiles.json";
     std::string log_prefix = "hera-daemon";
     std::vector<daemon::RemoteServerType> remote_servers;
+    bool broadcast_whitelist = true;
+    std::vector<std::string> broadcast_ifs;
 
     try {
         std::ifstream i(argv[1]);
         json config;
         i >> config;
+
+        name = config["name"];
+        std::cout << "Name = " << name << std::endl;
 
         storage_folder = config["storageFolder"];
         std::cout << "StorageFolder = " << storage_folder << std::endl;
@@ -97,6 +109,14 @@ int main(int argc, char** argv)
             std::cout << "RemoteServer: " << ur_json << std::endl;
             remote_servers.emplace_back(std::move(ur));
         }
+
+        json broadcast = config["broadcast"];
+        broadcast_whitelist = broadcast["mode"].get<bool>();
+        std::cout << "Broadcast Mode: " << int(broadcast_whitelist) << std::endl;
+        for (const auto& ifname : broadcast["ifs"]) {
+            broadcast_ifs.push_back(ifname);
+            std::cout << "Broadcast Interface: " << ifname << std::endl;
+        }
     } catch (std::exception& e) {
         std::cout << "Error occured when parsing json file " << argv[1] << ": " << e.what() << std::endl;
         exit(-1);
@@ -109,10 +129,14 @@ int main(int argc, char** argv)
     std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     std::shared_ptr<TTransportFactory> transportFactory(new THttpServerTransportFactory());
     std::shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
-
     g_server_ptr = new TThreadedServer(processor, serverTransport, transportFactory, protocolFactory);
+
+    g_broadcast_ptr = new daemon::Broadcast(name, broadcast_ifs, broadcast_whitelist);
+
     log::info << "HeraMain: Daemon Started" << log::endl;
     g_server_ptr->serve();
+
+    delete g_broadcast_ptr;
     log::info << "HeraMain: Daemon Stoped" << log::endl;
     return 0;
 }

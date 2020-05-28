@@ -44,8 +44,8 @@ cp -r ../client/dist/* ../artifacts/amd64/client
 
 # Headers
 cp -r ../common/include/* ../artifacts/amd64/include/hera/common
-cp -r ../device/include/* ../artifacts/amd64/include/hera/storage
-cp -r ../storage/include/* ../artifacts/amd64/include/hera/device
+cp -r ../device/include/* ../artifacts/amd64/include/hera/device
+cp -r ../storage/include/* ../artifacts/amd64/include/hera/storage
 
 # Libraries
 cp -r common/libhera-common.so ../artifacts/amd64/lib

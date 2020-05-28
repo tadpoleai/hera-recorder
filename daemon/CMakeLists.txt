@@ -29,6 +29,10 @@ add_executable(
 target_link_libraries(${PROJECT_NAME} hera-common hera-storage
                       hera-device-driver ${THRIFT})
 
+# Build finder
+add_executable(${PROJECT_NAME}-finder "finder/finder.cpp")
+target_link_libraries(${PROJECT_NAME}-finder)
+
 if(WITH_SLAM)
   message("STATUS" "Linking with libhera-slam")
   target_link_libraries(${PROJECT_NAME} hera-slam-result)
@@ -45,6 +49,11 @@ install(
 install(
   TARGETS hera-daemon
   PERMISSIONS OWNER_EXECUTE OWNER_READ
+  DESTINATION bin)
+install(
+  TARGETS hera-daemon-finder
+  PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE
+              WORLD_READ
   DESTINATION bin)
 install(
   FILES config/daemon.json

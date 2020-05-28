@@ -1,10 +1,27 @@
 {
+  "name": "Tron",
   "storageFolder": "/var/hera/data",
   "profileJson": "/var/hera/profiles.json",
   "logPrefix": "/var/hera/logs/hera-daemon",
-  "remoteServers": [{
-    "remark": "测试机1",
-    "protocol": "RSYNC",
-    "destination": "HDP1:"
-  }]
+  "broadcast": {
+    "mode": false,
+    "ifs": [
+      "eth_lan2",
+      "eth_lan3",
+      "eth_lan4",
+      "eth_lan5",
+      "eth_usb0",
+      "eth_lan2",
+      "lo",
+      "wlan0",
+      "docker0"
+    ]
+  },
+  "remoteServers": [
+    {
+      "remark": "测试机1",
+      "protocol": "RSYNC",
+      "destination": "HDP1:"
+    }
+  ]
 }
