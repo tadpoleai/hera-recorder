@@ -59,6 +59,7 @@ cp -r storage/libhera-storage*.a ../artifacts/amd64/lib
 cp -r convert/hera-convert ../artifacts/amd64/bin
 cp -r device/hera-device-record ../artifacts/amd64/bin
 cp -r daemon/hera-daemon ../artifacts/amd64/bin
+cp -r daemon/hera-daemon-finder ../artifacts/amd64/bin
 cp -r storage/hera-storage-tool ../artifacts/amd64/bin
 cp -r replay/hera-replay ../artifacts/amd64/bin
 cp -r slam/bridge/hera-slam-bridge \
