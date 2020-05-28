@@ -41,8 +41,8 @@ cp -r ../client/dist/* ../artifacts/arm/client
 
 # Headers
 cp -r ../common/include/* ../artifacts/arm/include/hera/common
-cp -r ../device/include/* ../artifacts/arm/include/hera/storage
-cp -r ../storage/include/* ../artifacts/arm/include/hera/device
+cp -r ../device/include/* ../artifacts/arm/include/hera/device
+cp -r ../storage/include/* ../artifacts/arm/include/hera/storage
 
 # Libraries
 cp -r common/libhera-common.so ../artifacts/arm/lib
