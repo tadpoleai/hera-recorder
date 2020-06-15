@@ -38,7 +38,7 @@ SerialConfig::SerialConfig(int32_t baud_rate,
 const std::set<int32_t> SerialPort::ValidBaudRates_ =
         {50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 9600, 19200, 38400, 57600, 115200, 230400};
 
-SerialPort::SerialPort() : fd_(-1) {}
+SerialPort::SerialPort() : fd_(-1), writable_(false) {}
 SerialPort::~SerialPort()
 {
     close_port();
@@ -49,6 +49,21 @@ bool SerialPort::die(std::string&& msg)
     log::error << "SerialPort: " << msg << log::endl;
     reason_ = std::forward<std::string>(msg);
     return false;
+}
+
+bool SerialPort::open_port(const std::string& kernel)
+{
+    close_port();
+
+    writable_ = true;
+    fd_ = open(kernel.c_str(), O_RDWR);
+    if (fd_ == -1) {
+        return die("Error opening: " + kernel);
+    }
+
+    log::info << "Serial: Port " << kernel << " opened" << log::endl;
+
+    return true;
 }
 
 bool SerialPort::open_port(const std::string& kernel, const SerialConfig& serial_config)
@@ -67,7 +82,8 @@ bool SerialPort::open_port(const std::string& kernel, const SerialConfig& serial
         return die("Invalid data bits " + std::to_string(serial_config.stop_bits));
     }
 
-    fd_ = open(kernel.c_str(), serial_config.writable ? O_RDWR : O_RDONLY);
+    writable_ = serial_config.writable;
+    fd_ = open(kernel.c_str(), writable_ ? O_RDWR : O_RDONLY);
     if (fd_ == -1) {
         return die("Error opening: " + kernel);
     }
@@ -194,6 +210,24 @@ std::vector<uint8_t> SerialPort::read_port(size_t max_size, int32_t timeout_ms)
     result.resize(read_size);
 
     return result;
+}
+
+size_t SerialPort::write_port(const std::vector<uint8_t>& data)
+{
+    if (fd_ < 0 || !writable_) {
+        return 0;
+    }
+
+    return write(fd_, data.data(), data.size());
+}
+
+size_t SerialPort::write_port(const std::string& data)
+{
+    if (fd_ < 0 || !writable_) {
+        return 0;
+    }
+
+    return write(fd_, data.data(), data.size());
 }
 
 std::string SerialPort::error_reason() const noexcept

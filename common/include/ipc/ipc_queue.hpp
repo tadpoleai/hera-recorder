@@ -342,7 +342,6 @@ public:
     bool write(DataPtr& data)
     {
         if (!is_open() || (mode_ == OpenMode::Read) || is_closed_) {
-            log::debug << "IPC: Not Open" << log::endl;
             return false;
         }
 

@@ -31,6 +31,13 @@ namespace device {
 /// @note every entry correspond to an derived class of Device
 /// @see Device
 ///
+/// IMU = Inertial Measurement Unit
+/// AHRS = Attitude and Heading Reference System
+/// GNSS = Global Navigation Satellite System
+/// INS = Integrated Navigation System
+///
+/// @note Use term 'GNSS' rather than 'GPS', 'GPS' is one of 'GNSS'
+///
 enum class DeviceVendorType : uint16_t {
     DummyFoobar = 0x0101,        ///< A dummy category for testing, vendor is Wayz
     DummyImage = 0x0102,         ///< A dummy category for testing, outputs dummy image
@@ -39,6 +46,7 @@ enum class DeviceVendorType : uint16_t {
     GnssSerialsync = 0x0301,     ///< RTK-GNSS, outputs NavSatFix, vendor is any that outpus NMEA
     GnssSerial = 0x0302,         ///< For Nmea Sentence with it's UTC time already synced to system time
     GnssS32VSal = 0x0303,        ///< GNSS, driver is provided by S32VSal
+    InsNovatelSpan = 0x0381,     ///< INS vendored by Novatel, product name is SPAN, connected by usb-serial
     CameraFlir = 0x0401,         ///< Camera, outputs RawImage or CompressedImage, vendor is FLIR
     CameraS32VSal = 0x0402,      ///< Camera, outputs RawImage, only for S32V, by mipi-csi, library provided by S32VSal
     LidarVelodyne = 0x0501,      ///< Lidar, outputs PointsXYZI, vendor is Velodyne
@@ -60,6 +68,7 @@ enum class DeviceDataType : uint16_t {
     GnssSerialsyncNmea = 0x0301,            ///< For Nmea Sentence
     GnssSerialNmea = 0x0302,                ///< For Nmea Sentence with time sync
     GnssS32VSalData = 0x0303,               ///< GNSS Data from S32VSal
+    InsNovatelSpanBinaryData = 0x381,       ///< Binary Data of InsNovatelSpan
     CameraFlirCompressedImage = 0x0401,     ///< For Flir's camera's compressed image
     CameraFlirRawImage = 0x0402,            ///< For Flir's camera's raw image
     CameraS32VSalRawImage = 0x0403,         ///< For S32vMipi's camera's raw image
@@ -86,6 +95,9 @@ enum class SensorDataType : uint16_t {
     DummyImage = 0x0102,                  ///< A dummy message, no correspond ROS Message, only to debug image show
     ImuMagneticField = 0x0201,            ///< ROS Imu and MagneticField
     NavSatFix = 0x0301,                   ///< ROS NavSatFix
+    InsBestPosition = 0x381,              ///< Ins Best Position -> ROS NavSatFix
+    InsCorrectedImu = 0x382,              ///< Ins CorrectImu -> ROS Imu
+    InsInsPosition = 0x383,               ///< Ins Position -> ROS NavSatFix
     CompressedImage = 0x0401,             ///< ROS CompressedImage
     Image = 0x0402,                       ///< ROS Image, some minor format conversion needed
     PointsXYZI = 0x0501,                  ///< ROS PointCloud2, some PCL function needed

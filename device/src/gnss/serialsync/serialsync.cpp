@@ -233,7 +233,6 @@ data::SensorDataPtr Serialsync::do_convert(data::DeviceDataPtr& storage_data)
     auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::NavSatFix, length);
     auto navsatfix_sensor_data = static_cast<data::NavSatFix*>(sensor_data.get());
 
-
     // Initialize an invalid data template
     navsatfix_sensor_data->timestamp_intrinsic_ns = raw_data->data.timestamp_intrinsic_ns;
     navsatfix_sensor_data->status.status = data::NavSatFix::StatusType::NO_Fix;

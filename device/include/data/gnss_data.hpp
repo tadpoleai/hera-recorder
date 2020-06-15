@@ -34,7 +34,7 @@ public:
     ///
     /// @note The definition above is defined by ROS.
     /// due to compatibility issues, only 'FIX' and 'NO_Fix' is used in Wayz's
-    /// subsequent codes. so set this to 'FIX' when result is valid, otherwise,
+    /// backend codes(@gaia)_. so set this to 'FIX' when result is valid, otherwise,
     /// set to 'NO_Fix'
     ///
     enum class StatusType : int8_t {
@@ -49,6 +49,8 @@ public:
     ///
     /// Bits defining which Global Navigation Satellite System signals were
     /// used by the receiver
+    ///
+    /// Unused in current version of backend (@gaia)
     enum class ServiceType : uint16_t {
         GPS = 1,
         GLONASS = 2,

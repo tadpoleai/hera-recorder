@@ -39,10 +39,14 @@ public:
     /// @param bagfile output bag file name
     /// @param remapper a remapper for remapping frame_id and topic_name, must not be nullptr
     /// @param only_show only show header information and exit
+    /// @param start_time [sec] if non-zero, convert data from that time only
+    /// @param duration [sec] if non-zero, convert for a certain duration only
     Converter(const std::string& src_filename,
               const std::string& bagfile,
               common::RemapperPtr&& remapper,
-              const bool only_show);
+              const bool only_show,
+              const int32_t start_time,
+              const int32_t duration);
 
     ///
     /// @brief Destroy the Converter object
@@ -107,16 +111,20 @@ private:
     ///
     /// @return a pointer to ROSMessage
     /// @note This operation called by bag thread using semaphore to invoke global bag access
-    /// @note This operation move a ROSMessage from member 'message', and then read thread can publish a new one
+    /// @note This operation move a ROSMessage from member 'message', and then read thread can publish a new
+    /// one
     ROSMessagePtr receive();
 
 private:
+    const std::string bagfile_;           ///< outfile name
     std::atomic<bool> running_;           ///< indicating whether conversion is running
     std::thread* read_thread_;            ///< thread handler of reading hera record
     std::thread* bag_thread_;             ///< thread handler of writing bag
     rosbag_direct_write::DirectBag bag_;  ///< output ROS bag handler
     common::RemapperPtr remapper_;        ///< the remapper for remapping frame_id and topic_name
 
+    const int32_t param_start_time_sec_;       ///< [sec] if non-zero, convert data from that time(start time) only
+    const int32_t param_duration_sec_;         ///< [sec] if non-zero, convert for a certain duration only
     std::atomic<int64_t> progress_;            ///< duration of data replaying now
     int64_t total_duration_;                   ///< total duration of data replaying now
     storage::StorageManagerPtr storage_;       ///< storage manager
