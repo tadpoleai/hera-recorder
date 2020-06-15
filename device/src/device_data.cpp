@@ -234,6 +234,10 @@ DisplayDataPtr DisplayData::create_from(std::vector<SensorDataPtr>&& sensor_data
     case SensorDataType::NavSatFix:
         disp_data->data = std::move(parse<SensorDataType::NavSatFix>(std::move(sensor_datas), disp_data->is_jpeg));
         break;
+    case SensorDataType::InsBestPosition:
+        disp_data->data =
+                std::move(parse<SensorDataType::InsBestPosition>(std::move(sensor_datas), disp_data->is_jpeg));
+        break;
     default:
         log::error << "DisplayParser:: Invalid Sensor Data Type" << log::endl;
         return broken_data();

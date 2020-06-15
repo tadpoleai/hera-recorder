@@ -18,5 +18,6 @@
 #include "data/dummy_data.hpp"
 #include "data/gnss_data.hpp"
 #include "data/imu_data.hpp"
+#include "data/ins_data.hpp"
 #include "data/lidar_data.hpp"
 #include "data/odometry_data.hpp"

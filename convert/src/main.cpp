@@ -61,13 +61,15 @@ int main(int argc, char** argv)
     std::string src_file;
     std::string remap_file;
     bool islog = false;
-    bool isonlyshow = false;
+    bool isonlyprint = false;
     bool isverbose = false;
     bool isquiet = false;
+    int32_t start_time = 0;
+    int32_t duration = 0;
 
     // opterr = 0;
     while (true) {
-        switch (getopt(argc, argv, "i:o:r:sldqhv")) {
+        switch (getopt(argc, argv, "i:o:r:s:t:pldqhv")) {
         case 'i':
             src_file = optarg;
             continue;
@@ -78,7 +80,23 @@ int main(int argc, char** argv)
             remap_file = optarg;
             continue;
         case 's':
-            isonlyshow = true;
+            try {
+                start_time = std::stoi(optarg);
+                continue;
+            } catch (...) {
+                print_version(argv);
+                exit(0);
+            }
+        case 't':
+            try {
+                duration = std::stoi(optarg);
+                continue;
+            } catch (...) {
+                print_version(argv);
+                exit(0);
+            }
+        case 'p':
+            isonlyprint = true;
             continue;
         case 'l':
             islog = true;
@@ -115,6 +133,12 @@ int main(int argc, char** argv)
         if (lastdot == std::string::npos)
             bag_file = src_file;
         bag_file = src_file.substr(0, lastdot);
+        if (start_time > 0) {
+            bag_file += "_s" + std::to_string(start_time);
+        }
+        if (duration > 0) {
+            bag_file += "_t" + std::to_string(duration);
+        }
         bag_file += ".bag";
     }
 
@@ -131,6 +155,8 @@ int main(int argc, char** argv)
         log::onlyprint();
     }
 
+    log::clear_line();
+
     if (isverbose) {
         log::set_level(log::LogLevel::Debug);
     } else {
@@ -138,7 +164,8 @@ int main(int argc, char** argv)
     }
 
     log::debug << "Conversion Start" << log::endl;
-    auto handler = std::make_unique<Converter>(src_file, bag_file, std::move(remapper), isonlyshow);
+    auto handler =
+            std::make_unique<Converter>(src_file, bag_file, std::move(remapper), isonlyprint, start_time, duration);
     g_converter_ptr = handler.get();
 
     if (!handler->running()) {
@@ -157,21 +184,28 @@ int main(int argc, char** argv)
 
         time::Duration progress = handler->progress();
         auto t_now = time::Timestamp::now();
-        double speed = progress / double(t_now - t_start);
+
+        double speed = (progress - start_time * time::OneSecond) / double(t_now - t_start);
         auto rest = total_duration - progress;
         time::Duration eta = rest / speed;
 
         std::cout << "\r";
         std::cout << "- progress:  ";
         auto progress_str = progress.to_str_second();
-        std::string whitespace(total_duration_str.size() - progress_str.size() + 6, ' ');
+        std::string whitespace(total_duration_str.size() - progress_str.size() + 4, ' ');
         std::cout << whitespace << progress_str << " / " << total_duration_str;
-        std::cout << "        ";
+        std::cout << "  ";
 
-        std::cout << " speed = " << std::setw(8) << std::setfill(' ') << std::setprecision(4) << speed << "x        ";
+        if (speed > 0) {
+            std::cout << " speed = " << std::setw(8) << std::setfill(' ') << std::setprecision(4) << speed << "x  ";
+        } else {
+            std::cout << " speed = "
+                      << "      ---"
+                      << "  ";
+        }
 
         auto eta_str = eta.to_str_second();
-        std::cout << " eta = " << std::string(10 - eta_str.size(), ' ') << eta_str;
+        std::cout << " eta = " << std::string(9 - eta_str.size(), ' ') << eta_str;
         std::cout.flush();
     }
     std::cout << "\n";
