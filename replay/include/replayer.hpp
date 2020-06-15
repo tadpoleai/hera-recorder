@@ -37,7 +37,10 @@ public:
     ///
     /// @param filename source file name of recorded data
     ///
-    Replayer(const std::string& filename, const double replay_rate = 1.0, const bool showonly = false);
+    Replayer(const std::string& filename,
+             const double replay_rate = 1.0,
+             const std::string& config_filename = "",
+             const uint64_t start_time = 0.0);
 
     ///
     /// @brief Destroy the Aligned Converter object
@@ -53,6 +56,22 @@ public:
     inline bool running() const noexcept
     {
         return running_;
+    }
+
+    ///
+    /// @brief Switch paused
+    ///
+    inline void pause() noexcept
+    {
+        paused_ = !paused_;
+    }
+
+    ///
+    /// @brief Get whether converter is paused
+    ///
+    inline bool is_paused() const noexcept
+    {
+        return paused_;
     }
 
     ///
@@ -86,13 +105,19 @@ private:
     void replay_thread_function();
 
 private:
-    std::thread* replay_thread_;                                          ///< thread handler of replaying
-    const double replay_rate_;                                            ///< time ratio of replaying
-    std::atomic<bool> running_;                                           ///< indicating whether conversion is running
-    std::atomic<int64_t> progress_;                                       ///< duration of data replaying now
-    int64_t total_duration_;                                              ///< total duration of data replaying now
-    storage::StorageManagerPtr storage_;                                  ///< storage manager
-    std::unique_ptr<ipc::IPCQueue<device::data::SensorData>> ipc_queue_;  ///< ipc queue for data forwarding;
+    std::thread* replay_thread_;     ///< thread handler of replaying
+    const double replay_rate_;       ///< time ratio of replaying
+    std::atomic<bool> running_;      ///< indicating whether conversion is running(not terminated) (true even paused)
+    std::atomic<bool> paused_;       ///< indicating whether conversion is paused
+    std::atomic<int64_t> progress_;  ///< duration of data replaying now
+    uint64_t param_start_time_;      ///< skip data time less than this
+    int64_t total_duration_;         ///< total duration of data replaying now
+    storage::StorageManagerPtr storage_;  ///< storage manager
+
+    std::vector<ipc::IPCQueue<device::data::SensorData>*>
+            ipc_ptrs_;  ///< pointer to which ipc queues to use for every device
+    std::vector<std::unique_ptr<ipc::IPCQueue<device::data::SensorData>>>
+            ipc_queues_;  ///< list of ipc queue for data forwarding;
 };
 
 }  // namespace replay

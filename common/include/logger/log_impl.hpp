@@ -29,6 +29,7 @@ class Logger;
 class Logger {
 public:
     static void onlyprint();
+    static void clear_line();
     static void ignore_signal(int signo);
     static void flush();
     static bool init(const std::string& file);
@@ -67,6 +68,7 @@ private:
 
     LogLevel level_;
     LogQueue queue_;
+    bool clear_line_;
 
     std::atomic<bool> running_;
     std::atomic<bool> flushed_;

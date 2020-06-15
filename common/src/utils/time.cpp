@@ -60,7 +60,7 @@ std::ostream& operator<<(std::ostream& os, const Timestamp& ts)
     return os;
 }
 
-std::string Duration::to_str_second() const
+std::string Duration::to_str_second(const bool show_ms) const
 {
     std::string result;
     int64_t sec = duration_ns_ / OneSecondToNs;
@@ -80,7 +80,16 @@ std::string Duration::to_str_second() const
         result += std::to_string(sec / 60) + "m ";
         sec %= 60;
     }
-    result += std::to_string(sec) + "s";
+    result += std::to_string(sec);
+
+    if (show_ms) {
+        uint64_t ms = (duration_ns_ % OneSecondToNs) / 1000000ULL;
+        auto ms_str = std::to_string(ms);
+        ms_str.insert(0, 3 - ms_str.length(), '0');
+        result += "." + ms_str;
+    }
+
+    result += "s";
     return result;
 }
 

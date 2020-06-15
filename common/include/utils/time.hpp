@@ -25,7 +25,7 @@ public:
         return duration_ns_;
     }
 
-    std::string to_str_second() const;
+    std::string to_str_second(const bool show_ms = false) const;
 
 private:
     int64_t duration_ns_;

@@ -20,6 +20,11 @@ void Logger::onlyprint()
     instance_->inited_ = true;
 }
 
+void Logger::clear_line()
+{
+    instance_->clear_line_ = true;
+}
+
 void Logger::flush()
 {
     while (!instance_->flushed_)
@@ -110,6 +115,10 @@ void Logger::write(LogString&& data)
     if (!inited_) {
         inited_ = true;
         init("default_log");
+    }
+
+    if (clear_line_) {
+        std::cout << "\r";
     }
     std::cout << data.level.to_color_prefix() << str << data.level.to_color_suffix() << std::endl;
     if (file_.is_open()) {

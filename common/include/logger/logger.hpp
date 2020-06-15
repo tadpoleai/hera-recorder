@@ -21,6 +21,11 @@ inline void onlyprint()
     return impl::Logger::onlyprint();
 }
 
+inline void clear_line()
+{
+    return impl::Logger::clear_line();
+}
+
 inline void ignore_signal(int signo)
 {
     return impl::Logger::ignore_signal(signo);
