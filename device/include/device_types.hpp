@@ -51,6 +51,7 @@ enum class DeviceVendorType : uint16_t {
     CameraS32VSal = 0x0402,      ///< Camera, outputs RawImage, only for S32V, by mipi-csi, library provided by S32VSal
     LidarVelodyne = 0x0501,      ///< Lidar, outputs PointsXYZI, vendor is Velodyne
     OdometryS32VGeely = 0x0601,  ///< Odometry, only for S32V, by CAN-bus, only for Car vendorGeely
+    OdometryAEHaitai = 0x0611,   ///< Odometry, absolute encoder connected by serial, vendor is haitai
 };
 
 ///
@@ -74,7 +75,9 @@ enum class DeviceDataType : uint16_t {
     CameraS32VSalRawImage = 0x0403,         ///< For S32vMipi's camera's raw image
     CameraS32VSalCompressedImage = 0x0404,  ///< For S32vMipi's camera's compressed image
     LidarVelodynePacket = 0x0501,           ///< For Velodyne's raw UDP packet
+    LidarVelodynePacketUnsync = 0x0502,     ///< For Velodyne's raw UDP packet, sync input is invalid
     OdometryS32VGeelyCANFrame = 0x0601,     ///< For OdometryS32V Geely
+    OdometryAEHaitaiData = 0x0611,          ///< For OdometryS32V Geely
 };
 
 ///
@@ -104,6 +107,7 @@ enum class SensorDataType : uint16_t {
     OdometryFrontWheelSpeed = 0x0601,     ///< For Odometry
     OdometryRearWheelSpeed = 0x0602,      ///< For Odometry
     OdometrySteeringAngle = 0x0603,       ///< For Odometry
+    OdometryOrientation = 0x0611,         ///< For Odometry, Single Axis Orientation > ROS Imu
     OdometryLocalizationResult = 0x0620,  ///< LocalizationResult, feedback by Localization Service to Hera
 };
 
@@ -118,6 +122,7 @@ BETTER_ENUM(DeviceParameterType,
             DummyRate = 0,
             DummyValue,
             DummyString,
+            SyncInvalid,
             IpAddress,
             DataPort,
             TelemetryPort,

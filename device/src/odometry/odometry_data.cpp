@@ -11,6 +11,7 @@
 
 #include "data/odometry_data.hpp"
 
+#include <cmath>
 #include <iomanip>
 #include <sstream>
 
@@ -30,9 +31,30 @@ std::string DisplayData::parse<SensorDataType::OdometryRearWheelSpeed>(std::vect
 
 template<>
 std::string DisplayData::parse<SensorDataType::OdometrySteeringAngle>(std::vector<SensorDataPtr>&& sensor_datas,
-                                                                        bool& is_jpeg)
+                                                                      bool& is_jpeg)
 {
     return "Driver is not implenmented";
+}
+
+
+template<>
+std::string DisplayData::parse<SensorDataType::OdometryOrientation>(std::vector<SensorDataPtr>&& sensor_datas,
+                                                                    bool& is_jpeg)
+{
+    is_jpeg = false;
+    std::string result;
+    for (auto&& data : sensor_datas) {
+        if (data->sensor_data_type == SensorDataType::OdometryOrientation) {
+            auto data_impl = reinterpret_cast<data::Orientation*>(data.get());
+            result += "O: " + std::to_string(data_impl->orientation) + "rad\n";
+            auto deg = data_impl->orientation / M_PI * 180.0;
+            if (deg < 0) {
+                deg += 360;
+            }
+            result += "O: " + std::to_string(deg) + "°\n";
+        }
+    }
+    return result;
 }
 
 }  // namespace data

@@ -110,6 +110,7 @@ private:
 
     ::sockaddr_in addr_in_;                 ///< Ip Address and Data Port of Lidar
     int32_t rotational_speed_;              ///< [rpm] Rotational Speed
+    bool sync_invalid_;                     ///< If gps sync input is invalid
     int socket_;                            ///< Socket handler
     uint8_t receive_buffer_[EthernetMTU_];  ///< UDP Receive buffer
 };

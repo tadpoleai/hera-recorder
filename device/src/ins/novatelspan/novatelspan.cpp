@@ -171,8 +171,6 @@ data::SensorDataPtr NovatelSpan::do_convert(data::DeviceDataPtr& storage_data)
 
     uint64_t timestamp_intrinsic_ns = utc_time_ns + raw_data->shifation_value_ns;
 
-    log::debug << "Timestamp = " << time::Timestamp(timestamp_intrinsic_ns);
-
     // Judge Type of Message
     auto message_id = raw_data->novatel_header.message_id;
     switch (message_id) {

@@ -27,6 +27,7 @@ public:
     double left;   ///< speed of left front wheel
     double right;  ///< speed of right front wheel
 };
+
 ///
 /// @brief SensorData for odometry RearWheelSpeedAngle
 ///
@@ -45,14 +46,22 @@ public:
 };
 
 ///
+/// @brief Single Axis Orientation
+///
+class Orientation final : public SensorData {
+public:
+    double orientation;  ///< orientation of axis, rad
+};
+
+///
 /// @brief LocalizationResult odometry geely / chery to send back by driver
 ///
 class LocalizationResult final : public SensorData {
 public:
-    static constexpr uint32_t IPCKeyS32VGeely = 0x100u;     ///< Key for sending data back to driver Geely
-    static constexpr uint32_t IPCKeyS32VChery = 0x101u;     ///< Key for sending data back to driver Chery
-    static constexpr uint32_t IPCElementSize = 0x100u;  ///< Element size of ipc slot
-    static constexpr uint32_t IPCNumElement = 0x10u;    ///< Queue length of ipc slot
+    static constexpr uint32_t IPCKeyS32VGeely = 0x100u;  ///< Key for sending data back to driver Geely
+    static constexpr uint32_t IPCKeyS32VChery = 0x101u;  ///< Key for sending data back to driver Chery
+    static constexpr uint32_t IPCElementSize = 0x100u;   ///< Element size of ipc slot
+    static constexpr uint32_t IPCNumElement = 0x10u;     ///< Queue length of ipc slot
 
 public:
     enum class SystemStatus : uint8_t { Off = 0x00u, On = 0x01u, Failed = 0x02u, Active = 0x03u };

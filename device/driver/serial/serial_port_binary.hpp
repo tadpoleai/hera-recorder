@@ -36,6 +36,7 @@ struct SerialPortBinaryConfig {
         NONE,            ///< 0 Bytes, Not use checksum
         XOR8,            ///< 1 Bytes, XOR of data bytes
         CRC32_ISO_3309,  ///< 4 Bytes, Polynomial = 0x04C11DB7, 0xEDB88320(R)
+        CRC16_MODBUS,    ///< 2 Bytes
     };
     ChecksumProtocol checksum_protocol;
 

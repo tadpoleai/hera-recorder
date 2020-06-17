@@ -238,6 +238,10 @@ DisplayDataPtr DisplayData::create_from(std::vector<SensorDataPtr>&& sensor_data
         disp_data->data =
                 std::move(parse<SensorDataType::InsBestPosition>(std::move(sensor_datas), disp_data->is_jpeg));
         break;
+    case SensorDataType::OdometryOrientation:
+        disp_data->data =
+                std::move(parse<SensorDataType::OdometryOrientation>(std::move(sensor_datas), disp_data->is_jpeg));
+        break;
     default:
         log::error << "DisplayParser:: Invalid Sensor Data Type" << log::endl;
         return broken_data();

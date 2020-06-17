@@ -196,6 +196,8 @@ std::vector<ROSMessagePtr> ROSMessage::convert(device::data::SensorDataPtr& sens
             return convert<device::SensorDataType::NavSatFix>(sensor_data, topic_prefix, frame_id, remapper);
         case device::SensorDataType::InsBestPosition:
             return convert<device::SensorDataType::InsBestPosition>(sensor_data, topic_prefix, frame_id, remapper);
+        case device::SensorDataType::OdometryOrientation:
+            return convert<device::SensorDataType::OdometryOrientation>(sensor_data, topic_prefix, frame_id, remapper);
         default: {
             log::error << "Converter:: Invalid Sensor Data Type" << log::endl;
             std::vector<ROSMessagePtr> ret;
