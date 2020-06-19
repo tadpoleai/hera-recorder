@@ -27,7 +27,8 @@ namespace replay {
 Replayer::Replayer(const std::string& filename,
                    const double replay_rate,
                    const std::string& config_filename,
-                   const uint64_t start_time) :
+                   const uint64_t start_time,
+                   const bool strict_aligned) :
     replay_thread_(nullptr),
     replay_rate_(replay_rate),
     running_(false),
@@ -35,7 +36,7 @@ Replayer::Replayer(const std::string& filename,
     param_start_time_(start_time),
     total_duration_(0)
 {
-    storage_ = storage::StorageManager::open(filename, true, false, false);
+    storage_ = storage::StorageManager::open(filename, true, false, false, strict_aligned);
     if (storage_->header == nullptr) {
         log::error << "Replayer: Can not open hera record file " << filename << log::endl;
         return;

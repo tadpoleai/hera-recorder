@@ -22,7 +22,7 @@ struct termios g_old_termios_settings;
 void print_help(char** argv)
 {
     std::cout << "usage:\t" << argv[0]
-              << " -i <source_data> [-c <record_config_file>] [-s <start_time>] [-r <replay_rate>] [-dq] [-hv]"
+              << " -i <source_data> [-c <record_config_file>] [-s <start_time>] [-r <replay_rate>] [-adq] [-hv]"
               << std::endl;
     std::cout << "\t-i\tSource data file\n"
               << "\t\t\tHera formatted file\n"
@@ -30,12 +30,15 @@ void print_help(char** argv)
               << "\t-c\tRecord config json file\n"
               << "\t\t\tTo specific an ipc remap, the same json format as which used by device-record\n"
 
-              << "\t-r\tStart time\n"
+              << "\t-s\tStart time\n"
               << "\t\t\tFloat number[sec], default = 0.0 to specific a timepoint, the data before which would be "
                  "skipped\n"
 
               << "\t-r\tReplay rate\n"
               << "\t\t\tFloat number, default = 1.0\n"
+
+              << "\t-a\tFlag to use strict mode\n"
+              << "\t\t\tThis force storage to read data in timestamp realigned mode, which cosumes more resources\n"
 
               << "\t-d\tFlag set log level to debug\n"
 
@@ -93,6 +96,7 @@ int main(int argc, char** argv)
 
     std::string filename;
     std::string config_filename;
+    bool isstrict_aligned = false;
     bool isverbose = false;
     bool isquiet = false;
     double replay_rate = 1.0;
@@ -100,7 +104,7 @@ int main(int argc, char** argv)
 
     // opterr = 0;
     while (true) {
-        switch (getopt(argc, argv, "i:c:s:r:dqhv")) {
+        switch (getopt(argc, argv, "i:c:s:r:adqhv")) {
         case 'i':
             filename = optarg;
             continue;
@@ -127,6 +131,9 @@ int main(int argc, char** argv)
                 print_help(argv);
                 exit(1);
             }
+            continue;
+        case 'a':
+            isstrict_aligned = true;
             continue;
         case 'd':
             isverbose = true;
@@ -172,7 +179,11 @@ int main(int argc, char** argv)
     log::debug << "Replay rate = " << replay_rate << log::endl;
 
     log::debug << "Replayer Start" << log::endl;
-    auto handler = std::make_unique<Replayer>(filename, replay_rate, config_filename, start_time * time::OneSecond);
+    auto handler = std::make_unique<Replayer>(filename,
+                                              replay_rate,
+                                              config_filename,
+                                              start_time * time::OneSecond,
+                                              isstrict_aligned);
     g_replayer_ptr = handler.get();
 
     log::flush();

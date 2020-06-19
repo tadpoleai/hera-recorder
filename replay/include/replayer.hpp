@@ -40,7 +40,8 @@ public:
     Replayer(const std::string& filename,
              const double replay_rate = 1.0,
              const std::string& config_filename = "",
-             const uint64_t start_time = 0.0);
+             const uint64_t start_time = 0.0,
+             const bool strict_aligned = false);
 
     ///
     /// @brief Destroy the Aligned Converter object
