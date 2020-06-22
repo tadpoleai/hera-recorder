@@ -6,7 +6,7 @@
 
 #include <common/include/logger/logger.hpp>
 
-#include "driver/checksum/crc32.hpp"
+#include "driver/checksum/crc.hpp"
 #include "string.h"
 
 namespace wayz {
@@ -164,7 +164,25 @@ void SerialPortBinary::fetch_thread_function()
                 uint32_t calculated_crc32 =
                         driver::CalculateBlockCRC32(crc32_length, (unsigned char*)c_buffer + crc32_start);
                 checksum_verified = (calculated_crc32 == received_crc32);
+            } break;
+            case SerialPortBinaryConfig::ChecksumProtocol::CRC16_MODBUS: {
+                if (msg_end - msg_start < 2) {
+                    break;
+                }
 
+                auto crc16_start = msg_start;
+                if (binary_config_.checksum_range == SerialPortBinaryConfig::ChecksumRange::DATA_ONLY) {
+                    crc16_start += binary_config_.lead_bytes.size();
+                }
+                auto crc16_end = msg_end - 2;
+                auto crc16_length = crc16_end - crc16_start;
+
+                uint32_t received_crc16 = 0;
+                memcpy(&received_crc16, (unsigned char*)c_buffer + crc16_end, 2);
+
+                uint32_t calculated_crc16 =
+                        driver::CalculateBlockCRC16(crc16_length, (unsigned char*)c_buffer + crc16_start);
+                checksum_verified = (calculated_crc16 == received_crc16);
             } break;
 
             default:
@@ -178,7 +196,7 @@ void SerialPortBinary::fetch_thread_function()
                 memcpy(message->data(), (unsigned char*)c_buffer + msg_start, msg_end - msg_start);
                 queue_.emplace(std::move(message));
             } else {
-                log::warn << "SerialPortBinary: Checksum mismatched data" << log::endl;
+                // log::warn << "SerialPortBinary: Checksum mismatched data" << log::endl;
             }
         }
 

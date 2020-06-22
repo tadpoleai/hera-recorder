@@ -21,9 +21,18 @@ namespace driver {
 ///
 /// @param ulCount Number of bytes in the data block
 /// @param char* Data block
-/// @return unsigned long Result
+/// @return uint32_t Result
 ///
 uint32_t CalculateBlockCRC32(uint32_t ulCount, unsigned char* ucBuffer);
+
+///
+/// @brief Calculates the CRC-16/Modbus of a block of data all at once
+///
+/// @param wdCount Number of bytes in the data block
+/// @param char* Data block
+/// @return uint16_t Result
+///
+uint16_t CalculateBlockCRC16(uint16_t wdCount, unsigned char* ucBuffer);
 
 }  // namespace driver
 }  // namespace device

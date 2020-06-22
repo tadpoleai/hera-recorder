@@ -19,7 +19,8 @@ namespace velodyne {
 const std::vector<DeviceParameterType> Velodyne::EssentialParameterTypes = {DeviceParameterType::IpAddress,
                                                                             DeviceParameterType::DataPort};
 
-const std::vector<DeviceParameterType> Velodyne::OptionalParameterTypes = {DeviceParameterType::RotationalSpeed};
+const std::vector<DeviceParameterType> Velodyne::OptionalParameterTypes = {DeviceParameterType::RotationalSpeed,
+                                                                           DeviceParameterType::SyncInvalid};
 
 auto _ = DeviceFactory::register_type({.type = DeviceVendorType::LidarVelodyne,
                                        .type_name = "lidar/velodyne",
@@ -63,6 +64,11 @@ HeraErrno Velodyne::connect()
                             "Velodyne::" + get_name() + "Invalid Parameter RotationalSpeed = " +
                                     parameters_[DeviceParameterType::RotationalSpeed] +
                                     ", is greater than MaximumRPM = " + std::to_string(MaximumRPM_) + "rpm");
+    }
+
+    if (parameters_.count(DeviceParameterType::SyncInvalid) && !parameters_[DeviceParameterType::SyncInvalid].empty()) {
+        sync_invalid_ = true;
+        log::info << "Velodyne: Sync is Invalid" << log::endl;
     }
 
     int ret = system(("curl -m 0.2 --data \"motor=on&laser=on&rpm=" + std::to_string(rotational_speed_) + "\" http://" +
@@ -122,11 +128,11 @@ data::DeviceDataPtr Velodyne::fetch()
 
     // Total length of device data
     auto length = sizeof(VelodynePacket);
-    auto data = data::DeviceData::create(length,
-                                         id_,
-                                         DeviceVendorType::LidarVelodyne,
-                                         DeviceDataType::LidarVelodynePacket,
-                                         sequence_++);
+    auto data_type = DeviceDataType::LidarVelodynePacket;
+    if (sync_invalid_) {
+        data_type = DeviceDataType::LidarVelodynePacketUnsync;
+    }
+    auto data = data::DeviceData::create(length, id_, DeviceVendorType::LidarVelodyne, data_type, sequence_++);
     auto derived_data = static_cast<VelodynePacket*>(data.get());
 
     // Use Memcpy to directly fill buf
@@ -151,7 +157,8 @@ HeraErrno Velodyne::adjust_parameter(DeviceParameterType type, const std::string
 /// if valid, do convertion by LidarType
 data::SensorDataPtr Velodyne::do_convert(data::DeviceDataPtr& storage_data)
 {
-    if (!storage_data->is_type(DeviceDataType::LidarVelodynePacket)) {
+    if (!storage_data->is_type(DeviceDataType::LidarVelodynePacket) &&
+        !storage_data->is_type(DeviceDataType::LidarVelodynePacketUnsync)) {
         return data::SensorData::broken_data();
     }
 
@@ -272,18 +279,22 @@ data::SensorDataPtr Velodyne::do_convert(data::DeviceDataPtr& storage_data)
     lidar_sensor_data->point_number = point_number;
 
     // Calculate laser firing timestamp of the first laser beam
-    int64_t t_recv_us = (raw_data->get_timestamp_receive_ns()) / UsToNs_;
-    int64_t t_packet_us = (int64_t)(raw_data->data.timestamp);
-    int64_t t_fire_us = HourToUs_ * ((t_recv_us - t_packet_us + HalfHourToUs_) / HourToUs_) + t_packet_us;
-    if (abs(t_fire_us - t_recv_us) > MaxDelayToleranceUs_) {
-        // Synchronization lost
-        /// @note If Synchronization is lost, i.e. t_recv is more than t_fire by MaxDelayTolerance,
-        /// data will be abandon
-        log::warn << "Velodyne: Data with ts = " << t_fire_us << "us, received at " << t_recv_us << "us too far"
-                  << log::endl;
-        return data::SensorData::broken_data();
+    if (storage_data->is_type(DeviceDataType::LidarVelodynePacket)) {
+        int64_t t_recv_us = (raw_data->get_timestamp_receive_ns()) / UsToNs_;
+        int64_t t_packet_us = (int64_t)(raw_data->data.timestamp);
+        int64_t t_fire_us = HourToUs_ * ((t_recv_us - t_packet_us + HalfHourToUs_) / HourToUs_) + t_packet_us;
+        if (abs(t_fire_us - t_recv_us) > MaxDelayToleranceUs_) {
+            // Synchronization lost
+            /// @note If Synchronization is lost, i.e. t_recv is more than t_fire by MaxDelayTolerance,
+            /// data will be abandon
+            log::warn << "Velodyne: Data with ts = " << t_fire_us << "us, received at " << t_recv_us << "us too far"
+                      << log::endl;
+            return data::SensorData::broken_data();
+        }
+        lidar_sensor_data->timestamp_intrinsic_ns = t_fire_us * UsToNs_;
+    } else {
+        lidar_sensor_data->timestamp_intrinsic_ns = raw_data->get_timestamp_receive_ns();
     }
-    lidar_sensor_data->timestamp_intrinsic_ns = t_fire_us * UsToNs_;
 
     // Fill Metadata
     switch (raw_data->data.lidar_type) {
