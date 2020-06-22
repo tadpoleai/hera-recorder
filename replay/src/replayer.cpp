@@ -166,15 +166,23 @@ void Replayer::replay_thread_function()
             auto now = time::Timestamp::now();
             auto duration = now - t;
             t = now;
+
+            constexpr auto UpdatePeriodUs = 10000;  // 10ms;
             if (paused_) {
                 pause_waited += duration;
+                usleep(UpdatePeriodUs);
             } else {
                 progress_ = (now - t_start - pause_waited) * replay_rate_ + param_start_time_;
                 if (now >= t_wait) {
                     break;
                 }
+                auto to_sleep_us = (t_wait - now) / 1000UL;
+
+                if (to_sleep_us > UpdatePeriodUs) {
+                    to_sleep_us = UpdatePeriodUs;
+                }
+                usleep(to_sleep_us);
             }
-            usleep(1);
         };
         progress_ = t_data - t_data_start + param_start_time_;
 

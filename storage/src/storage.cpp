@@ -42,7 +42,9 @@ StorageManager::StorageManager(const std::string& filename,
     add_device_finished_(false),
     thread_(nullptr),
     thread_running_(false),
-    prefetch_ended_(false)
+    prefetch_data_ready_(false),
+    prefetch_ended_(false),
+    read_header_timestamp_(UINT64_MAX)
 {
     if (read_mode) {
         in_file_.open(filename, std::ios::binary);
@@ -50,6 +52,7 @@ StorageManager::StorageManager(const std::string& filename,
             header = StorageDataHeader::read_from(in_file_, is_extra, is_logs);
         } else {
             log::error << "StorageManager: Can not open " << filename << log::endl;
+            return;
         }
 
         if (read_strict) {

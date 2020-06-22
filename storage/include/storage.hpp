@@ -198,8 +198,11 @@ private:
     /// @brief Data array used in read_strict mode
     ///
     std::vector<std::queue<std::shared_ptr<device::data::DeviceData>>> data_array_prefetch_;
-    mutable std::mutex mutex_prefetch_;  ///< mutex for operations in read_strict mode
-    bool prefetch_ended_;                ///< prefetch ended up
+    mutable std::mutex mutex_prefetch_;            ///< mutex for operations in read_strict mode
+    mutable std::condition_variable cv_prefetch_;  ///< condition_variable for operations in read_strict mode
+    bool prefetch_data_ready_;  ///< either, data is ready to read in data_array_prefetch, or prefetch has ended up
+    bool prefetch_ended_;       ///< if prefetch has ended up
+    uint64_t read_header_timestamp_;
 };
 
 }  // namespace storage
