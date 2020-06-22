@@ -14,9 +14,16 @@
 #include <string>
 #include <vector>
 
+#ifdef HERA_COMPILE_IN_REPO
 #include "common/include/third_party/enum.hpp"
 #include "common/include/utils/folder_content.hpp"
 #include "common/include/utils/process.hpp"
+#else
+#include <hera/common/third_party/enum.hpp>
+#include <hera/common/utils/folder_content.hpp>
+#include <hera/common/utils/process.hpp>
+#endif
+
 
 namespace wayz {
 namespace hera {
