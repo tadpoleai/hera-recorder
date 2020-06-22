@@ -27,7 +27,8 @@ namespace replay {
 Replayer::Replayer(const std::string& filename,
                    const double replay_rate,
                    const std::string& config_filename,
-                   const uint64_t start_time) :
+                   const uint64_t start_time,
+                   const bool strict_aligned) :
     replay_thread_(nullptr),
     replay_rate_(replay_rate),
     running_(false),
@@ -35,7 +36,7 @@ Replayer::Replayer(const std::string& filename,
     param_start_time_(start_time),
     total_duration_(0)
 {
-    storage_ = storage::StorageManager::open(filename, true, false, false);
+    storage_ = storage::StorageManager::open(filename, true, false, false, strict_aligned);
     if (storage_->header == nullptr) {
         log::error << "Replayer: Can not open hera record file " << filename << log::endl;
         return;
@@ -165,15 +166,23 @@ void Replayer::replay_thread_function()
             auto now = time::Timestamp::now();
             auto duration = now - t;
             t = now;
+
+            constexpr auto UpdatePeriodUs = 10000;  // 10ms;
             if (paused_) {
                 pause_waited += duration;
+                usleep(UpdatePeriodUs);
             } else {
                 progress_ = (now - t_start - pause_waited) * replay_rate_ + param_start_time_;
                 if (now >= t_wait) {
                     break;
                 }
+                auto to_sleep_us = (t_wait - now) / 1000UL;
+
+                if (to_sleep_us > UpdatePeriodUs) {
+                    to_sleep_us = UpdatePeriodUs;
+                }
+                usleep(to_sleep_us);
             }
-            usleep(1);
         };
         progress_ = t_data - t_data_start + param_start_time_;
 

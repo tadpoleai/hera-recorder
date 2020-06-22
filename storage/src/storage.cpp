@@ -23,24 +23,28 @@ StorageManagerPtr StorageManager::open(const std::string& filename,
                                        const bool read_mode,
                                        const bool is_extra,
                                        const bool is_logs,
-                                       const bool read_aligned)
+                                       const bool read_strict)
 {
-    return StorageManagerPtr(new StorageManager(filename, read_mode, is_extra, is_logs));
+    return StorageManagerPtr(new StorageManager(filename, read_mode, is_extra, is_logs, read_strict));
 }
 
 StorageManager::StorageManager(const std::string& filename,
                                const bool read_mode,
                                const bool is_extra,
                                const bool is_logs,
-                               const bool read_aligned) :
+                               const bool read_strict) :
     header(nullptr),
     filename_(filename),
     file_size_counter_(0),
     read_mode_(read_mode),
+    read_strict_(read_strict),
     out_file_opened_(false),
     add_device_finished_(false),
     thread_(nullptr),
-    thread_running_(false)
+    thread_running_(false),
+    prefetch_data_ready_(false),
+    prefetch_ended_(false),
+    read_header_timestamp_(UINT64_MAX)
 {
     if (read_mode) {
         in_file_.open(filename, std::ios::binary);
@@ -48,6 +52,15 @@ StorageManager::StorageManager(const std::string& filename,
             header = StorageDataHeader::read_from(in_file_, is_extra, is_logs);
         } else {
             log::error << "StorageManager: Can not open " << filename << log::endl;
+            return;
+        }
+
+        if (read_strict) {
+            log::warn << "StorageManager: Opening '" << filename << "' in timestamp strict aligned mode" << log::endl;
+            log::warn << "StorageManager: This cosumes more CPU and memory" << log::endl;
+
+            thread_running_ = true;
+            thread_ = new std::thread(&StorageManager::prefetch_thread_function, this);
         }
     } else {
         header = StorageDataHeaderPtr(new StorageDataHeader(4));
@@ -134,15 +147,6 @@ bool StorageManager::add_data(const uint32_t device_id, device::data::DeviceData
     }
 
     return data_array_[device_id]->push(data, !if_write_data);
-}
-
-device::data::DeviceDataPtr StorageManager::read()
-{
-    if (!read_mode_ || !header) {
-        return nullptr;
-    }
-
-    return device::data::DeviceData::read_from(in_file_);
 }
 
 std::vector<DeviceDataPtr> StorageManager::history(const uint32_t device_id) const

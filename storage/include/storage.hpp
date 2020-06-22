@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <fstream>
 #include <memory>
+#include <queue>
 #include <string>
 #include <thread>
 #include <utility>
@@ -59,14 +60,14 @@ public:
     /// @param read_mode true if to read out from storage, otherwise write
     /// @param is_extra bool write/read extra information
     /// @param is_logs bool write/read extra information
-    /// @param read_aligned bool read SensorData instead of DeviceData in timestamp aligned mode
+    /// @param read_strict bool read deviceData in timestamp re-indexed mode
     ///
     /// @return StorageManagerPtr the unique pointer to StorageManager
     static StorageManagerPtr open(const std::string& filename,
                                   const bool read_mode,
                                   const bool is_extra = true,
                                   const bool is_logs = true,
-                                  const bool read_aligned = false);
+                                  const bool read_strict = false);
 
 public:
     ///
@@ -159,6 +160,11 @@ private:
     ///
     void write_thread_function();
 
+    ///
+    /// @brief function of prefetching data (read mode, strict)
+    ///
+    void prefetch_thread_function();
+
 private:
     static constexpr auto TimeSleepUs = 500;  ///< Time to sleep on write thread when no data
 
@@ -169,20 +175,34 @@ private:
     std::string filename_;      ///< Storage folder name
     size_t file_size_counter_;  ///< Size of current storage file, in bytes
 
-    bool read_mode_;          ///< Indicating if storage is in read mode
-    bool read_aligned_;       ///< Read sensor data messages aligned by timestamp_intrinsic
-                              /// @todo (WIP)
+    bool read_mode_;    ///< Indicating if storage is in read mode
+    bool read_strict_;  ///< Read sensor data messages aligned by timestamp
+
     std::ofstream out_file_;  ///< Current output file, used in write mode
     bool out_file_opened_;    ///< output file (write mode) opened
     std::ifstream in_file_;   ///< Current input file, used in read mode
 
-    bool add_device_finished_;  ///< Finish_add_device called
+    bool add_device_finished_;  ///< Finish_add_device called, used in write mode
 
-    std::thread* thread_;               ///< Writing thread handler, used in write mode
+    std::thread* thread_;  ///< Writing thread handler, used in write mode. or Prefetch thread handler, used in
+                           ///< read_strict mode
     std::atomic<bool> thread_running_;  ///< An atomic variable indicating if storage is operating,
-                                        /// used in write mode
+                                        /// used in write, or read_strict mode
 
-    std::vector<std::unique_ptr<common::ThreadQueue<device::data::DeviceData>>> data_array_;  ///< Device datas
+    ///
+    /// @brief Data array used in write mode
+    ///
+    std::vector<std::unique_ptr<common::ThreadQueue<device::data::DeviceData>>> data_array_;
+
+    ///
+    /// @brief Data array used in read_strict mode
+    ///
+    std::vector<std::queue<std::shared_ptr<device::data::DeviceData>>> data_array_prefetch_;
+    mutable std::mutex mutex_prefetch_;            ///< mutex for operations in read_strict mode
+    mutable std::condition_variable cv_prefetch_;  ///< condition_variable for operations in read_strict mode
+    bool prefetch_data_ready_;  ///< either, data is ready to read in data_array_prefetch, or prefetch has ended up
+    bool prefetch_ended_;       ///< if prefetch has ended up
+    uint64_t read_header_timestamp_;
 };
 
 }  // namespace storage
