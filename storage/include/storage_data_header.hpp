@@ -16,8 +16,13 @@
 #include <ostream>
 #include <vector>
 
+#ifdef HERA_COMPILE_IN_REPO
 #include "common/include/logger/log_string.hpp"
 #include "common/include/third_party/json.hpp"
+#else
+#include <hera/common/logger/log_string.hpp>
+#include <hera/common/third_party/json.hpp>
+#endif
 
 namespace wayz {
 namespace hera {
