@@ -195,10 +195,67 @@ data::SensorDataPtr NovatelSpan::do_convert(data::DeviceDataPtr& storage_data)
 
         return sensor_data;
     }
-    case MessageIdType::INSPOSX:
-        return data::SensorData::broken_data();
-    case MessageIdType::CORRIMUDATA:
-        return data::SensorData::broken_data();
+    case MessageIdType::INSPOS: {
+        auto inspos = static_cast<INSPOS*>((void*)raw_data->novatel_header.payload);
+
+        // Create a SensorData from DeviceData
+        auto length = sizeof(data::InsPosition);
+        auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::InsInsPosition, length);
+        auto ins_sensor_data = static_cast<data::InsPosition*>(sensor_data.get());
+
+        // Parse Data
+        ins_sensor_data->timestamp_intrinsic_ns = timestamp_intrinsic_ns;
+        ins_sensor_data->ins_status = inspos->ins_status;
+        ins_sensor_data->position_type = data::PositionVelocityType::UNKNOWN;
+        ins_sensor_data->latitude = inspos->latitude;
+        ins_sensor_data->longitude = inspos->longitude;
+        ins_sensor_data->altitude = inspos->height;
+        ins_sensor_data->latitude_deviation = -1;
+        ins_sensor_data->longitude_deviation = -1;
+        ins_sensor_data->altitude_deviation = -1;
+
+        return sensor_data;
+    }
+    case MessageIdType::INSPOSX: {
+        auto insposx = static_cast<INSPOSX*>((void*)raw_data->novatel_header.payload);
+
+        // Create a SensorData from DeviceData
+        auto length = sizeof(data::InsPosition);
+        auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::InsInsPosition, length);
+        auto ins_sensor_data = static_cast<data::InsPosition*>(sensor_data.get());
+
+        // Parse Data
+        ins_sensor_data->timestamp_intrinsic_ns = timestamp_intrinsic_ns;
+        ins_sensor_data->ins_status = insposx->ins_status;
+        ins_sensor_data->position_type = insposx->position_type;
+        ins_sensor_data->latitude = insposx->latitude;
+        ins_sensor_data->longitude = insposx->longitude;
+        ins_sensor_data->altitude = insposx->height + insposx->undulation;
+        ins_sensor_data->latitude_deviation = insposx->latitude_deviation;
+        ins_sensor_data->longitude_deviation = insposx->longitude_deviation;
+        ins_sensor_data->altitude_deviation = insposx->height_deviation;
+
+        return sensor_data;
+    }
+    case MessageIdType::CORRIMUDATA: {
+        static constexpr auto CorrectedImuRate = 100.0;  // 100Hz
+
+        auto corrimu = static_cast<CORRIMUDATA*>((void*)raw_data->novatel_header.payload);
+
+        // Create a SensorData from DeviceData
+        auto length = sizeof(data::CorrectedImu);
+        auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::InsCorrectedImu, length);
+        auto ins_sensor_data = static_cast<data::CorrectedImu*>(sensor_data.get());
+
+        // Parse Data
+        ins_sensor_data->timestamp_intrinsic_ns = timestamp_intrinsic_ns;
+        for (auto i = 0; i < 3; ++i) {
+            ins_sensor_data->angular_velocity[i] = corrimu->rotational_speed_sample[i] * CorrectedImuRate;
+            ins_sensor_data->linear_acceleration[i] = corrimu->acceleration_sample[i] * CorrectedImuRate;
+        }
+
+        return sensor_data;
+    }
     default:
         return data::SensorData::broken_data();
     }

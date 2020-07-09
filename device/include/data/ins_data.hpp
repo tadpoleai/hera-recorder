@@ -100,6 +100,8 @@ BETTER_ENUM(
 BETTER_ENUM(
         PositionVelocityType,
         uint32_t,
+        UNKNOWN = 999u,
+
         NONE = 0u,         ///< No solution
         FIXEDPOS = 1u,     ///< Position has been fixed by the FIX position command or byposition averaging.
         FIXEDHEIGHT = 2u,  ///< Position has been fixed by the FIX height or FIX auto commandor by position averaging
