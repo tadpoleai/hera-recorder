@@ -53,6 +53,15 @@ struct BESTPOS {
     uint8_t gps_and_glonass_signal_mask;
 };
 
+struct INSPOS {
+    uint32_t week;
+    double seconds_into_week;
+    double latitude;
+    double longitude;
+    double height;
+    data::InertialSolutionStatus ins_status;
+};
+
 struct INSPOSX {
     data::InertialSolutionStatus ins_status;
     data::PositionVelocityType position_type;
@@ -74,7 +83,7 @@ struct CORRIMUDATA {
     double acceleration_sample[3];
 };
 
-enum class MessageIdType : uint16_t { BESTPOS = 42u, INSPOSX = 1459u, CORRIMUDATA = 812u };
+enum class MessageIdType : uint16_t { BESTPOS = 42u, INSPOS = 265u, INSPOSX = 1459u, CORRIMUDATA = 812u };
 
 ///
 /// @brief Data for recording NovatelSpan

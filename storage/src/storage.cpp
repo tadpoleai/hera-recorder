@@ -50,6 +50,10 @@ StorageManager::StorageManager(const std::string& filename,
         in_file_.open(filename, std::ios::binary);
         if (in_file_.is_open()) {
             header = StorageDataHeader::read_from(in_file_, is_extra, is_logs);
+            if (!header) {
+                log::error << "StorageManager: Can not open " << filename << ", since header can not be read"
+                           << log::endl;
+            }
         } else {
             log::error << "StorageManager: Can not open " << filename << log::endl;
             return;

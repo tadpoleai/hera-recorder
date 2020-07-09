@@ -196,6 +196,10 @@ std::vector<ROSMessagePtr> ROSMessage::convert(device::data::SensorDataPtr& sens
             return convert<device::SensorDataType::NavSatFix>(sensor_data, topic_prefix, frame_id, remapper);
         case device::SensorDataType::InsBestPosition:
             return convert<device::SensorDataType::InsBestPosition>(sensor_data, topic_prefix, frame_id, remapper);
+        case device::SensorDataType::InsCorrectedImu:
+            return convert<device::SensorDataType::InsCorrectedImu>(sensor_data, topic_prefix, frame_id, remapper);
+        case device::SensorDataType::InsInsPosition:
+            return convert<device::SensorDataType::InsInsPosition>(sensor_data, topic_prefix, frame_id, remapper);
         case device::SensorDataType::OdometryOrientation:
             return convert<device::SensorDataType::OdometryOrientation>(sensor_data, topic_prefix, frame_id, remapper);
         default: {
