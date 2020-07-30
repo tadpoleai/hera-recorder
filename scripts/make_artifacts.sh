@@ -9,7 +9,7 @@ mkdir -p artifacts/header/hera/storage
 mkdir -p artifacts/header/hera/device
 mkdir -p artifacts/script
 mkdir -p artifacts/script/daemon
-mkdir -p artifacts/shared
+mkdir -p artifacts/share
 
 # Client
 cp -r build_client/* artifacts/client
@@ -74,10 +74,8 @@ cp -r slam/carto artifacts/share
 cp -r cmake/export/* artifacts/share
 
 # Manual
-cp -r \
-    README.md \
-    manual/* \
-    artifacts/manual
+cp -r README.md artifacts
+cp -r manual/* artifacts/manual
 
 # Install Script
 cp -r scripts/install_artifacts.sh artifacts/
