@@ -18,41 +18,20 @@ namespace convert {
 void operator<<(rosbag_direct_write::DirectBag& bag, ROSMessagePtr&& message)
 {
     switch (message->type) {
-    case ROSMessageType::Vector3Stamped: {
-        auto ros_message = reinterpret_cast<geometry_msgs::Vector3Stamped*>(message->ptr);
-        bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
-        break;
+
+#undef _HERA_CONVERT_ROS_MESSAGE_TYPES_HPP_
+#define ROS_MESSAGE_TYPE_TEMPLATE_EXPAND
+
+#undef ROS_MESSAGE_TYPE_DEFINE
+#define ROS_MESSAGE_TYPE_DEFINE(msg_category, msg_type)                             \
+    case ROSMessageType::msg_type: {                                                \
+        auto ros_message = reinterpret_cast<msg_category::msg_type*>(message->ptr); \
+        bag.write(message->topic_name, ros_message->header.stamp, *ros_message);    \
+        break;                                                                      \
     }
-    case ROSMessageType::Imu: {
-        auto ros_message = reinterpret_cast<sensor_msgs::Imu*>(message->ptr);
-        bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
-        break;
-    }
-    case ROSMessageType::MagneticField: {
-        auto ros_message = reinterpret_cast<sensor_msgs::MagneticField*>(message->ptr);
-        bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
-        break;
-    }
-    case ROSMessageType::PointCloud2: {
-        auto ros_message = reinterpret_cast<sensor_msgs::PointCloud2*>(message->ptr);
-        bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
-        break;
-    }
-    case ROSMessageType::CompressedImage: {
-        auto ros_message = reinterpret_cast<sensor_msgs::CompressedImage*>(message->ptr);
-        bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
-        break;
-    }
-    case ROSMessageType::Image: {
-        auto ros_message = reinterpret_cast<sensor_msgs::Image*>(message->ptr);
-        bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
-        break;
-    }
-    case ROSMessageType::NavSatFix: {
-        auto ros_message = reinterpret_cast<sensor_msgs::NavSatFix*>(message->ptr);
-        bag.write(message->topic_name, ros_message->header.stamp, *ros_message);
-        break;
-    }
+
+#include "ros_message_types.hpp"
+
     default:
         break;
     }
@@ -76,61 +55,20 @@ ROSMessagePtr ROSMessage::create<ROSMessageType::BrokenData>()
     return result;
 }
 
-template<>
-ROSMessagePtr ROSMessage::create<ROSMessageType::Vector3Stamped>()
-{
-    auto result = std::unique_ptr<ROSMessage>(new ROSMessage(ROSMessageType::Vector3Stamped));
-    result->ptr = new geometry_msgs::Vector3Stamped();
-    return result;
-}
+#undef _HERA_CONVERT_ROS_MESSAGE_TYPES_HPP_
+#define ROS_MESSAGE_TYPE_TEMPLATE_EXPAND
 
-template<>
-ROSMessagePtr ROSMessage::create<ROSMessageType::Imu>()
-{
-    auto result = std::unique_ptr<ROSMessage>(new ROSMessage(ROSMessageType::Imu));
-    result->ptr = new sensor_msgs::Imu();
-    return result;
-}
+#undef ROS_MESSAGE_TYPE_DEFINE
+#define ROS_MESSAGE_TYPE_DEFINE(msg_category, msg_type)                                      \
+    template<>                                                                               \
+    ROSMessagePtr ROSMessage::create<ROSMessageType::msg_type>()                             \
+    {                                                                                        \
+        auto result = std::unique_ptr<ROSMessage>(new ROSMessage(ROSMessageType::msg_type)); \
+        result->ptr = new msg_category::msg_type();                                          \
+        return result;                                                                       \
+    }
 
-template<>
-ROSMessagePtr ROSMessage::create<ROSMessageType::MagneticField>()
-{
-    auto result = std::unique_ptr<ROSMessage>(new ROSMessage(ROSMessageType::MagneticField));
-    result->ptr = new sensor_msgs::MagneticField();
-    return result;
-}
-
-template<>
-ROSMessagePtr ROSMessage::create<ROSMessageType::PointCloud2>()
-{
-    auto result = std::unique_ptr<ROSMessage>(new ROSMessage(ROSMessageType::PointCloud2));
-    result->ptr = new sensor_msgs::PointCloud2();
-    return result;
-}
-
-template<>
-ROSMessagePtr ROSMessage::create<ROSMessageType::CompressedImage>()
-{
-    auto result = std::unique_ptr<ROSMessage>(new ROSMessage(ROSMessageType::CompressedImage));
-    result->ptr = new sensor_msgs::CompressedImage();
-    return result;
-}
-
-template<>
-ROSMessagePtr ROSMessage::create<ROSMessageType::Image>()
-{
-    auto result = std::unique_ptr<ROSMessage>(new ROSMessage(ROSMessageType::Image));
-    result->ptr = new sensor_msgs::Image();
-    return result;
-}
-
-template<>
-ROSMessagePtr ROSMessage::create<ROSMessageType::NavSatFix>()
-{
-    auto result = std::unique_ptr<ROSMessage>(new ROSMessage(ROSMessageType::NavSatFix));
-    result->ptr = new sensor_msgs::NavSatFix();
-    return result;
-}
+#include "ros_message_types.hpp"
 
 /// Destroy with variant deleter, by type information
 ///
@@ -138,27 +76,18 @@ ROSMessage::~ROSMessage()
 {
     if (ptr != nullptr) {
         switch (type) {
-        case ROSMessageType::Vector3Stamped:
-            delete reinterpret_cast<geometry_msgs::Vector3Stamped*>(ptr);
-            break;
-        case ROSMessageType::Imu:
-            delete reinterpret_cast<sensor_msgs::Imu*>(ptr);
-            break;
-        case ROSMessageType::MagneticField:
-            delete reinterpret_cast<sensor_msgs::MagneticField*>(ptr);
-            break;
-        case ROSMessageType::PointCloud2:
-            delete reinterpret_cast<sensor_msgs::PointCloud2*>(ptr);
-            break;
-        case ROSMessageType::CompressedImage:
-            delete reinterpret_cast<sensor_msgs::CompressedImage*>(ptr);
-            break;
-        case ROSMessageType::Image:
-            delete reinterpret_cast<sensor_msgs::Image*>(ptr);
-            break;
-        case ROSMessageType::NavSatFix:
-            delete reinterpret_cast<sensor_msgs::NavSatFix*>(ptr);
-            break;
+
+#undef _HERA_CONVERT_ROS_MESSAGE_TYPES_HPP_
+#define ROS_MESSAGE_TYPE_TEMPLATE_EXPAND
+
+#undef ROS_MESSAGE_TYPE_DEFINE
+#define ROS_MESSAGE_TYPE_DEFINE(msg_category, msg_type)        \
+    case ROSMessageType::msg_type:                             \
+        delete reinterpret_cast<msg_category::msg_type*>(ptr); \
+        break;
+
+#include "ros_message_types.hpp"
+
         default:
             log::error << "Fatal: Unknown Message Type" << log::endl;
             break;
@@ -182,26 +111,17 @@ std::vector<ROSMessagePtr> ROSMessage::convert(device::data::SensorDataPtr& sens
             ret.emplace_back(std::move(ROSMessage::create<ROSMessageType::BrokenData>()));
             return ret;
         }
-        case device::SensorDataType::Dummy:
-            return convert<device::SensorDataType::Dummy>(sensor_data, topic_prefix, frame_id, remapper);
-        case device::SensorDataType::ImuMagneticField:
-            return convert<device::SensorDataType::ImuMagneticField>(sensor_data, topic_prefix, frame_id, remapper);
-        case device::SensorDataType::PointsXYZI:
-            return convert<device::SensorDataType::PointsXYZI>(sensor_data, topic_prefix, frame_id, remapper);
-        case device::SensorDataType::CompressedImage:
-            return convert<device::SensorDataType::CompressedImage>(sensor_data, topic_prefix, frame_id, remapper);
-        case device::SensorDataType::Image:
-            return convert<device::SensorDataType::Image>(sensor_data, topic_prefix, frame_id, remapper);
-        case device::SensorDataType::NavSatFix:
-            return convert<device::SensorDataType::NavSatFix>(sensor_data, topic_prefix, frame_id, remapper);
-        case device::SensorDataType::InsBestPosition:
-            return convert<device::SensorDataType::InsBestPosition>(sensor_data, topic_prefix, frame_id, remapper);
-        case device::SensorDataType::InsCorrectedImu:
-            return convert<device::SensorDataType::InsCorrectedImu>(sensor_data, topic_prefix, frame_id, remapper);
-        case device::SensorDataType::InsInsPosition:
-            return convert<device::SensorDataType::InsInsPosition>(sensor_data, topic_prefix, frame_id, remapper);
-        case device::SensorDataType::OdometryOrientation:
-            return convert<device::SensorDataType::OdometryOrientation>(sensor_data, topic_prefix, frame_id, remapper);
+
+#undef _HERA_DEVICE_SENSOR_DATA_TYPES_HPP_
+#define SENSOR_DATA_TYPE_TEMPLATE_EXPAND
+
+#undef SENSOR_DATA_TYPE_DEFINE
+#define SENSOR_DATA_TYPE_DEFINE(name, value) \
+    case device::SensorDataType::name:       \
+        return convert<device::SensorDataType::name>(sensor_data, topic_prefix, frame_id, remapper);
+
+#include "device/include/sensor_data_types.hpp"
+
         default: {
             log::error << "Converter:: Invalid Sensor Data Type" << log::endl;
             std::vector<ROSMessagePtr> ret;

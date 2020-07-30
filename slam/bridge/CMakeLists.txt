@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(hera-slam-bridge)
 
-include("../../deploy/cmake/cpp_common.cmake")
-include("../../deploy/cmake/turbojpeg.cmake")
+include("../../cmake/include/cpp_common.cmake")
+include("../../cmake/include/turbojpeg.cmake")
 
 find_package(roscpp REQUIRED)
 include_directories(../.. include ${roscpp_INCLUDE_DIRS}

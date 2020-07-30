@@ -1,7 +1,7 @@
 ///
 /// @file device_data.hpp
 /// @author zheming.lyu (zheming.lyu@wayz.ai)
-/// @brief Class DeviceData and class SensorData
+/// @brief Class DeviceData
 /// @version 0.1
 /// @date 2019-11-06
 ///
@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-#include "device_types.hpp"
+#include "types.hpp"
 
 namespace wayz {
 namespace hera {
@@ -25,23 +25,11 @@ namespace data {
 #pragma pack(push, 1)
 
 class DeviceData;
-class SensorData;
-class DisplayData;
 
 ///
 /// @brief Shared pointer to DeviceData
 ///
 using DeviceDataPtr = std::shared_ptr<DeviceData>;
-
-///
-/// @brief Shared pointer to SensorData
-///
-using SensorDataPtr = std::shared_ptr<SensorData>;
-
-///
-/// @brief Shared pointer to DisplayData
-///
-using DisplayDataPtr = std::shared_ptr<DisplayData>;
 
 ///
 /// @brief Abstract base class device data
@@ -159,131 +147,7 @@ private:
     uint64_t timestamp_receive_ns;        ///< Timstamp of data received, UTC, in ns
 };
 
-///
-/// @brief Abstract base class sensor data
-///
-/// Provides common interfaces and realizes common operations
-///
-/// @see SensorDataType
-class SensorData {
-public:
-    SensorData() = delete;
-
-    ///
-    /// @brief Create a SensorData from DeviceData
-    ///
-    /// @param storage_data device data to refer from
-    /// @param type sensor data type
-    /// @param length memory size to allocate, in bytes
-    /// @return SensorDataPtr shared pointer to SensorDataPtr
-    ///
-    static SensorDataPtr create_from(const DeviceDataPtr& storage_data,
-                                     const SensorDataType type,
-                                     const uint32_t length);
-
-    ///
-    /// @brief Create a SensorData from DeviceData
-    ///
-    /// @param type sensor data type
-    /// @param length memory size to allocate, in bytes
-    /// @param id device id
-    /// @param sequence sequence of sensor data
-    /// @return SensorDataPtr shared pointer to SensorDataPtr
-    ///
-    static SensorDataPtr create_direct(const SensorDataType type,
-                                       const uint32_t length,
-                                       const uint32_t id,
-                                       const uint32_t sequence);
-
-    ///
-    /// @brief Create a broken sensor_data
-    ///
-    /// @return SensorDataPtr shared pointer to a broken sensor_data
-    ///
-    static SensorDataPtr broken_data();
-
-    ///
-    /// @brief Create an end of file sensor_data
-    ///
-    /// @return SensorDataPtr shared pointer to an end of file sensor_data
-    ///
-    static SensorDataPtr end_of_file();
-
-    ///
-    /// @brief Serialize to memory
-    ///
-    /// @param dest destination pointer
-    /// @param max_size max size of destination
-    /// @return size_t 0 if failed, otherwise size after serialization
-    ///
-    /// @see ipc::IPCQueue
-    size_t serialize(void* dest, size_t max_size) const;
-
-    ///
-    /// @brief Deserialize from memory
-    ///
-    /// @param src source pointer
-    /// @param max_size max size of source
-    /// @return SensorDataPtr a shared pointer to Deserialized SensorData, if succeed, otherwise nullptr
-    ///
-    /// @see ipc::IPCQueue
-    static SensorDataPtr deserialize(void* src, size_t max_size);
-
-public:
-    uint32_t length;                  ///< Total length, in bytes
-    uint32_t sensor_id;               ///< ID of sensor
-    SensorDataType sensor_data_type;  ///< Sensor data type
-    uint32_t sequence;                ///< Sequence, copied from DeviceData::sequence
-    uint64_t timestamp_intrinsic_ns;  ///< Timstamp of device intrinsic, i.e. with synchronization,
-                                      /// UTC, in ns
-    uint8_t data[0];                  ///< Start address of derived data
-};
-
 #pragma pack(pop)
-
-///
-/// @brief Final class display data
-///
-/// Which contains string or jpeg data to display for viewer
-///
-class DisplayData final {
-public:
-    ///
-    /// @brief Create a broken DisplayData
-    ///
-    static DisplayDataPtr broken_data();
-
-    ///
-    /// @brief Create a DisplayData from SensorData
-    ///
-    /// @param sensor_datas vector of SensorData
-    /// @param data Converted data (compressed jpeg or parsed human-readable string)
-    /// @return DisplayDataPtr shared pointer to DisplayData
-    ///
-    /// @note This function calls parse()
-    ///
-    static DisplayDataPtr create_from(std::vector<SensorDataPtr>&& sensor_datas);
-
-private:
-    DisplayData() = default;
-
-    ///
-    /// @brief Convert a SensorData to DisplayData
-    ///
-    /// @tparam T SensorDataType sensor data type
-    /// @param sensor_datas vector of SensorData
-    /// @param is_jpeg [out] is data jpeg or string
-    /// @see folder: <category>/<category>_data.cpp
-    template<SensorDataType T>
-    static std::string parse(std::vector<SensorDataPtr>&& sensor_datas, bool& is_jpeg);
-
-public:
-    bool is_valid;                    ///< Is data valid
-    bool is_jpeg;                     ///< Is jpeg or string
-    uint32_t sequence;                ///< Sequence, copied from SensorData::sequence
-    uint64_t timestamp_intrinsic_ns;  ///< Timstamp, copied from SensorData::sequence
-    std::string data;                 ///< Data in string or jpeg binary
-};
 
 }  // namespace data
 }  // namespace device

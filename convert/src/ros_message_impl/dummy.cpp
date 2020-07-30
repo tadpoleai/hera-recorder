@@ -39,6 +39,32 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::Dummy>(de
     return ret;
 }
 
+template<>
+std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::DummyImage>(
+        device::data::SensorDataPtr& sensor_data,
+        const std::string& topic_prefix,
+        const std::string& frame_id,
+        const common::Remapper* remapper)
+{
+    auto data_impl = reinterpret_cast<device::data::DummyImage*>(sensor_data.get());
+    auto message = ROSMessage::create<ROSMessageType::Image>();
+    auto ros_message = reinterpret_cast<sensor_msgs::Image*>(message->ptr);
+    std::vector<ROSMessagePtr> ret;
+
+    message->topic_name = remapper->remap(topic_prefix + "dummy_image");
+    message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+    ros_message->header.seq = sensor_data->sequence;
+    ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+    ros_message->header.frame_id = frame_id;
+
+    ros_message->height = data_impl->image_height;
+    ros_message->width = data_impl->image_width;
+    ros_message->is_bigendian = 0;
+
+    ret.emplace_back(std::move(message));
+    return ret;
+}
+
 }  // namespace convert
 }  // namespace hera
 }  // namespace wayz

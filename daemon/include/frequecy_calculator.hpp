@@ -7,6 +7,7 @@
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
+#include <algorithm>
 #include <atomic>
 #include <thread>
 #include <vector>
@@ -41,9 +42,9 @@ public:
     inline float get_result(size_t index) const noexcept
     {
         if (index >= result_.size()) {
-            return 0.0;
+            return 0.0f;
         } else {
-            return result_[index];
+            return std::max(0.0f, result_[index]);
         }
     }
 

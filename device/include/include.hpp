@@ -11,7 +11,10 @@
 #pragma once
 
 // Device Factory
-#include "device_factory.hpp"
+#include "factory.hpp"
+
+// Sensor Data Types
+#include "sensor_data_types.hpp"
 
 // Sensor data
 #include "data/camera_data.hpp"

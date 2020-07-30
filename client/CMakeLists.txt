@@ -3,8 +3,7 @@ cmake_minimum_required(VERSION 3.5.1)
 set(PROJECT_NAME hera-client)
 project(${PROJECT_NAME})
 
-include("../deploy/cmake/npm.cmake")
-include("../deploy/cmake/thrift.cmake")
+include("../cmake/include/thrift.cmake")
 
 add_custom_target(
   client

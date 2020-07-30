@@ -6,6 +6,7 @@
 #include <regex>
 #include <thread>
 
+#include "device/include/display_data.hpp"
 #include "service.hpp"
 
 namespace wayz {
@@ -23,22 +24,20 @@ void Service::getData(ResultData& result)
     std::vector<std::future<DeviceData>> promises;
     // clang-format off
     for (auto& device : devices_) {
-        promises.emplace_back(std::async(std::launch::async, [result](auto* device) {
+        promises.emplace_back(std::async(std::launch::async, [](auto* device) {
             DeviceData data;
             data.id = device->get_id();
             data.type = device->get_vendor_type();
             data.name = device->get_name();
             data.dataSizeKB = device->get_volume() / 1024;
-            // data.frequency = device->get_frequency();
 
-            data.valid = false;
-            auto disp_data = device::data::DisplayData::create_from(device->history());
-            data.valid = disp_data->is_valid;
-            data.isJpeg = disp_data->is_jpeg;
-            data.sequence = disp_data->sequence;
-            data.timeSecond = disp_data->timestamp_intrinsic_ns / time::OneSecond;
-            data.timeNanosecond = disp_data->timestamp_intrinsic_ns % time::OneSecond;
-            data.data = std::move(disp_data->data);
+            const auto disp_datas = device->update_get_disp_data();
+            for (const auto& category: disp_datas->categorized_disp_data) {
+                daemon::SingleDisplayData single_data;
+                single_data.jpegData = category.second.jpeg_data;
+                single_data.textData = category.second.text_data;
+                data.dispData.emplace_back(std::move(single_data));
+            }
             return data;
         },
         device.get()));
@@ -72,7 +71,7 @@ void Service::getData(ResultData& result)
     result.nowTimeSec = time::Timestamp::now().tv_sec;
 
     mutex_.unlock();
-}  // namespace daemon
+}
 
 }  // namespace daemon
 }  // namespace hera

@@ -86,12 +86,14 @@ git_info.cpp
 # ! deploy script
 !deploy/*.sh
 
+# docker folder
+docker/
+setup/
+
 # Doxygen
-doxygen/
+doxygen/html/
 
 # Artifacts
 artifacts/
 artifacts*
-
-device/lib/arm/*
-device/device-lib/*
+*.tar.gz

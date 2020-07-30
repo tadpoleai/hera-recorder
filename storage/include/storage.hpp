@@ -30,7 +30,6 @@
 
 #include "storage_data_header.hpp"
 
-
 namespace wayz {
 namespace hera {
 namespace storage {

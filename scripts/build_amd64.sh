@@ -1,12 +1,15 @@
 echo "Building for amd64"
-mkdir -p build
-cd build
+
+cd $(dirname "$0")/..
+
+mkdir -p build_amd64
+cd build_amd64
 
 if [ -z "$1" ]; then
-    cmake .. -Dwith-all=1 -Dwith-driver-all=1
+    cmake .. -Dwith-all=1
 else
     echo "git version is $1"
-    cmake .. -Dwith-all=1 -Dwith-driver-all=1 -Dforce-git-info=$1
+    cmake .. -Dwith-all=1 -Dforce-git-info=$1
 fi
 
 if [ $? -ne 0 ]; then
@@ -22,78 +25,3 @@ make client
 if [ $? -ne 0 ]; then
     echo "build client error"
 fi
-
-# Package artifacts
-echo "Packaging artifacts/amd64"
-mkdir -p ../artifacts/amd64/client
-mkdir -p ../artifacts/amd64/lib
-mkdir -p ../artifacts/amd64/bin
-mkdir -p ../artifacts/amd64/include/hera/common
-mkdir -p ../artifacts/amd64/include/hera/storage
-mkdir -p ../artifacts/amd64/include/hera/device
-mkdir -p ../artifacts/amd64/script
-mkdir -p ../artifacts/amd64/script/daemon
-mkdir -p ../artifacts/amd64/shared
-mkdir -p ../artifacts/amd64/manual
-mkdir -p ../artifacts/amd64/manual/deploy
-mkdir -p ../artifacts/amd64/manual/slam
-mkdir -p ../artifacts/amd64/manual/convert
-
-# Client
-cp -r ../client/dist/* ../artifacts/amd64/client
-
-# Headers
-cp -r ../common/include/* ../artifacts/amd64/include/hera/common
-cp -r ../device/include/* ../artifacts/amd64/include/hera/device
-cp -r ../storage/include/* ../artifacts/amd64/include/hera/storage
-
-# Libraries
-cp -r common/libhera-common.so ../artifacts/amd64/lib
-cp -r common/libhera-common*.a ../artifacts/amd64/lib
-cp -r device/libhera-device*.so ../artifacts/amd64/lib
-cp -r device/libhera-device*.a ../artifacts/amd64/lib
-cp -r storage/libhera-storage.so ../artifacts/amd64/lib
-cp -r storage/libhera-storage*.a ../artifacts/amd64/lib
-
-# Binaries
-cp -r convert/hera-convert ../artifacts/amd64/bin
-cp -r device/hera-device-record ../artifacts/amd64/bin
-cp -r daemon/hera-daemon ../artifacts/amd64/bin
-cp -r daemon/hera-daemon-finder ../artifacts/amd64/bin
-cp -r storage/hera-storage-tool ../artifacts/amd64/bin
-cp -r replay/hera-replay ../artifacts/amd64/bin
-cp -r slam/bridge/hera-slam-bridge \
-    slam/caller/hera-slam-caller-start \
-    slam/caller/hera-slam-caller-stop \
-    slam/result/hera-slam-result-test \
-    ../artifacts/amd64/bin
-
-# Script
-cp -r ../daemon/script/* ../artifacts/amd64/script/daemon
-
-# Shared
-cp -r ../convert/config ../artifacts/amd64/shared
-cp -r ../daemon/config ../artifacts/amd64/shared
-cp -r ../slam/carto ../artifacts/amd64/shared
-cp -r ../cmake/FindHera.cmake ../artifacts/amd64/shared
-
-# Manual
-cp -r \
-    ../README.md \
-    ../INSTALLATION.md \
-    ../artifacts/amd64/manual
-cp -r \
-    ../deploy/dev_etc.md \
-    ../deploy/nginx.md \
-    ../deploy/wlan.md \
-    ../artifacts/amd64/manual/deploy
-cp -r \
-    ../slam/USAGE.md \
-    ../artifacts/amd64/manual/slam
-cp -r \
-    ../convert/USAGE.md \
-    ../artifacts/amd64/manual/convert
-
-# Install Script
-cp -r ../scripts/install_artifacts_amd64.sh ../artifacts/amd64
-chmod +x ../artifacts/amd64/install_artifacts_amd64.sh

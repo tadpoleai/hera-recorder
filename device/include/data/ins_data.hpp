@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "../device_data.hpp"
+#include "../sensor_data.hpp"
 
 #ifdef HERA_COMPILE_IN_REPO
 #include "common/include/third_party/enum.hpp"

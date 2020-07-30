@@ -17,6 +17,7 @@
 
 #include "common/include/ipc/ipc_queue.hpp"
 #include "common/include/utils/folder_content.hpp"
+#include "device/include/sensor_data.hpp"
 #include "storage/include/storage.hpp"
 
 namespace wayz {

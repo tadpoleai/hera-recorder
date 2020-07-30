@@ -30,14 +30,16 @@
 #endif
 
 #include "device_data.hpp"
-
+#include "display_data.hpp"
+#include "sensor_data.hpp"
 
 namespace wayz {
 namespace hera {
 namespace device {
 
 class Device;
-class DeviceFactory;
+
+class Factory;
 
 ///
 /// @brief A unique pointer to Device
@@ -45,16 +47,9 @@ class DeviceFactory;
 using DevicePtr = std::unique_ptr<Device>;
 
 ///
-/// @brief A Map from DeviceParameterType(enum) to ParameterValue(string)
-///
-/// Used to in derived classes of Devices
-///
-using ParametersMap = std::map<DeviceParameterType, std::string>;
-
-///
 /// @brief A Map from ParameterType(string) to Value(string)
 ///
-using OutParametersMap = std::map<std::string, std::string>;
+using ParametersMap = std::map<std::string, std::string>;
 
 ///
 /// @brief Abstract base class of all devices
@@ -93,7 +88,7 @@ public:
            ipc::IPCQueue<data::SensorData>* const ipc_queue,
            storage::StorageManager* const storage,
            const size_t history_depth,
-           const std::vector<DeviceParameterType>& essential_parameter_types);
+           const std::vector<std::string>& essential_parameter_types);
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
 
@@ -125,7 +120,7 @@ public:
     /// @param value true to start record
     /// @param value false to pause record
     /// @return HeraErrno operation result
-    HeraErrno record(bool value);
+    HeraErrno record(const bool value);
 
     ///
     /// @todo Forward sensor data by socket
@@ -136,28 +131,11 @@ public:
     /// @brief Set or adjust a single parameter
     ///
     /// @param type valid parameter type in string
-    /// @see DeviceParameterType in device_type.hpp
     /// @param value paramaeter value
     /// @return HeraErrno operation result
     /// @note Essential parameters should be set before start()
     /// @note Some parameter is immutable after start()
     HeraErrno parameter(const std::string& type, const std::string& value);
-
-    ///
-    /// @brief Read a SensorData from device
-    ///
-    /// @return SensorDataPtr a shared pointer to sensor data, if succeed, otherwise nullptr
-    /// @note In read mode, this method is the only valid operation in read mode, it returns
-    /// data from storaged data
-    data::SensorDataPtr read();
-
-    ///
-    /// @brief Get history Sensor from device
-    ///
-    /// @return std::vector<SensorDataPtr> a vector of history sensor data
-    ///
-    /// @note Only valid in normal (record) mode
-    std::vector<data::SensorDataPtr> history();
 
     ///
     /// @brief Get the vendor type
@@ -254,10 +232,24 @@ public:
     }
 
     ///
+    /// @brief Update and get the disp data object
+    ///
+    /// @return updated disp_data
+    ///
+    inline auto update_get_disp_data()
+    {
+        disp_data_->update_from(history());
+        return disp_data_;
+    }
+
+    ///
     /// @brief Get the parameters
     ///
-    /// @return OutParametersType parameters in map<string, string>
-    OutParametersMap get_parameters() const;
+    /// @return ParametersType parameters in map<string, string>
+    ParametersMap get_parameters() const noexcept
+    {
+        return parameters_;
+    }
 
 protected:
     ///
@@ -280,7 +272,7 @@ protected:
     /// @see start()
     virtual HeraErrno connect()
     {
-        return HeraErrno::UnimplementedDriver;
+        return handle_error(HeraErrno::UnimplementedDriver, "Driver is not loaded");
     }
 
     ///
@@ -312,15 +304,14 @@ protected:
     /// @brief Adjust a single parameter after start()/connect()
     ///
     /// @param type valid parameter type in enum
-    /// @see DeviceParameterType in device_type.hpp
     /// @param value paramaeter value
     /// @return HeraErrno operation result
     /// @note Some parameter is immutable during operation
     /// @note This function should be implemented by derived class.
     /// @note This function will be called by parameter()
-    virtual HeraErrno adjust_parameter(DeviceParameterType type, const std::string& value)
+    virtual HeraErrno adjust_parameter(const std::string& type, const std::string& value)
     {
-        return HeraErrno::UnimplementedDriver;
+        return handle_error(HeraErrno::UnimplementedDriver, "Driver is not loaded");
     }
 
     ///
@@ -355,11 +346,17 @@ private:
     ///
     void forward_thread_function();
 
+    ///
+    /// @brief Get history Sensor from device
+    ///
+    /// @return std::vector<SensorDataPtr> a vector of history sensor data
+    ///
+    std::vector<data::SensorDataPtr> history();
+
 protected:
     const uint32_t id_;              ///< device id
     const std::string vendor_type_;  ///< device vendor type
     const std::string name_;         ///< device name
-    const std::string folder_;       ///< parent folder for all devices
 
     ParametersMap parameters_;  ///< Parameters set by define_parameter()
     uint32_t sequence_;         ///< Data sequence, increased by 1 when a valid data comes
@@ -380,7 +377,9 @@ private:
     common::ThreadQueue<data::DeviceData> forward_queue_;  ///< DeviceData(device raw data) queue, ready for forwarding
     ipc::IPCQueue<data::SensorData>* ipc_queue_;           ///< IPC queue for sensor data forwarding
 
-    const std::vector<DeviceParameterType> essential_parameter_types_;  ///< essential parameters types
+    const std::shared_ptr<data::DisplayData> disp_data_;  ///< Pointer to display data;
+
+    const std::vector<std::string> essential_parameter_types_;  ///< essential parameters types
 };
 
 }  // namespace device

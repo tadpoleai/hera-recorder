@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5.1)
 set(PROJECT_NAME hera-replay)
 project(${PROJECT_NAME})
 
-include("../deploy/cmake/cpp_common.cmake")
+include("../cmake/include/cpp_common.cmake")
 
 find_package(Threads REQUIRED)
 

@@ -15,9 +15,11 @@ namespace daemon {
 void Service::generate_meta()
 {
     log::debug << "Daemon::generate meta called" << log::endl;
-    const auto DeviceTypes = device::DeviceFactory::types();
+    device::Factory::load_plugins(true);
+
+    const auto DeviceTypes = device::Factory::types();
     for (const auto& type_name : DeviceTypes) {
-        auto parameter_types = device::DeviceFactory::parameter_types(type_name);
+        auto parameter_types = device::Factory::parameter_types(type_name);
         DeviceTypeMeta type_meta;
         type_meta.name = type_name;
         type_meta.essentialParameterTypes = parameter_types.first;

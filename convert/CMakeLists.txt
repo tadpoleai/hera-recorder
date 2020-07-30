@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.5.1)
 set(PROJECT_NAME hera-convert)
 project(${PROJECT_NAME})
 
-include("../deploy/cmake/cpp_common.cmake")
-include("../deploy/cmake/ros.cmake")
-include("../deploy/cmake/pcl_common.cmake")
+include("../cmake/include/cpp_common.cmake")
+include("../cmake/include/ros.cmake")
+include("../cmake/include/pcl_common.cmake")
 
 # Find ROS Bag and Eigen3
 set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/cmake;${ROS_ROOT_DIR}")

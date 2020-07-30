@@ -10,7 +10,7 @@
 ///
 #pragma once
 
-#include "../device_data.hpp"
+#include "../sensor_data.hpp"
 
 namespace wayz {
 namespace hera {

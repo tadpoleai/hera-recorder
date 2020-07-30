@@ -141,7 +141,7 @@ void Converter::read_thread_function()
             break;
         }
 
-        auto sensor_data = device::DeviceFactory::convert(data);
+        auto sensor_data = device::Factory::convert(data);
         if (sensor_data->sensor_data_type != device::SensorDataType::Broken) {
             try {
                 const auto& topic_prefix = topic_prefixes_[sensor_data->sensor_id];
