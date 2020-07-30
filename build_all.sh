@@ -3,9 +3,9 @@ echo "Building"
 cd $(dirname "$0")
 
 rm -rf artifacts
-rm -rf build_amd64
-rm -rf build_arm
-rm -rf build_client
+# rm -rf build_amd64
+# rm -rf build_arm
+# rm -rf build_client
 
 bash scripts/build_amd64.sh $1
 bash scripts/build_arm_host.sh $1
