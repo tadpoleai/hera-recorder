@@ -4,10 +4,11 @@
 
 #include "serial_port_binary.hpp"
 
+#include <cstring>
+
 #include <common/include/logger/logger.hpp>
 
 #include "driver/checksum/crc.hpp"
-#include "string.h"
 
 namespace wayz {
 namespace hera {

@@ -9,20 +9,19 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "/usr/local")
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
-if(target-arm)
-  set(TARGET_ARM 1)
-  add_definitions(-DTARGET_ARM)
-  message(STATUS "Hera will build for arm")
+if(NOT DEFINED ENV{ARCH})
+  execute_process(
+    COMMAND uname -m
+    COMMAND tr -d '\n'
+    OUTPUT_VARIABLE ARCHITECTURE)
+else()
+  set(ARCHITECTURE $ENV{ARCH})
 endif()
-
-if(build-static)
-  set(BUILD_STATIC 1)
-  message(STATUS "Hera will build static library")
-endif()
+message(STATUS "Architecture is ${ARCHITECTURE}")
 
 if(NOT without-git-info)
   message(STATUS "Hera will build with git info")
-  include(deploy/cmake/git_info.cmake)
+  include(cmake/include/git_info.cmake)
 else()
   message(STATUS "Hera will build without git info")
 endif()
@@ -32,35 +31,6 @@ add_subdirectory(common)
 
 message(STATUS "Hera adding storage")
 add_subdirectory(storage)
-
-# Whether to build lib-hera-devices with some external-library-required device
-# drivers, list them here to pass the definitions to all subdirectory. Devices
-# built without driver can be be open by record-daemon, or it will return return
-# HeraErrno::UnimplementedDriver;
-if(with-driver-flir OR with-driver-all)
-  set(DEVICE_DRIVER_FLIR 1)
-  add_definitions(-DDEVICE_DRIVER_FLIR)
-  message(STATUS "Hera will build with device driver flir")
-else()
-  message(STATUS "Hera will build without device driver flir")
-endif()
-
-if(with-driver-s32vsal-vsdk OR with-driver-arm)
-  set(DEVICE_DRIVER_S32VSAL_VSDK 1)
-  add_definitions(-DDEVICE_DRIVER_S32VSAL_VSDK)
-  message(STATUS "Hera will build with device driver s32vsal-vsdk")
-else()
-  message(STATUS "Hera will build without device driver s32vsal-vsdk")
-endif()
-
-if(with-driver-s32vsal OR with-driver-arm)
-  set(DEVICE_DRIVER_S32VSAL 1)
-  add_definitions(-DDEVICE_DRIVER_S32VSAL)
-  message(STATUS "Hera will build with device driver s32vsal")
-  include("deploy/cmake/s32vsal.cmake")
-else()
-  message(STATUS "Hera will build without device driver s32vsal")
-endif()
 
 message(STATUS "Hera adding device")
 add_subdirectory(device)
@@ -102,13 +72,4 @@ if(with-daemon
   add_subdirectory(daemon)
 else()
   message(STATUS "Hera will build without daemon")
-endif()
-
-if(with-client
-   OR with-all
-   AND NOT without-client)
-  message(STATUS "Hera will build with client")
-  add_subdirectory(client)
-else()
-  message(STATUS "Hera will build without client")
 endif()

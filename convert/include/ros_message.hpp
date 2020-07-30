@@ -16,6 +16,7 @@
 #include "common/include/utils/remapper.hpp"
 #include "device/include/include.hpp"
 #include "direct_bag/direct_bag.h"
+#include "ros_message_types.hpp"
 
 namespace wayz {
 namespace hera {
@@ -24,21 +25,6 @@ namespace hera {
 /// @brief converter and ROS related codes
 ///
 namespace convert {
-
-///
-/// @brief ROS message type enum
-///
-enum class ROSMessageType : int32_t {
-    EndOfFile = -2,      ///< End of file, storage reading over
-    BrokenData = -1,     ///< Invalid data, or bad data;
-    Vector3Stamped = 0,  ///< geometry_msgs/Vector3
-    Imu,                 ///< ROS sensor_msgs/Imu
-    MagneticField,       ///< ROS sensor_msgs/MagneticField
-    PointCloud2,         ///< ROS sensor_msgs/PointCloud2
-    CompressedImage,     ///< ROS sensor_msgs/CompressedImage
-    Image,               ///< ROS sensor_msgs/Image
-    NavSatFix,           ///< ROS sensor_msgs/NavSatFix
-};
 
 class ROSMessage;
 

@@ -29,7 +29,7 @@ int main()
     auto storage = storage::StorageManager::open("/home/root/work_cc/hera/s32v_test.hera", false);
     auto ipc_queue = ipc::IPCQueue<device::data::SensorData>::create();
     ipc_queue->open(0, ipc::OpenMode::Write, false, 4UL, (1 << 20));
-    auto device0 = device::DeviceFactory::create(0, "camera/s32vsal", "camera0", true, ipc_queue.get(), storage.get());
+    auto device0 = device::Factory::create(0, "camera/s32vsal", "camera0", true, ipc_queue.get(), storage.get());
     storage->finish_add_device();
 
     auto err = device0->start();

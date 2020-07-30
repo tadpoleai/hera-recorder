@@ -104,6 +104,5 @@ int main(int argc, char** argv)
     }
     std::cout << std::endl;
 
-    log::debug << "Replayer End" << log::endl;
     return 0;
 }

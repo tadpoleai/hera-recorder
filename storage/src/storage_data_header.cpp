@@ -304,7 +304,11 @@ std::ostream& operator<<(std::ostream& os, const StorageDataHeader& rhs)
     os << "- Containing data of " << rhs.device_names.size() << " devices:"
        << "\n";
 
-    auto max_message_num = *std::max_element(rhs.device_message_nums.begin(), rhs.device_message_nums.end());
+    auto max_message_num = 0;
+    if (!rhs.device_message_nums.empty()) {
+        max_message_num = *std::max_element(rhs.device_message_nums.begin(), rhs.device_message_nums.end());
+    }
+
     uint64_t total_size = 0;
 
     for (size_t i = 0; i < rhs.device_names.size(); ++i) {

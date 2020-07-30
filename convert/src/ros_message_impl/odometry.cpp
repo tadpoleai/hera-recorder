@@ -16,6 +16,87 @@ namespace hera {
 namespace convert {
 
 template<>
+std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::OdometryFrontWheelSpeed>(
+        device::data::SensorDataPtr& sensor_data,
+        const std::string& topic_prefix,
+        const std::string& frame_id,
+        const common::Remapper* remapper)
+{
+    auto data_impl = reinterpret_cast<device::data::FrontWheelSpeed*>(sensor_data.get());
+    std::vector<ROSMessagePtr> ret;
+
+    auto message = ROSMessage::create<ROSMessageType::Vector3Stamped>();
+    auto ros_message = reinterpret_cast<geometry_msgs::Vector3Stamped*>(message->ptr);
+
+    message->topic_name = remapper->remap(topic_prefix + "front_wheel_speed");
+    message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+    ros_message->header.seq = sensor_data->sequence;
+    ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+    ros_message->header.frame_id = frame_id;
+
+    ros_message->vector.x = data_impl->left;
+    ros_message->vector.y = data_impl->right;
+    ros_message->vector.z = 0;
+
+    ret.emplace_back(std::move(message));
+    return ret;
+}
+
+template<>
+std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::OdometryRearWheelSpeed>(
+        device::data::SensorDataPtr& sensor_data,
+        const std::string& topic_prefix,
+        const std::string& frame_id,
+        const common::Remapper* remapper)
+{
+    auto data_impl = reinterpret_cast<device::data::RearWheelSpeed*>(sensor_data.get());
+    std::vector<ROSMessagePtr> ret;
+
+    auto message = ROSMessage::create<ROSMessageType::Vector3Stamped>();
+    auto ros_message = reinterpret_cast<geometry_msgs::Vector3Stamped*>(message->ptr);
+
+    message->topic_name = remapper->remap(topic_prefix + "rear_wheel_speed");
+    message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+    ros_message->header.seq = sensor_data->sequence;
+    ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+    ros_message->header.frame_id = frame_id;
+
+    ros_message->vector.x = data_impl->left;
+    ros_message->vector.y = data_impl->right;
+    ros_message->vector.z = 0;
+
+    ret.emplace_back(std::move(message));
+    return ret;
+}
+
+template<>
+std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::OdometrySteeringAngle>(
+        device::data::SensorDataPtr& sensor_data,
+        const std::string& topic_prefix,
+        const std::string& frame_id,
+        const common::Remapper* remapper)
+{
+    auto data_impl = reinterpret_cast<device::data::SteeringAngle*>(sensor_data.get());
+    std::vector<ROSMessagePtr> ret;
+
+    auto message = ROSMessage::create<ROSMessageType::Vector3Stamped>();
+    auto ros_message = reinterpret_cast<geometry_msgs::Vector3Stamped*>(message->ptr);
+
+    message->topic_name = remapper->remap(topic_prefix + "steering_angle");
+    message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+    ros_message->header.seq = sensor_data->sequence;
+    ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+    ros_message->header.frame_id = frame_id;
+
+    ros_message->vector.x = data_impl->steering_angle;
+    ros_message->vector.y = 0;
+    ros_message->vector.z = 0;
+
+    ret.emplace_back(std::move(message));
+    return ret;
+}
+
+template<>
 std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::OdometryOrientation>(
         device::data::SensorDataPtr& sensor_data,
         const std::string& topic_prefix,
@@ -42,6 +123,16 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::OdometryO
     ros_message->linear_acceleration_covariance[0] = -1;
     ret.emplace_back(std::move(message));
     return ret;
+}
+
+template<>
+std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::OdometryLocalizationResult>(
+        device::data::SensorDataPtr& sensor_data,
+        const std::string& topic_prefix,
+        const std::string& frame_id,
+        const common::Remapper* remapper)
+{
+    return {};
 }
 
 }  // namespace convert

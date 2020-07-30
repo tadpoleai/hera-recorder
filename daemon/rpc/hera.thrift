@@ -9,18 +9,21 @@ struct Parameter {
     2: required string value;
 }
 
+struct SingleDisplayData {
+    1: required binary textData;
+    2: required binary jpegData;
+}
+
 struct DeviceData {
     1: required i32 id;
     2: required string type;
     3: required string name;
-    5: required bool valid;
-    10: required bool isJpeg;
+
     20: required i32 sequence;
-    30: required i32 timeSecond;
-    31: required i32 timeNanosecond;
     40: required double frequency;
     50: required i32 dataSizeKB;
-    60: required binary data;
+
+    60: required list<SingleDisplayData> dispData;
 }
 
 struct DeviceStatus {
@@ -92,7 +95,6 @@ struct ResultData {
     30: required i32 startTimeSec;
     31: required i32 nowTimeSec;
 }
-
 
 struct DeviceStorage {
     1: required string typeName;

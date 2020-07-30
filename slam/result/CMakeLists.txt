@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(hera-slam-result)
 
-include("../../deploy/cmake/cpp_common.cmake")
+include("../../cmake/include/cpp_common.cmake")
 
 include_directories(../.. include)
 

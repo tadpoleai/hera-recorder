@@ -59,7 +59,7 @@ void Service::start(Result& result, const OperatorInfo& operator_info)
     std::regex device_name_regex("[a-zA-Z0-9_]{1,32}");
     for (const auto& device : profile.devices) {
         // Check device type
-        if (!device::DeviceFactory::check_type(device.type)) {
+        if (!device::Factory::check_type(device.type)) {
             return handle_error(result,
                                 HeraErrno::InvalidDeviceType,
                                 "Device type given '" + device.type + "' is invalid");
@@ -82,7 +82,7 @@ void Service::start(Result& result, const OperatorInfo& operator_info)
     std::string full_storage_name = StorageFolder_ + "/" + storage_name + FileNameSuffix_;
     storage_ = storage::StorageManager::open(full_storage_name, false);
     for (const auto& device : profile.devices) {
-        devices_.emplace_back(device::DeviceFactory::create(
+        devices_.emplace_back(device::Factory::create(
                 device_id++, device.type, device.name, device.forward, ipc_queue_.get(), storage_.get()));
         auto device_ptr = devices_.back().get();
 

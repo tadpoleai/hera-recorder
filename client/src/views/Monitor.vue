@@ -8,7 +8,7 @@
 
     van-cell
       div(style="display: flex; justify-content: space-between;")
-        span 磁盘可用容量
+        span 占用容量
         span {{diskVolume}}
       div
         van-progress(:percentage="diskVolumePercent"
@@ -30,9 +30,14 @@
               span(style="font-size: 90%;") {{renderFrequency(dd.frequency)}}
               span(style="font-size: 90%;") {{(dd.dataSizeKB / 1024).toFixed(1) + 'M'}}
 
-          img.device-data-image(v-if="dd.isJpeg" :ref="'image' + index")
-          template(v-else)
-            p.pdata(v-for="line in renderStringData(dd.data)") {{line}}
+          //- dispData
+          template(v-for="(singleDisplayData, j) in dd.dispData")
+              img.device-data-image(
+                v-if="singleDisplayData.jpegData"
+                :ref="'image' + index + ':' + j"
+              )
+              template(v-if="singleDisplayData.textData")
+                p.pdata(v-for="line in renderStringData(singleDisplayData.textData)") {{line}}
 
   van-cell-group(
     v-if="status.local.operatorInfo.slam"
@@ -113,19 +118,22 @@ export default class Monitor extends Vue {
   async updateData() {
     await Api.getData();
     for (let i = 0; i < this.status.deviceDatas.length; i += 1) {
-      if (this.status.deviceDatas[i].isJpeg) {
-        const img = new Image();
-        img.src = 'data:image/jpg;base64,' + this.status.deviceDatas[i].data.toString('base64');
-        img.onload = () => {
-          if (this.$refs['image' + i] && (this.$refs['image' + i] as Element[])[0]) {
-            ((this.$refs['image' + i] as Element[])[0] as any).src = img.src;
-          }
-          if (i == this.dataDetailIndex) {
-            if (this.$refs['imageDetail']) {
-              ((this.$refs['imageDetail'] as Element) as any).src = img.src;
+      const dispData = this.status.deviceDatas[i].dispData;
+      for (let j = 0; j < dispData.length; j += 1) {
+        if (dispData[j].jpegData !== undefined) {
+          const img = new Image();
+          img.src = 'data:image/jpg;base64,' + (dispData[j].jpegData as any).toString('base64');
+          img.onload = () => {
+            if (this.$refs['image' + i + ':' + j] && (this.$refs['image' + i + ':' + j] as Element[])[0]) {
+              ((this.$refs['image' + i + ':' + j] as Element[])[0] as any).src = img.src;
             }
-          }
-        };
+            if (i == this.dataDetailIndex) {
+              if (this.$refs['imageDetail']) {
+                ((this.$refs['imageDetail'] as Element) as any).src = img.src;
+              }
+            }
+          };
+        }
       }
     }
 

@@ -80,7 +80,7 @@ void Tool::read_thread_function()
 
     while ((data = storage_->read())) {
         // if (reindex_) {
-        //     auto sensor_data = device::DeviceFactory::convert(data);
+        //     auto sensor_data = device::Factory::convert(data);
         // }
         progess_size_ += data->get_length();
         auto id = data->get_device_id();

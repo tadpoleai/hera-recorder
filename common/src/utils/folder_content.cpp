@@ -23,9 +23,8 @@ namespace file {
 
 std::ostream& operator<<(std::ostream& os, const FileSize& size)
 {
-
     if (size.size < (1ULL << 10)) {
-        os << std::setw(4) << size.size << "Bytes";
+        os << std::setw(4) << std::setfill(' ') << size.size << "Bytes";
     } else {
         os << std::setw(6) << std::setprecision(5) << std::setfill('0') << std::left;
         if (size.size < (1ULL << 20)) {
