@@ -38,6 +38,7 @@ foreach(PLUGIN_SRC ${PLUGIN_SRC_LIST})
 
   # Find extra cmake file of each device
   unset(PLUGIN_DRIVER_FOUND)
+  unset(PLUGIN_DRIVER_DEP_LIBS)
   string(REGEX REPLACE "(.+)\\.cpp" "\\1.cmake" PLUGIN_CMAKE_FILE ${PLUGIN_SRC})
   if(EXISTS ${PLUGIN_CMAKE_FILE})
     # Define message_plugin
@@ -79,7 +80,7 @@ foreach(PLUGIN_SRC ${PLUGIN_SRC_LIST})
   # Add dynamic library with device driver
   if(PLUGIN_DRIVER_FOUND)
     add_library(${PLUGIN_DRIVER_LIB_NAME} SHARED ${PLUGIN_SRC})
-    target_link_libraries(${PLUGIN_DRIVER_LIB_NAME} ${PROJECT_NAME})
+    target_link_libraries(${PLUGIN_DRIVER_LIB_NAME} ${PROJECT_NAME} ${PLUGIN_DRIVER_DEP_LIBS})
     target_compile_definitions(${PLUGIN_DRIVER_LIB_NAME} PRIVATE WITH_DRIVER=1)
 
     # Install plugin

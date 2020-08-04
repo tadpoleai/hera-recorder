@@ -13,6 +13,8 @@ if(NOT PLUGIN_EXIT)
      AND EXISTS ${FLY_CAPTURE_INCLUDE_DIR}/flycapture/FlyCapture2.h)
     message_plugin("FlyCapture found")
     set(PLUGIN_DRIVER_FOUND 1)
+
+    set(PLUGIN_DRIVER_DEP_LIBS ${FLY_CAPTURE_LIBS})
   else()
     message_plugin("FlyCapture not found")
     set(PLUGIN_DRIVER_FOUND 0)

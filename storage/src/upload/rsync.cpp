@@ -60,7 +60,7 @@ Rsync::Rsync(const Config& config)
             "rsync",
             "--info=progress",
             "--archive",
-            "--checksum",
+            // "--checksum",
             "--partial",
             "--timeout=15",
     };
