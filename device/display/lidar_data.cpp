@@ -57,7 +57,7 @@ private:
 };
 
 template<>
-SingleDisplayData SingleDisplayData::parse<SensorDataType::PointsXYZI>(std::vector<SensorDataPtr>&& sensor_datas)
+SingleDisplayData SingleDisplayData::parse<SensorDataType::PointsXYZI>(std::vector<SensorDataPtr>&& sensor_datas, const bool is_detail)
 {
     static constexpr auto CanvasPixelSize = 480;
     static constexpr auto CanvasPixelCenter = CanvasPixelSize / 2;

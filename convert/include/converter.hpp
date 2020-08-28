@@ -38,13 +38,14 @@ public:
     /// @param src_filename source file name of recorded data
     /// @param bagfile output bag file name
     /// @param remapper a remapper for remapping frame_id and topic_name, must not be nullptr
-    /// @param only_show only show header information and exit
+    /// @param parameter_tuple_list list of parameters override map, tuple<DeviceName/Category/ID, ParamType,
+    /// ParamValue>
     /// @param start_time [sec] if non-zero, convert data from that time only
     /// @param duration [sec] if non-zero, convert for a certain duration only
     Converter(const std::string& src_filename,
               const std::string& bagfile,
               common::RemapperPtr&& remapper,
-              const bool only_show,
+              const std::vector<std::tuple<std::string, std::string, std::string>>& parameter_tuple_list,
               const int32_t start_time,
               const int32_t duration);
 

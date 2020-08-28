@@ -4,20 +4,11 @@ set(PROJECT_NAME hera)
 project(${PROJECT_NAME})
 
 add_definitions(-DHERA_COMPILE_IN_REPO)
-
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "/usr/local")
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
-if(NOT DEFINED ENV{ARCH})
-  execute_process(
-    COMMAND uname -m
-    COMMAND tr -d '\n'
-    OUTPUT_VARIABLE ARCHITECTURE)
-else()
-  set(ARCHITECTURE $ENV{ARCH})
-endif()
-message(STATUS "Architecture is ${ARCHITECTURE}")
+include("cmake/include/system_arch.cmake")
 
 if(NOT without-git-info)
   message(STATUS "Hera will build with git info")
@@ -29,11 +20,11 @@ endif()
 message(STATUS "Hera adding common")
 add_subdirectory(common)
 
-message(STATUS "Hera adding storage")
-add_subdirectory(storage)
-
 message(STATUS "Hera adding device")
 add_subdirectory(device)
+
+message(STATUS "Hera adding storage")
+add_subdirectory(storage)
 
 if(with-convert
    OR with-all

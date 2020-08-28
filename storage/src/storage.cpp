@@ -120,8 +120,7 @@ bool StorageManager::add_device(const std::string& full_name, const size_t histo
     header->device_message_nums.push_back(0);
     header->device_names.push_back(full_name);
     header->device_data_sizes.push_back(0);
-    data_array_.emplace_back(
-            std::move(std::make_unique<common::ThreadQueue<device::data::DeviceData>>(0, history_depth)));
+    data_array_.emplace_back(std::make_unique<common::ThreadQueue<device::data::DeviceData>>(0, history_depth));
     return true;
 }
 
@@ -160,6 +159,15 @@ std::vector<DeviceDataPtr> StorageManager::history(const uint32_t device_id) con
     }
 
     return data_array_[device_id]->history();
+}
+
+void StorageManager::clear_history(const uint32_t device_id)
+{
+    if (read_mode_ || !add_device_finished_ || device_id >= data_array_.size()) {
+        return;
+    }
+
+    return data_array_[device_id]->clear_history();
 }
 
 uint64_t StorageManager::get_volume(const uint32_t device_id) const

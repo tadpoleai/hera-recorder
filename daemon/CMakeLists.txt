@@ -22,7 +22,7 @@ add_custom_command(
 
 # Build daemon
 file(GLOB_RECURSE ALL_SRC "src/*.cpp" "src/**/*.cpp")
-include_directories(".." include ${THRIFT_INCLUDE_DIR})
+include_directories(".." include ${THRIFT_INCLUDE_DIR} ${BOOST_INCLUDE_DIR})
 add_executable(
   ${PROJECT_NAME} ${ALL_SRC} ${RPC_GEN_CPP}/hera_types.cpp
                   ${RPC_GEN_CPP}/hera_constants.cpp ${RPC_GEN_CPP}/Service.cpp)
@@ -34,7 +34,7 @@ add_executable(${PROJECT_NAME}-finder "finder/finder.cpp")
 target_link_libraries(${PROJECT_NAME}-finder)
 
 if(WITH_SLAM)
-  message("STATUS" "Linking with libhera-slam")
+  message(STATUS "Linking with libhera-slam")
   target_link_libraries(${PROJECT_NAME} hera-slam-result)
 endif()
 
@@ -51,10 +51,10 @@ install(
   PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE
               WORLD_READ
   DESTINATION bin)
-install(
-  FILES config/daemon.json
-  PERMISSIONS OWNER_READ
-  DESTINATION /var/hera)
+# install(
+#   FILES config/daemon.json
+#   PERMISSIONS OWNER_READ
+#   DESTINATION /var/hera)
 install(
   CODE "execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/script/install-extra.sh)"
 )

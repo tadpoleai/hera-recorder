@@ -9,6 +9,9 @@ import {
   Collapse,
   CollapseItem,
   Dialog,
+  Divider,
+  DropdownItem,
+  DropdownMenu,
   Empty,
   Field,
   Grid,
@@ -24,7 +27,9 @@ import {
   Progress,
   Radio,
   RadioGroup,
+  Rate,
   Row,
+  Stepper,
   Sticky,
   SwipeCell,
   Switch,
@@ -39,6 +44,9 @@ Vue.use(Col);
 Vue.use(Collapse);
 Vue.use(CollapseItem);
 Vue.use(Dialog);
+Vue.use(Divider);
+Vue.use(DropdownItem);
+Vue.use(DropdownMenu);
 Vue.use(Empty);
 Vue.use(Field);
 Vue.use(Grid);
@@ -54,7 +62,9 @@ Vue.use(Popup);
 Vue.use(Progress);
 Vue.use(Radio);
 Vue.use(RadioGroup);
+Vue.use(Rate);
 Vue.use(Row);
+Vue.use(Stepper);
 Vue.use(Sticky);
 Vue.use(SwipeCell);
 Vue.use(Switch);

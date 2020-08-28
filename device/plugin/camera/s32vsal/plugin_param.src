@@ -1,0 +1,17 @@
+# 启用限制帧率功能
+# 若开启, 相机将输出帧率限制到 FrameRate
+# 否则, 每一帧都会被输出保存
+mutable boolean SkipFrame = true;
+
+# 限制后的相机帧率
+mutable real FrameRate = 10.0; range 1.0, 20.0, 1.0
+
+# 图像保存格式
+# JPEG: JPEG压缩格式，其压缩质量由 JpegQuality 控制
+# RGB8: RGB各8位，非压缩，每像素24位
+mutable enum SaveFormat = JPEG; options JPEG, RGB8
+
+# JPEG质量
+# 控制 JPEG 图像质量的参数
+# 该值越高则图像质量越好，相应地，图像数据大小也会增大
+mutable integer JpegQuality = 90; range 0, 100, 5

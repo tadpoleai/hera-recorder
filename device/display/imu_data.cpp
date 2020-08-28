@@ -22,7 +22,7 @@ namespace device {
 namespace data {
 
 template<>
-SingleDisplayData SingleDisplayData::parse<SensorDataType::ImuMagneticField>(std::vector<SensorDataPtr>&& sensor_datas)
+SingleDisplayData SingleDisplayData::parse<SensorDataType::ImuMagneticField>(std::vector<SensorDataPtr>&& sensor_datas, const bool is_detail)
 {
     std::stringstream result;
     auto data_impl = reinterpret_cast<data::ImuMagneticField*>(sensor_datas[0].get());

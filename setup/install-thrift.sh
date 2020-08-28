@@ -41,10 +41,10 @@ echo $(pwd)
 
 ./configure \
     --with-cpp \
-    --without-qt4 --without-qt5 --without-c_glib --without-csharp \
+    --without-qt4 --without-qt5 --without-c_glib --without-csharp --without-net-std --without-net-core \
     --without-java --without-erlang --without-nodejs --without-nodets --without-lua \
     --without-python --without-py3 --without-perl --without-php --without-php_extension --without-ruby \
-    --without-haskell --without-go --without-rs --without-cl --without-haxe --without-d \
+    --without-haskell --without-go --without-rs --without-cl --without-haxe --without-d --without-swift \
     --disable-tests --disable-tutorial \
     CFLAGS="-g -O2" CXXFLAGS="-g -O2"
 

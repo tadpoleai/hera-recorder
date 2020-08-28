@@ -25,7 +25,7 @@ namespace device {
 namespace data {
 
 template<>
-SingleDisplayData SingleDisplayData::parse<SensorDataType::OdometryOrientation>(std::vector<SensorDataPtr>&& sensor_datas)
+SingleDisplayData SingleDisplayData::parse<SensorDataType::OdometryOrientation>(std::vector<SensorDataPtr>&& sensor_datas, const bool is_detail)
 {
     SingleDisplayData result;
 

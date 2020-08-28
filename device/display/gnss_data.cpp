@@ -19,7 +19,7 @@ namespace device {
 namespace data {
 
 template<>
-SingleDisplayData SingleDisplayData::parse<SensorDataType::NavSatFix>(std::vector<SensorDataPtr>&& sensor_datas)
+SingleDisplayData SingleDisplayData::parse<SensorDataType::NavSatFix>(std::vector<SensorDataPtr>&& sensor_datas, const bool is_detail)
 {
     SingleDisplayData result;
 
@@ -28,10 +28,16 @@ SingleDisplayData SingleDisplayData::parse<SensorDataType::NavSatFix>(std::vecto
     result.text_data += "LAT : " + std::to_string(data_impl->latitude) + "\n";
     result.text_data += "LON : " + std::to_string(data_impl->longitude) + "\n";
     result.text_data += "ALT : " + std::to_string(data_impl->altitude) + "\n";
-    result.text_data += "STAT: " + (data_impl->status.status == NavSatFix::StatusType::NO_Fix) ? "NO FIX\n" : "FIXED\n";
+
+    if (data_impl->status.status == NavSatFix::StatusType::NO_Fix) {
+        result.text_data += "STAT: NO FIX";
+    } else {
+        result.text_data += "STAT: FIXED";
+    }
 
     return result;
 }
+
 
 }  // namespace data
 }  // namespace device

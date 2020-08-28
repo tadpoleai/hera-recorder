@@ -19,7 +19,7 @@ namespace device {
 namespace data {
 
 template<>
-SingleDisplayData SingleDisplayData::parse<SensorDataType::InsBestPosition>(std::vector<SensorDataPtr>&& sensor_datas)
+SingleDisplayData SingleDisplayData::parse<SensorDataType::InsBestPosition>(std::vector<SensorDataPtr>&& sensor_datas, const bool is_detail)
 {
     SingleDisplayData result;
     auto data_impl = reinterpret_cast<data::BestPosition*>(sensor_datas[0].get());

@@ -96,7 +96,7 @@ void FrequecyCalculator::thread_function()
     }
 
     log::debug << "FrequecyCalculator: Stop running" << log::endl;
-}  // namespace daemon
+}
 
 }  // namespace daemon
 }  // namespace hera

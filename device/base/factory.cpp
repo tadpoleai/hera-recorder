@@ -68,7 +68,7 @@ void Factory::load_plugins(const bool load_driver, const std::string& plugins_pa
     }
 };
 
-std::vector<std::string> Factory::types()
+std::vector<std::string> Factory::plugin_types()
 {
     if (!is_loaded) {
         load_plugins();
@@ -87,11 +87,11 @@ bool Factory::check_type(const std::string& vendor_type)
         load_plugins();
     }
 
-    const auto Types = types();
+    const auto Types = plugin_types();
     return std::find(Types.begin(), Types.end(), vendor_type) != Types.end();
 }
 
-std::pair<std::vector<std::string>, std::vector<std::string>> Factory::parameter_types(const std::string& vendor_type)
+std::string Factory::plugin_parameter_rules(const std::string& vendor_type)
 {
     if (!is_loaded) {
         load_plugins();
@@ -99,16 +99,16 @@ std::pair<std::vector<std::string>, std::vector<std::string>> Factory::parameter
 
     if (!check_type(vendor_type)) {
         log::warn << "Factory::type_parameters: Unknown vendor type: " << vendor_type << log::endl;
-        return {};
+        return "[]";
     }
 
     for (const auto& device_handle : device_handles) {
         if (vendor_type == device_handle.type_name) {
-            return std::make_pair(device_handle.essential_parameter_types, device_handle.optional_parameter_types);
+            return device_handle.rules;
         }
     }
 
-    return {};
+    return "[]";
 }
 
 DevicePtr Factory::create(const uint32_t id,
@@ -125,7 +125,7 @@ DevicePtr Factory::create(const uint32_t id,
     for (const auto& device_handle : device_handles) {
         if (vendor_type == device_handle.type_name) {
             if (device_handle.create) {
-                return device_handle.create(id, vendor_type, name, forward, ipc_queue, storage);
+                return DevicePtr(device_handle.create(id, vendor_type, name, forward, ipc_queue, storage));
             } else {
                 log::warn << "Factory::create: driver is not loaded" << log::endl;
             }
@@ -136,7 +136,7 @@ DevicePtr Factory::create(const uint32_t id,
     return nullptr;
 }
 
-data::SensorDataPtr Factory::convert(data::DeviceDataPtr& data)
+data::SensorDataPtr Factory::convert(const data::DeviceDataPtr& data, const ParametersInterface* parameters)
 {
     if (!is_loaded) {
         load_plugins();
@@ -151,7 +151,7 @@ data::SensorDataPtr Factory::convert(data::DeviceDataPtr& data)
 
     for (const auto& device_handle : device_handles) {
         if (vendor_type == device_handle.type) {
-            return device_handle.convert(data);
+            return device_handle.convert(data, parameters);
             break;
         }
     }

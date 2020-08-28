@@ -1,15 +1,8 @@
 <template lang="pug">
 div
-  van-notice-bar(
-    v-show="showNoticeBar"
-    :text="noticeBarText"
-    :background="noticeBarBackground"
-    color="black"
-  )
-
   van-sticky
     van-nav-bar(
-      :title="'HERA' + $router.history.current.name"
+      :title="'HERA ' + $router.history.current.name"
       :left-arrow="$router.history.current.path != '/'"
       @click-left="onClickNavBack()"
       @click-right="onClickInfo()"
@@ -17,81 +10,55 @@ div
       van-icon(
         slot="right"
         name="question-o"
-        size="18"
+        size="24px"
       )
 
-  router-view(v-if="status.remoteConnected")
+    ControlStatusBar
 
-  template(v-else)
-    van-empty(
-      image="network"
-      :description="messageConnection"
-    )
-  
+  ConnectionError
+
+  router-view
+
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Api, status } from '@/api';
+import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
+import { Hera } from '@/api';
 import { Toast, Dialog } from 'vant';
 import { GitVersion } from '../git_info';
 
-@Component({})
+import ConnectionError from '@/views/App/ConnectionError.vue';
+import ControlStatusBar from '@/views/App/ControlStatusBar.vue';
+
+const MetaModule = namespace('Meta');
+
+@Component({
+  components: { ConnectionError, ControlStatusBar }
+})
 export default class ProfileEdit extends Vue {
+  // Actions
+  @MetaModule.Action fetchMeta;
+
   created() {
-    (this.$router as any).history.current!.path !== '/' && this.$router.replace({ path: '/' });
+    this.fetchMeta();
+    // (this.$router as any).history.current!.path !== '/' && this.$router.replace({ path: '/' });
   }
 
   onClickNavBack() {
-    this.$router.back();
+    if ((this.$router! as any).history!.current.path != '/') {
+      this.$router.back();
+    }
   }
 
   onClickInfo() {
-    Dialog({ title: 'HERA采集软件', message: '客户端版本\n' + GitVersion + '\n版权信息\nCopyright 2018 Wayz.ai. All Rights Reserved.' });
+    Dialog({
+      title: 'HERA采集软件',
+      message: '客户端版本\n' + GitVersion + '\n版权信息\nCopyright 2018 Wayz.ai. All Rights Reserved.',
+      messageAlign: 'left',
+      theme: 'round-button'
+    });
   }
-
-  async mounted() {
-    const result = await Api.get(true);
-    if (result.error !== 0) {
-      Toast.fail({
-        message: Api.formatResult(result),
-        duration: 0,
-        closeOnClick: true
-      });
-      this.messageConnection = '连接下位机失败';
-    }
-    this.intervalHandler = setInterval(this.updateData, Api.config.syncPeriodMs);
-  }
-
-  updateData() {
-    Api.get(false);
-  }
-
-  get showNoticeBar() {
-    return this.status.remoteStatus.started;
-  }
-
-  get noticeBarText() {
-    if (this.status.remoteStatus.recording) {
-      return '保存中 > ' + this.status.remoteStatus.operatorInfo.storagePath;
-    } else {
-      return '未保存 > ' + this.status.remoteStatus.operatorInfo.storagePath;
-    }
-  }
-
-  get noticeBarBackground() {
-    if (this.status.remoteStatus.recording) {
-      return 'lightpink';
-    } else {
-      return 'lightgreen';
-    }
-  }
-
-  intervalHandler!: NodeJS.Timeout;
-
-  messageConnection = '正在连接下位机';
-
-  status = status;
 }
 </script>
 

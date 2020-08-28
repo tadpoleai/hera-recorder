@@ -1,0 +1,15 @@
+# 传感器的 IPv4 地址
+immutable string IpAddress = ""; regex ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
+
+# 传感器监听端口
+# 必须每个传感器有单独的端口, 并且没有被其他程序占用
+immutable integer ListenPort = 2368; range 0, 65535, 1
+
+# 激光转速
+# 该项控制激光转动的速度
+# 设定范围从 300rpm 到 1200rpm
+mutable integer Speed = 600; range 300, 1200, 50
+
+# 不使用同步
+# 当Velodyne无法从外部信号同步时, 开启此选项
+mutable boolean DisableSync = false;

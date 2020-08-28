@@ -25,7 +25,7 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::Compresse
     auto ros_message = reinterpret_cast<sensor_msgs::CompressedImage*>(message->ptr);
     std::vector<ROSMessagePtr> ret;
 
-    message->topic_name = remapper->remap(topic_prefix + "compressed_image");
+    message->topic_name = remapper->remap(topic_prefix + "image/compressed");
     message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
     ros_message->header.seq = sensor_data->sequence;
     ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
@@ -70,13 +70,90 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::Image>(de
 
     ros_message->height = data_impl->image_meta.rows;
     ros_message->width = data_impl->image_meta.cols;
+    ros_message->step = data_impl->image_meta.stride;
     ros_message->is_bigendian = 0;
 
     switch (data_impl->image_meta.pixel_format) {
     case device::data::Image::PixelFormat::Mono8:
         ros_message->encoding = "mono8";
-        ros_message->step = ros_message->width * 1;
         break;
+    case device::data::Image::PixelFormat::Mono16:
+        ros_message->encoding = "mono16";
+        break;
+    case device::data::Image::PixelFormat::RGB8:
+        ros_message->encoding = "rgb8";
+        break;
+    case device::data::Image::PixelFormat::BGR8:
+        ros_message->encoding = "bgr8";
+        break;
+    case device::data::Image::PixelFormat::RGB16:
+        ros_message->encoding = "rgb16";
+        break;
+    case device::data::Image::PixelFormat::BGR16:
+        ros_message->encoding = "bgr16";
+        break;
+    case device::data::Image::PixelFormat::Raw8:
+        switch (data_impl->image_meta.bayer_format) {
+        case device::data::Image::BayerFormat::RGGB:
+            ros_message->encoding = "bayer_rggb8";
+            break;
+        case device::data::Image::BayerFormat::GRBG:
+            ros_message->encoding = "bayer_grbg8";
+            break;
+        case device::data::Image::BayerFormat::GBRG:
+            ros_message->encoding = "bayer_gbrg8";
+            break;
+        case device::data::Image::BayerFormat::BGGR:
+            ros_message->encoding = "bayer_bggr8";
+            break;
+        default:
+            log::error << "Converter: Invalid BayerFormat:" << static_cast<int>(data_impl->image_meta.bayer_format)
+                       << log::endl;
+            return ret;
+        }
+        break;
+    case device::data::Image::PixelFormat::Raw12:
+        switch (data_impl->image_meta.bayer_format) {
+        case device::data::Image::BayerFormat::RGGB:
+            ros_message->encoding = "bayer_rggb12";
+            break;
+        case device::data::Image::BayerFormat::GRBG:
+            ros_message->encoding = "bayer_grbg12";
+            break;
+        case device::data::Image::BayerFormat::GBRG:
+            ros_message->encoding = "bayer_gbrg12";
+            break;
+        case device::data::Image::BayerFormat::BGGR:
+            ros_message->encoding = "bayer_bggr12";
+            break;
+        default:
+            log::error << "Converter: Invalid BayerFormat:" << static_cast<int>(data_impl->image_meta.bayer_format)
+                       << log::endl;
+            return ret;
+        }
+        break;
+
+    case device::data::Image::PixelFormat::Raw16:
+        switch (data_impl->image_meta.bayer_format) {
+        case device::data::Image::BayerFormat::RGGB:
+            ros_message->encoding = "bayer_rggb16";
+            break;
+        case device::data::Image::BayerFormat::GRBG:
+            ros_message->encoding = "bayer_grbg16";
+            break;
+        case device::data::Image::BayerFormat::GBRG:
+            ros_message->encoding = "bayer_gbrg16";
+            break;
+        case device::data::Image::BayerFormat::BGGR:
+            ros_message->encoding = "bayer_bggr16";
+            break;
+        default:
+            log::error << "Converter: Invalid BayerFormat:" << static_cast<int>(data_impl->image_meta.bayer_format)
+                       << log::endl;
+            return ret;
+        }
+        break;
+
     default:
         log::error << "Converter: Invalid Format:" << static_cast<int>(data_impl->image_meta.pixel_format) << "\n"
                    << "Please add format in convert/src/ros_message_impl/camera.cpp" << log::endl;

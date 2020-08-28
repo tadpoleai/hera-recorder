@@ -17,16 +17,43 @@ Converter* g_converter_ptr = nullptr;
 
 void print_help(char** argv)
 {
-    std::cout << "usage:\t" << argv[0] << " -i <source_data> [-o <output_bag_file>] [-r <remap_file>] [-sld] [-hv]"
-              << std::endl;
-    std::cout << "\t-i\tSource Data File\n"
-              << "\t-o\tOutput Bag File, default is sample as source with .bag extension\n"
-              << "\t-r\tTopic and FrameID remap json file\n"
-              << "\t-s\tFlag to only show header information\n"
-              << "\t-l\tFlag to output log file\n"
-              << "\t-d\tFlag to debug output\n"
-              << "\t-q\tFlag to off progress output\n"
+    std::cerr << "usage:\t" << argv[0] << " -i <source_data> [-o <output_bag_file>] [-r <remap_file>]\n"
+              << "\t[-s <start_time_sec> ] [-t <time_duration_sec>]\n"
+              << "\t[-p <device_id|device_category|device_name>:<ParamType>=<ParamValue> [-p ...]]\n"
+              << "\t[-ldq] [-hv]" << std::endl;
+
+    std::cerr << "\t-i\tSource data file\n"
+              << "\t\t\tHera formatted file\n"
+
+              << "\t-o\tOutput Bag File\n"
+              << "\t\t\tOutputfile name of ROS Bag, default is the same with source data file, replacing extension "
+                 "with '.bag'\n "
+
+              << "\t-r\tRemap json file\n"
+              << "\t\t\tSpecific remap of 'Topic' and 'FrameID' in ROS Message, default = none\n"
+
+              << "\t-s\tStart time\n"
+              << "\t\t\tFloat number[sec], default = 0.0, to specific a timepoint, the data before which would be "
+                 "skipped\n"
+
+              << "\t-t\tDuration\n"
+              << "\t\t\tFloat number[sec], default = 0.0(disabled), only convert data within a certain duration\n"
+
+              << "\t-p\tParameters\n"
+              << "\t\t\tOverride parameters of devices in covnertion, default = none\n"
+              << "\t\t\t\t'-p 0:Gamma:2.2' overrides device id = 0, parameter type = 'Gamma', to new value "
+                 "'2.2'\n"
+              << "\t\t\t\t'-p camera/flir:Gamma:2.2' overrides device category 'camera/flir', parameter type = "
+                 "'Gamma', to new value '2.2'\n"
+
+              << "\t-l\tFlag to output a log file\n"
+
+              << "\t-d\tFlag set log level to debug\n"
+
+              << "\t-q\tFlat to suppress progress\n"
+
               << "\t-h\tPrint this help and exit\n"
+
               << "\t-v\tPrint version and exit\n"
               << std::endl;
 }
@@ -60,8 +87,8 @@ int main(int argc, char** argv)
     std::string bag_file;
     std::string src_file;
     std::string remap_file;
+    std::vector<std::tuple<std::string, std::string, std::string>> parameter_tuple_list;
     bool islog = false;
-    bool isonlyprint = false;
     bool isverbose = false;
     bool isquiet = false;
     int32_t start_time = 0;
@@ -69,7 +96,7 @@ int main(int argc, char** argv)
 
     // opterr = 0;
     while (true) {
-        switch (getopt(argc, argv, "i:o:r:s:t:pldqhv")) {
+        switch (getopt(argc, argv, "i:o:r:s:t:p:ldqhv")) {
         case 'i':
             src_file = optarg;
             continue;
@@ -95,8 +122,18 @@ int main(int argc, char** argv)
                 print_version(argv);
                 exit(0);
             }
-        case 'p':
-            isonlyprint = true;
+        case 'p': {
+            std::stringstream optarg_ss(optarg);
+            std::string token_list[3];
+            for (auto&& token : token_list) {
+                if (!getline(optarg_ss, token, ':')) {
+                    std::cerr << "Can not tokenize -p " << optarg << std::endl;
+                    print_help(argv);
+                    exit(1);
+                }
+            }
+            parameter_tuple_list.emplace_back(std::make_tuple(token_list[0], token_list[1], token_list[2]));
+        }
             continue;
         case 'l':
             islog = true;
@@ -164,8 +201,12 @@ int main(int argc, char** argv)
     }
 
     log::debug << "Conversion Start" << log::endl;
-    auto handler =
-            std::make_unique<Converter>(src_file, bag_file, std::move(remapper), isonlyprint, start_time, duration);
+    auto handler = std::make_unique<Converter>(src_file,
+                                               bag_file,
+                                               std::move(remapper),
+                                               parameter_tuple_list,
+                                               start_time,
+                                               duration);
     g_converter_ptr = handler.get();
 
     if (!handler->running()) {

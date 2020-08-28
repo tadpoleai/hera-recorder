@@ -186,7 +186,7 @@ void Replayer::replay_thread_function()
         };
         progress_ = t_data - t_data_start + param_start_time_;
 
-        auto sensor_data = device::Factory::convert(data);
+        auto sensor_data = device::Factory::convert(data, nullptr);
         if (sensor_data) {
             if (sensor_data->sensor_data_type != device::SensorDataType::Broken) {
                 if (data->get_device_id() < ipc_ptrs_.size()) {

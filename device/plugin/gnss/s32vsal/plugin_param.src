@@ -1,0 +1,3 @@
+# GNSS 设备类型
+# 详见 S32VSAL 采集操作指南
+immutable enum SubVendor = UBLOX; options UBLOX, MPSTNAV
