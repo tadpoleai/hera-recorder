@@ -79,7 +79,7 @@ private:
     ///
     /// @note This may various by different Camera Models and Camera Modes
     /// @todo Find the relationship of exact value
-    /// @note This value 19us, is for Mode 1 of 23S6C
+    /// @note This value 19us, is for Mode 4 of 23S6C
     static constexpr int32_t ShutterStepUs_ = 19;
 
     int64_t duration_us_;  ///< shutter duration, in us

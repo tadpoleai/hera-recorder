@@ -14,12 +14,14 @@
 #include "daemon/rpc/gen-cpp/Service.h"
 #include "device/include/include.hpp"
 #include "frequecy_calculator.hpp"
+#include "serialize.hpp"
 #include "storage/include/upload.hpp"
 
 #ifdef WITH_SLAM
 #include "slam/caller/include/caller.hpp"
 #include "slam/result/include/result.hpp"
 #endif
+
 
 using json = nlohmann::json;
 
@@ -39,18 +41,18 @@ struct RemoteServerType {
 class Service final : public ServiceIf {
 public:
     Service(const std::string& storage_folder = ".",
-            const std::string& profiles_filename = "./profiles.json",
+            const std::string& setting_filename = "./setting.json",
             const std::vector<RemoteServerType>& remote_servers = {}) :
+        StorageFolder_(storage_folder),
+        FileNameSuffix_(".hera"),
+        AcquisitionSettingFileName_(setting_filename),
         started_(false),
         recording_(false),
         start_time_sec_(0),
-        StorageFolder_(storage_folder),
-        FileNameSuffix_(".hera"),
-        ProfilesFileName_(profiles_filename),
-        RemoteServers_(remote_servers)
+        remote_servers_(remote_servers)
     {
         generate_meta();
-        load_profiles();
+        load_setting();
 #ifdef WITH_SLAM
         slam_handler_ = std::move(slam::Result::handler());
         slam_result_ = nullptr;
@@ -62,82 +64,91 @@ public:
         reset();
     }
 
-    void get(Result& _return) override;
+    virtual void getMeta(Meta& _return) override;
 
-    void start(Result& _return, const OperatorInfo& operator_info) override;
+    virtual void getSetting(AcquisitionSetting& _return) override;
+    virtual void setProfiles(AcquisitionSetting& _return, const std::vector<Profile>& profiles) override;
+    virtual void selectProfile(AcquisitionSetting& _return, const int32_t profileIndex) override;
+    virtual void setOperatorInfo(AcquisitionSetting& _return, const OperatorInfo& operatorInfo) override;
 
-    void stop(Result& _return) override;
+    virtual void getStatus(AcquisitionStatus& _return) override;
+    virtual void start(AcquisitionStatus& _return) override;
+    virtual void stop(AcquisitionStatus& _return) override;
+    virtual void setRecord(AcquisitionStatus& _return, const bool on) override;
 
-    void record(Result& _return, const bool on) override;
+    virtual void getData(DataStatus& _return) override;
+    virtual void selectDetailDevice(DataStatus& _return, const int32_t deviceIndex) override;
+    virtual void clearDetailDevice(DataStatus& _return) override;
 
-    void adjustParameters(Result& _return, const int32_t id, const std::vector<Parameter>& parameters) override;
+    virtual void getDeviceAndParameterses(std::vector<DeviceAndParameters>& _return) override;
+    virtual void adjustDeviceParameter(std::vector<DeviceAndParameters>& _return,
+                                       const int32_t deviceIndex,
+                                       const std::string& type,
+                                       const std::string& value) override;
 
-    void updateProfiles(Result& _return, const std::vector<Profile>& profiles, const int32_t profileIndex) override;
+    virtual void getDiskUsageStatus(DiskUsageStatus& _return) override;
 
-    void getData(ResultData& _return) override;
+    virtual void getStorage(std::vector<StorageRecordFile>& _return) override;
+    virtual void deleteStorage(std::vector<StorageRecordFile>& _return, const std::string& name) override;
 
-    void getStorage(StorageInfo& _return) override;
-
-    void deleteStorage(StorageInfo& _return, const std::string& name) override;
-
-    void getUploadInfo(UploadInfo& _return) override;
-
-    void operateUpload(UploadInfo& _return, const UploadOperationType::type op, const UploadRequest& request) override;
+    virtual void getUploadServers(std::vector<std::string>& _return) override;
+    virtual void getUploadProcesses(std::vector<UploadProcess>& _return) override;
+    virtual void requestUpload(std::vector<UploadProcess>& _return, const UploadRequest& request) override;
 
     void reset();
 
 private:
-    void handle_error(Result& _return, HeraErrno hera_errno, std::string&& reason = "", bool die = false);
-
-    void handle_success(Result& _return);
-
-    void append_status(Result& _return);
-
     void generate_meta();
 
-    void load_profiles();
+    void load_setting();
+    void dump_setting();
+    void append_acquisition_setting(AcquisitionSetting& _return);
 
-    void dump_profiles();
+    void handle_error(AcquisitionStatus& _return, HeraErrno hera_errno, std::string&& reason = "", bool die = false);
+    void handle_success(AcquisitionStatus& _return);
+    void append_acquisition_status(AcquisitionStatus& _return);
 
-    void get_single_data();
+    void append_data_status(DataStatus& _return);
 
-    void append_storage_info(StorageInfo& _return);
+    void append_device_parameterses(std::vector<DeviceAndParameters>& _return);
 
-    void append_upload_info(UploadInfo& _return);
+    void append_storage_status(std::vector<StorageRecordFile>& _return);
+
+    void append_upload_processes(std::vector<UploadProcess>& _return);
+
+private:
+    const std::string StorageFolder_;
+    const std::string FileNameSuffix_;
+    const std::string AcquisitionSettingFileName_;
 
 private:
     std::mutex mutex_;
 
+    // Meta
     Meta meta_;
 
-    OperatorInfo operator_info_;
+    // Setting
+    AcquisitionSetting acquisition_setting_;
 
+    // Control & Data
     std::vector<device::DevicePtr> devices_;
+    int32_t detail_device_index_;
+    std::string storage_filename_;
+    storage::StorageManagerPtr storage_;
+    std::unique_ptr<ipc::IPCQueue<device::data::SensorData>> ipc_queue_;
     std::unique_ptr<FrequecyCalculator> frequecy_calculator_;
     bool started_;
     bool recording_;
     int32_t start_time_sec_;
-
-    const std::string StorageFolder_;
-    const std::string FileNameSuffix_;
-    storage::StorageManagerPtr storage_;
-
-    std::unique_ptr<ipc::IPCQueue<device::data::SensorData>> ipc_queue_;
-
-    const std::string ProfilesFileName_;
-    std::vector<Profile> profiles_;
-    json profiles_json_;
-    int32_t profile_index_;
-
 #ifdef WITH_SLAM
     decltype(slam::Result::handler()) slam_handler_;
     slam::ResultPtr slam_result_;
 #endif
 
-    StorageInfo storage_info_;
+    // Storage & Upload
+    StorageStatus storage_status_;
     std::vector<std::unique_ptr<storage::upload::Manager>> upload_managers_;
-
-    const std::vector<RemoteServerType> RemoteServers_;
+    std::vector<RemoteServerType> remote_servers_;
 };
 
 }  // namespace daemon

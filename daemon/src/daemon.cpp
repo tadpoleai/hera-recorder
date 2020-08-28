@@ -69,9 +69,11 @@ int main(int argc, char** argv)
     }
 
     std::string name = "Hera Default Daemon";
+    std::string plugin_folder = "/usr/local/lib/hera/plugin";
     std::string storage_folder = "./";
-    std::string profile_json = "./profiles.json";
+    std::string setting_json = "./setting.json";
     std::string log_prefix = "hera-daemon";
+    int listen_port = 9090;
     std::vector<daemon::RemoteServerType> remote_servers;
     bool broadcast_whitelist = true;
     std::vector<std::string> broadcast_ifs;
@@ -84,21 +86,20 @@ int main(int argc, char** argv)
         name = config["name"];
         std::cout << "Name = " << name << std::endl;
 
+        plugin_folder = config["pluginFolder"];
+        std::cout << "PluginFolder = " << plugin_folder << std::endl;
+
         storage_folder = config["storageFolder"];
         std::cout << "StorageFolder = " << storage_folder << std::endl;
 
-        profile_json = config["profileJson"];
-        std::cout << "ProfileJson = " << profile_json << std::endl;
+        setting_json = config["settingJson"];
+        std::cout << "ProfileJson = " << setting_json << std::endl;
 
         log_prefix = config["logPrefix"];
         std::cout << "LogPrefix = " << log_prefix << std::endl;
 
-        log::init(log_prefix);
-
-        log::info << "libhera-common: " << common::get_version() << log::endl;
-        log::info << "libhera-device: " << device::get_version() << log::endl;
-        log::info << "libhera-storage: " << storage::get_version() << log::endl;
-        log::info << "Copyright 2018 Wayz.ai. All Rights Reserved." << log::endl;
+        listen_port = config["listenPort"];
+        std::cout << "ListenPort = " << listen_port << std::endl;
 
         for (const auto& ur_json : config["remoteServers"]) {
             daemon::RemoteServerType ur;
@@ -122,11 +123,19 @@ int main(int argc, char** argv)
         exit(-1);
     }
 
-    int port = 9090;
-    std::shared_ptr<daemon::Service> handler(new daemon::Service(storage_folder, profile_json, remote_servers));
+    log::init(log_prefix);
+
+    log::info << "libhera-common: " << common::get_version() << log::endl;
+    log::info << "libhera-device: " << device::get_version() << log::endl;
+    log::info << "libhera-storage: " << storage::get_version() << log::endl;
+    log::info << "Copyright 2018 Wayz.ai. All Rights Reserved." << log::endl;
+
+    device::Factory::load_plugins(true, plugin_folder);
+
+    std::shared_ptr<daemon::Service> handler(new daemon::Service(storage_folder, setting_json, remote_servers));
     g_handler_ptr = handler.get();
     std::shared_ptr<TProcessor> processor(new daemon::ServiceProcessor(handler));
-    std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
+    std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(listen_port));
     std::shared_ptr<TTransportFactory> transportFactory(new THttpServerTransportFactory());
     std::shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
     g_server_ptr = new TThreadedServer(processor, serverTransport, transportFactory, protocolFactory);

@@ -22,8 +22,7 @@ SerialPortBinary::SerialPortBinary(const std::string& kernel,
     port_opened_(false),
     thread_run_(false),
     thread_fetch_(nullptr),
-    binary_config_(binary_config),
-    buffer_inited_(false)
+    binary_config_(binary_config)
 {
     if (binary_config_.lead_bytes.empty()) {
         log::error << "SerialPortBinary: Can not open since LeadBytes is empty";
@@ -45,8 +44,7 @@ SerialPortBinary::SerialPortBinary(const std::string& kernel, const SerialPortBi
     port_opened_(false),
     thread_run_(false),
     thread_fetch_(nullptr),
-    binary_config_(binary_config),
-    buffer_inited_(false)
+    binary_config_(binary_config)
 {
     if (binary_config_.lead_bytes.empty()) {
         log::error << "SerialPortBinary: Can not open since LeadBytes is empty";

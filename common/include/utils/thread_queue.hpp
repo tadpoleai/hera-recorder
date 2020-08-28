@@ -165,6 +165,15 @@ public:
         return datas;
     };
 
+    ///
+    /// @brief Clear history data immediately (in shared mode)
+    ///
+    void clear_history(typename std::enable_if<shared, bool>* _ = 0)
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        history_.clear();
+    }
+
 private:
     const size_t Capacity_;                          ///< Capacity of queue
     const size_t History_Depth_;                     ///< Depth of History data fifo (only shared)

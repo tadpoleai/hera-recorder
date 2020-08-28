@@ -1,172 +1,225 @@
 <template lang="pug">
 div
-  van-cell-group(title="基本信息")
-    van-field(v-model="status.local.profileToEdit.author"
-      placeholder="请输入创建人" label="创建人")
-    van-field(v-model="status.local.profileToEdit.name"
-    placeholder="请输入配置名" label="配置名" required)
+  van-cell-group
+    template(slot="title")
+      div(style="display: flex; justify-content: space-between;")
+        span 基本信息
+        span
+          van-icon.title-right-icon(
+            name="sign"
+            @click="onClickSaveProfile"
+            size="24px"
+            v-bind:class="{ 'enabled-icon': profileEdited }"
+          )
+    CheckedField(
+      label="配置名"
+      :value="profile.name"
+      @input="setProfileName"
+      regex=".+"
+      placeholder="请输入配置名"
+      input-align="right"
+    )
+    CheckedField(
+      label="创建人"
+      :value="profile.author"
+      @input="setProfileAuthor"
+      regex=".+"
+      placeholder="请输入创建人"
+      input-align="right"
+    )
 
+  van-action-sheet(
+    v-model="isShowSelectDeviceType"
+    description="选择添加的传感器"
+    :actions="deviceTypesVantActions"
+    @select="onSelectDeviceType($event.name)"
+    close-on-click-action
+    cancel-text="取消"
+  )
   van-cell-group
     template(slot="title")
       div(style="display: flex; justify-content: space-between;")
         span 传感器列表
-        van-icon(type="info" name="more-o" size="large" @click="clickAddDevice()")
-    template(v-if="status.local.profileToEdit.devices.length === 0")
+        span
+          van-icon.title-right-icon.enabled-icon(
+            v-if="!isDeviceListEmpty"
+            name="edit"
+            @click="onClickListEdit"
+            size="24px"
+            v-bind:class="{ 'active-icon': isDeviceListEditMode }"
+          )
+          van-icon.title-right-icon.enabled-icon(
+            name="add-o"
+            @click="onClickAddDevice"
+            size="24px"
+          )
+
+    template(v-if="isDeviceListEmpty")
       van-empty(description="传感器列表为空")
-    //- For deviceList
-    van-swipe-cell(v-for="(device, index) in status.local.profileToEdit.devices")
-      van-cell(
-        clickable
-        center
-        @click="clickEditDevice(index)"
-        :value="device.type + '/' + device.name")
-        template(slot="icon")
-          van-icon(v-if="checkDevice(device)" name="passed" color="green" size="large")
-          van-icon(v-else name="warning-o" color="red" size="large")
-      template(slot="right")
-        van-button(square type="danger" text="删除" @click="clickDeleteDevice(index)")
-
-  van-action-sheet(
-    v-model="showSelectDeviceType"
-    :actions="status.remoteStatus.meta.deviceTypeMetas"
-    description="传感器类型"
-    cancel-text="取消"
-    @select="clickSelectDeviceType")
-
-  van-dialog(v-model="showEditDevice" :title="titleEditDevice"
-    @confirm="clickConfirmDevice")
-    van-cell-group(title="基本信息")
-      van-cell(title="传感器类型" :value="deviceToEdit.type")
-
-      van-field(v-model="deviceToEdit.name" required input-align="right"
-        placeholder="请输入传感器名" label="传感器名")
-
-      van-cell(title="转发数据")
-        van-switch(
-          slot="right-icon" 
-          v-model="deviceToEdit.forward"
-          size="24")
-
-      van-cell-group(title="参数")
-        van-field(v-for="(param, index) in deviceToEdit.essentialParameters"
-          v-model="param.value"
-          :key="'e' + index"
-          required input-align="right"
-          :label="param.type")
-        van-field(v-for="(param, index) in deviceToEdit.optionalParameters"
-          v-model="param.value"
-          :key="'o' + index"
-          input-align="right"
-          :label="param.type")
+    template(v-else)
+      template(v-if="isDeviceListEditMode")
+        van-cell(
+          v-for="(device, deviceIndex) in profile.devices"
+          :value="device.type + '/' + device.name"
+          center
+        )
+          template(
+            slot="right-icon"
+          )
+            van-icon.title-right-icon(
+              name="arrow-up"
+              :color="deviceIndex != 0 ? '#1989fa' : '#FFF'"
+              @click="moveDeviceIndex({deviceIndex, direction: -1})"
+              size="24px"
+            )
+            van-icon.title-right-icon(
+              name="arrow-down"
+              :color="deviceIndex != profile.devices.length - 1 ? '#1989fa' : '#FFF'"
+              @click="moveDeviceIndex({deviceIndex, direction: +1})"
+              size="24px"
+            )
+            van-icon.title-right-icon(
+              name="delete"
+              color="red"
+              @click="deleteDeviceByIndex(deviceIndex)"
+              size="24px"
+            )
+      van-collapse(
+        v-else
+        v-model="activeDeviceIndex"
+        accordion
+      )
+        van-collapse-item(
+          v-for="(device, deviceIndex) in profile.devices"
+          :title="device.type + '/' + device.name"
+        )
+          //- Item Panel
+          van-cell-group(title="基本")
+            van-cell(
+              title="传感器类型"
+              :value="device.type"
+            )
+            CheckedField(
+              label="传感器名"
+              :value="device.name"
+              @input="setDeviceNameByIndex({deviceIndex, name: $event})"
+              regex="^[a-zA-Z0-9]+$"
+              placeholder="请输入传感器名(英数)"
+              input-align="right"
+            )
+            van-cell(title="转发数据")
+              van-switch(
+                slot="right-icon" 
+                :value="device.forward"
+                @input="setDeviceForwardByIndex({deviceIndex, forward: $event})"
+                size="24px"
+              )
+          van-cell-group(title="参数")
+            Parameters(
+              :deviceType="device.type"
+              :values="device.parameters"
+              @syncInput="setDeviceParameterByIndex({deviceIndex, parameterType: $event.type, parameterValue: $event.value})"
+            )
 
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { Hera, Api, status } from '@/api';
-import { Toast } from 'vant';
+import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
+import { Dialog } from 'vant';
 
-@Component({})
+import CheckedField from '@/components/CheckedField.vue';
+import Parameter from '@/components/Parameter.vue';
+import Parameters from '@/components/Parameters.vue';
+
+const ProfileEditModule = namespace('ProfileEdit');
+const MetaModule = namespace('Meta');
+const AcquisitionSettingModule = namespace('AcquisitionSetting');
+
+@Component({
+  components: { CheckedField, Parameter, Parameters }
+})
 export default class ProfileEdit extends Vue {
-  mounted() {
-    this.deviceTypeMetas = this.status.remoteStatus.meta.deviceTypeMetas.slice();
-  }
+  @ProfileEditModule.State profile;
+  @ProfileEditModule.State profileEdited;
+  @MetaModule.State deviceRulesMap;
+
+  // Getters
+  @MetaModule.Getter deviceTypes;
+  @MetaModule.Getter deviceParameterRuleMapMap;
+
+  @AcquisitionSettingModule.Action finishEditingProfileAndSave;
+
+  @ProfileEditModule.Action setProfileName;
+  @ProfileEditModule.Action setProfileAuthor;
+
+  @ProfileEditModule.Action addDeviceByType;
+  @ProfileEditModule.Action deleteDeviceByIndex;
+  @ProfileEditModule.Action moveDeviceIndex;
+
+  @ProfileEditModule.Action setDeviceNameByIndex;
+  @ProfileEditModule.Action setDeviceForwardByIndex;
+  @ProfileEditModule.Action setDeviceParameterByIndex;
 
   async beforeDestroy() {
-    if (this.status.local.profileAddOrEdit) {
-      if (this.status.local.profileToEdit.name) {
-        this.status.local.profiles.push(Object.assign(this.status.local.profileToEdit));
-      }
-    }
-    const result = await Api.updateProfiles();
-    if (result.error !== 0) {
-      Toast.fail({
-        message: Api.formatResult(result),
-        duration: 0,
-        closeOnClick: true
-      });
-    } else {
-      Toast.success('配置更新成功');
+    if (this.profileEdited) {
+      console.log('awt');
+      await this.finishEditingProfileAndSave();
+      console.log('aftwat');
     }
   }
 
-  clickSelectDeviceType(meta: Hera.DeviceTypeMeta) {
-    this.isAddOrEditDevice = true;
-    this.showEditDevice = true;
-    this.deviceToEdit = new Hera.Device({
-      type: meta.name,
-      name: '',
-      essentialParameters: [],
-      optionalParameters: [],
-      forward: true
+  get deviceTypesVantActions() {
+    return this.deviceTypes.map(type => {
+      return {
+        name: type
+      };
     });
-    meta.essentialParameterTypes.forEach(param =>
-      this.deviceToEdit.essentialParameters.push(new Hera.Parameter({ type: param, value: '' }))
-    );
-    meta.optionalParameterTypes.forEach(param =>
-      this.deviceToEdit.optionalParameters.push(new Hera.Parameter({ type: param, value: '' }))
-    );
-    this.showSelectDeviceType = false;
   }
 
-  clickAddDevice() {
-    this.showSelectDeviceType = true;
+  get isDeviceListEmpty() {
+    return this.profile.devices.length === 0;
   }
 
-  clickConfirmDevice() {
-    if (this.isAddOrEditDevice) {
-      if (this.deviceToEdit.type != '') {
-        this.status.local.profileToEdit.devices.push(Object.assign(this.deviceToEdit));
-      }
+  async onClickSaveProfile() {
+    await this.finishEditingProfileAndSave();
+    this.$router.back();
+  }
+
+  onClickListEdit() {
+    this.isDeviceListEditMode = !this.isDeviceListEditMode;
+
+    if (this.isDeviceListEditMode) {
+      this.activeDeviceIndex = '';
     }
   }
 
-  clickEditDevice(index: number) {
-    this.isAddOrEditDevice = false;
-    this.showEditDevice = true;
-    this.deviceToEdit = this.status.local.profileToEdit.devices[index];
+  onClickAddDevice() {
+    this.isShowSelectDeviceType = true;
   }
 
-  clickDeleteDevice(index: number) {
-    this.status.local.profileToEdit.devices.splice(index, 1);
+  onSelectDeviceType(deviceType: string) {
+    this.isDeviceListEditMode = false;
+    this.addDeviceByType(deviceType);
+    this.activeDeviceIndex = this.profile.devices.length - 1;
   }
 
-  checkDevice(device: Hera.Device) {
-    if (!device.name) {
-      return false;
-    }
+  isDeviceListEditMode = false;
 
-    let ret = true;
-    device.essentialParameters.forEach(param => {
-      if (!param.value) {
-        ret = false;
-      }
-    });
-    return ret;
-  }
+  isShowSelectDeviceType = false;
 
-  status = status;
-
-  showSelectDeviceType = false;
-
-  showEditDevice = false;
-
-  isAddOrEditDevice = false;
-
-  deviceTypeMetas = new Array<Hera.DeviceTypeMeta>();
-
-  deviceToEdit = new Hera.Device({
-    type: '',
-    name: '',
-    essentialParameters: [],
-    optionalParameters: [],
-    forward: false
-  });
-
-  get titleEditDevice() {
-    return this.isAddOrEditDevice ? '新增传感器' : '编辑传感器';
-  }
-
-  deviceTypeColumns: Array<string> = [''];
+  activeDeviceIndex: number | string = '';
 }
 </script>
+
+<style lang="stylus">
+.title-right-icon
+  margin-left 4px
+  margin-right 4px
+
+.enabled-icon
+  color #1989fa !important
+
+.active-icon
+  color red !important
+</style>

@@ -19,7 +19,7 @@ endif()
 
 file(GLOB_RECURSE TOOL_SRC "tool/*.cpp")
 add_executable(${PROJECT_NAME}-tool ${TOOL_SRC})
-target_link_libraries(${PROJECT_NAME}-tool hera-common hera-device hera-storage)
+target_link_libraries(${PROJECT_NAME}-tool hera-common hera-storage hera-device)
 
 # Install shared libraries
 install(

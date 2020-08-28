@@ -23,12 +23,12 @@ namespace device {
 namespace data {
 
 template<>
-SingleDisplayData SingleDisplayData::parse<SensorDataType::Dummy>(std::vector<SensorDataPtr>&& sensor_datas)
+SingleDisplayData SingleDisplayData::parse<SensorDataType::Dummy>(std::vector<SensorDataPtr>&& sensor_datas,
+                                                                  const bool is_detail)
 {
     SingleDisplayData result;
     for (auto&& data : sensor_datas) {
         if (data->sensor_data_type == SensorDataType::Dummy) {
-            log::debug << "Display: Parsing Dummy Data" << log::endl;
             auto data_impl = reinterpret_cast<data::Dummy*>(data.get());
             result.text_data += std::to_string(data_impl->sequence);
             result.text_data += " ";
@@ -36,11 +36,15 @@ SingleDisplayData SingleDisplayData::parse<SensorDataType::Dummy>(std::vector<Se
             result.text_data += "\n";
         }
     }
+    if (is_detail) {
+        result.text_data += "\nDetail View";
+    }
     return result;
 }
 
 template<>
-SingleDisplayData SingleDisplayData::parse<SensorDataType::DummyImage>(std::vector<SensorDataPtr>&& sensor_datas)
+SingleDisplayData SingleDisplayData::parse<SensorDataType::DummyImage>(std::vector<SensorDataPtr>&& sensor_datas,
+                                                                       const bool is_detail)
 {
     static constexpr auto CanvasPixelSize = 480;
     static constexpr auto CanvasPixelNum = CanvasPixelSize * CanvasPixelSize;

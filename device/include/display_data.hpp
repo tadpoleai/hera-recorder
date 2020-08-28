@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -50,13 +51,22 @@ public:
     /// @brief Update displayData from a vector of uncategorized SensorData
     ///
     /// @param sensor_datas vector of SensorData, containing multi-SensorDataType data
+    /// @param bool is_detail, show detail (i.e., high resolution)
     ///
     /// @note This function calls SingleDisplayData::parse()
     ///
-    void update_from(std::vector<SensorDataPtr>&& sensor_datas);
+    void update_from(std::vector<SensorDataPtr>&& sensor_datas, const bool is_detail = false);
+
+    ///
+    /// @brief Clear all display data
+    ///
+    void clear_all();
 
 public:
     std::map<SensorDataType, SingleDisplayData> categorized_disp_data;
+
+private:
+    mutable std::mutex mutex_;
 };
 
 class SingleDisplayData final {
@@ -70,7 +80,7 @@ public:
     /// @param sensor_datas vector of SensorData, must be same sensor data type<T>
     /// @note implementation is in folder: display/<T>_data.cpp
     template<SensorDataType T>
-    static SingleDisplayData parse(std::vector<SensorDataPtr>&& sensor_datas);
+    static SingleDisplayData parse(std::vector<SensorDataPtr>&& sensor_datas, const bool is_detail = false);
 
 public:
     SingleDisplayData() = default;

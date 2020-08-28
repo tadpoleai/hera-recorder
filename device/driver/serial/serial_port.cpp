@@ -11,7 +11,9 @@
 #include <unistd.h>
 
 #include <common/include/logger/logger.hpp>
+#ifdef LINUX
 #include <linux/serial.h>
+#endif
 #include <sys/ioctl.h>
 
 namespace wayz {
@@ -160,6 +162,7 @@ void SerialPort::close_port()
 
 bool SerialPort::set_low_latency_mode()
 {
+#ifdef LINUX
     struct serial_struct serial_info;
     if (ioctl(fd_, TIOCGSERIAL, &serial_info) < 0) {
         return false;
@@ -169,6 +172,7 @@ bool SerialPort::set_low_latency_mode()
     if (ioctl(fd_, TIOCSSERIAL, &serial_info) < 0) {
         return false;
     }
+#endif
 
     return true;
 }

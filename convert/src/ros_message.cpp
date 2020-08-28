@@ -102,13 +102,13 @@ std::vector<ROSMessagePtr> ROSMessage::convert(device::data::SensorDataPtr& sens
 {
     if (sensor_data == nullptr) {
         std::vector<ROSMessagePtr> ret;
-        ret.emplace_back(std::move(ROSMessage::create<ROSMessageType::EndOfFile>()));
+        ret.emplace_back(ROSMessage::create<ROSMessageType::EndOfFile>());
         return ret;
     } else {
         switch (sensor_data->sensor_data_type) {
         case device::SensorDataType::Broken: {
             std::vector<ROSMessagePtr> ret;
-            ret.emplace_back(std::move(ROSMessage::create<ROSMessageType::BrokenData>()));
+            ret.emplace_back(ROSMessage::create<ROSMessageType::BrokenData>());
             return ret;
         }
 
@@ -125,7 +125,7 @@ std::vector<ROSMessagePtr> ROSMessage::convert(device::data::SensorDataPtr& sens
         default: {
             log::error << "Converter:: Invalid Sensor Data Type" << log::endl;
             std::vector<ROSMessagePtr> ret;
-            ret.emplace_back(std::move(ROSMessage::create<ROSMessageType::BrokenData>()));
+            ret.emplace_back(ROSMessage::create<ROSMessageType::BrokenData>());
             return ret;
         }
         }

@@ -14,7 +14,13 @@
 #include <unistd.h>
 
 #include <sys/stat.h>
+#ifdef LINUX
 #include <sys/statfs.h>
+#endif
+#ifdef DARWIN
+#include <sys/param.h>
+#include <sys/mount.h>
+#endif
 #include <sys/types.h>
 
 namespace wayz {

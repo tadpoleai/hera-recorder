@@ -105,7 +105,6 @@ private:
     SerialPortBinaryConfig binary_config_;
     static constexpr size_t BufferReverseSize_ = 256;
     std::string buffer_;
-    bool buffer_inited_;
 
     common::ThreadQueue<SerialData> queue_;
 };

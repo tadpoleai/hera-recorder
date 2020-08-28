@@ -57,13 +57,13 @@ void SerialPortSentence::fetch_thread_function()
 
         // Insert them into buffer
         for (auto&& c : new_chars) {
-            if (__glibc_unlikely(!buffer_inited_)) {
+            if (__builtin_expect(!buffer_inited_, 0)) {
                 if (c == SentenceDivider_) {
                     buffer_inited_ = true;
                 }
             } else {
                 buffer_.emplace_back(c);
-                if (__glibc_unlikely(c == SentenceDivider_)) {
+                if (__builtin_expect(c == SentenceDivider_, 0)) {
                     auto sentence = std::make_shared<SerialData>(std::move(buffer_));
                     buffer_.clear();
                     buffer_.reserve(BufferReverseSize_);

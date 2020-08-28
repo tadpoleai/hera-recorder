@@ -49,7 +49,7 @@ Tool::Tool(const std::string& filename,
     if (storage_->header != nullptr) {
         log::flush();
         std::cout << *storage_->header << std::endl;
-        if (rebuild || reindex) {
+        if (rebuild_ || reindex_) {
             log::info << "Storage: Start reading '" << filename_ << "'" << log::endl;
             read_thread_ = new std::thread(&Tool::read_thread_function, this);
             running_ = true;

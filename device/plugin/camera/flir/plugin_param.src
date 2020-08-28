@@ -1,0 +1,200 @@
+# 传感器的 IPv4 地址
+immutable string IpAddress = ""; regex ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
+
+# FLIR驱动高性能模式
+# 开启后，采集中修改参数将无法修改
+immutable boolean HighPerf = false;
+
+# 使用外触发模式
+# 相机将等待外触发信号而不是使用 FrameRate 设定
+# immutable boolean Triggered = true;
+
+# 必须同步曝光
+# 若该项开启，则当相机无法取得同步时，将丢弃采集到的数据
+immutable boolean NeedSync = true;
+
+# 自动曝光补偿
+immutable boolean AutoExposure = false;
+
+# 手动固定曝光补偿
+requires #AutoExposure == 'false'
+mutable real Exposure = 0.0; range -7.5, 2.5, 0.1
+
+# 自动曝光补偿最小值
+requires #AutoExposure == 'true'
+mutable real MinExposure = -1.5; range -7.5, 2.5, 0.1
+
+# 自动曝光补偿最大值
+requires #AutoExposure == 'true'
+mutable real MaxExposure = 1.5; range -7.5, 2.5, 0.1
+
+# 自动快门时长
+immutable boolean AutoShutter = true;
+
+# 手动固定快门时长[ms]
+requires #AutoShutter == 'false'
+mutable real Shutter = 2; range 0, 30, 1
+
+# 自动快门时长最小值[ms]
+requires #AutoShutter == 'true'
+mutable real MinShutter = 0; range 0, 30, 1
+
+# 自动快门时长最大值[ms]
+requires #AutoShutter == 'true'
+mutable real MaxShutter = 15; range 0, 30, 1
+
+# 自动增益控制
+immutable boolean AutoGain = true;
+
+# 手动固定增益[dB]
+requires #AutoGain == 'false'
+mutable real Gain = 10; range 0, 30, 1
+
+# 自动增益最小值[dB]
+requires #AutoGain == 'true'
+mutable real MinGain = 10; range 0, 30, 1
+
+# 自动增益最小值[dB]
+requires #AutoGain == 'true'
+mutable real MaxGain = 30; range 0, 30, 1
+
+# 像素合并
+# 该设置将和Flir相机的 Mode 对应
+# 该项还将影响相机的分辨率
+# Options:
+# - B11: 每 1x1 个传感器像素输出一个像素 (Mode7)
+# - B22: 每 2x2 个传感器像素输出一个像素 (Mode4)
+immutable enum Binning = B11; options B11, B22
+
+# 裁剪
+# 是否对图像源进行裁剪
+# Options:
+# - NONE: 不裁剪图像
+# - CENTER: 以传感器中心为中心, 裁剪宽高分别为ROI_W, ROT_H的矩形区域
+# - RECT: 指定左上角坐标ROI_X, ROI_Y, 宽高分别为ROI_W, ROT_H的矩形区域
+immutable enum Crop = NONE; options NONE, CENTER, RECT
+
+# 裁剪图像宽
+requires #Crop != 'NONE'
+immutable integer ROI_W = 1920; range 4, 1920, 2
+
+# 裁剪图像高
+requires #Crop != 'NONE'
+immutable integer ROI_H = 1200; range 4, 1200, 2
+
+# 裁剪图像左上角X
+requires #Crop == 'RECT'
+immutable integer ROI_X = 0; range 0, 1918, 2
+
+# 裁剪图像左上角Y
+requires #Crop == 'RECT'
+immutable integer ROI_Y = 0; range 0, 1198, 2;
+
+# 图像格式
+# 指定从相机获取图像的方法, 该选项影响传输带宽
+# Options:
+# - MONO8: 单色灰度, 每像素8位
+# - MONO12: 单色灰度, 每像素12位
+# - RAW8: RAW 格式，每像素8位
+# - RAW12: RAW 格式，每像素12位
+immutable enum Format = RAW12; options MONO8, MONO12, RAW8, RAW12
+
+# 保存原始数据
+# 若打开, 将保存原始数据, 不对图像做压缩(非常消耗储存空间)
+# 否则, 使用 JPEG 压缩
+immutable boolean SaveRaw = false;
+
+# 去马赛克方法
+# 指定将 RAW 图像处理为彩色图像时使用的算法
+# 仅当图像格式(Format)为 RAW8/RAW12, 且保存原始数据关闭时有效
+# Options:
+# - Nearest: Fastest but lowest quality.
+# - EdgeSense: Weights surrounding pixels based on localized edge orientation.
+# - HQLinear: Well-balanced speed and quality.
+# - Rigorous: Slowest but produces good results.
+# - IPP: Multithreaded with similar results to edge sensing.
+# - Directional: Best quality but much faster than rigorous.
+# - Weighted: Weighted pixel average from different directions.
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12')
+mutable enum DeBayer = EdgeSense; options Nearest, EdgeSense, HQLinear, Rigorous, IPP, Directional, Weighted
+
+# 色彩校准动作
+# 指定是否使用色彩校准(暗电流, 白平衡, 色彩矩阵校准等)
+# 另外, 还可以将校准参数写入相机内部的寄存器以永久保存校准参数
+# Options:
+# - NONE: 不使用色彩校准
+# - ONESHOT: 手动输入色彩校准参数, 不保存到相机内部 
+# - STORE:  手动输入色彩校准参数, 并保存到相机内部
+# - LOAD: 从相机内部寄存器读取校准参数
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12')
+immutable enum Correction = LOAD; options NONE, ONESHOT, STORE, LOAD
+
+# 色彩校准 - 暗电流本底[Blue]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real DarkB = 0; range 0, 0.5, 0.01
+# 色彩校准 - 暗电流本底[Green]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real DarkG = 0; range 0, 0.5, 0.01
+# 色彩校准 - 暗电流本底[Blue]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real DarkR = 0; range 0, 0.5, 0.01
+
+# 色彩校准 - 白平衡[Blue]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real BalanceB = 1; range 1, 4, 0.01
+# 色彩校准 - 白平衡[Green]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real BalanceG = 1; range 1, 4, 0.01
+# 色彩校准 - 白平衡[Red]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real BalanceR = 1; range 1, 4, 0.01
+
+# 色彩校准 - 色彩校准矩阵[1,1]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real CCM11 = 1; range -1, 4, 0.01
+# 色彩校准 - 色彩校准矩阵[1,2]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real CCM12 = 0; range -1, 4, 0.01
+# 色彩校准 - 色彩校准矩阵[1,3]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real CCM13 = 0; range -1, 4, 0.01
+# 色彩校准 - 色彩校准矩阵[2,1]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real CCM21 = 0; range -1, 4, 0.01
+# 色彩校准 - 色彩校准矩阵[2,2]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real CCM22 = 1; range -1, 4, 0.01
+# 色彩校准 - 色彩校准矩阵[2,3]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real CCM23 = 0; range -1, 4, 0.01
+# 色彩校准 - 色彩校准矩阵[3,1]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real CCM31 = 0; range -1, 4, 0.01
+# 色彩校准 - 色彩校准矩阵[3,2]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real CCM32 = 0; range -1, 4, 0.01
+# 色彩校准 - 色彩校准矩阵[3,3]
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
+immutable real CCM33 = 1; range -1, 4, 0.01
+
+# Gamma 值
+requires #SaveRaw == 'false'
+mutable real Gamma = 2.2; range 0.1, 10.0, 0.1
+
+# JPEG 质量
+# 控制 JPEG 图像质量的参数
+# 该值越高则图像质量越好，相应地，图像数据大小也会增大
+requires #SaveRaw == 'false'
+mutable integer JpegQuality = 90; range 0, 100, 5
+
+# JPEG 色度降采样
+# 指定 JPEG 编码时色度通道降采样方式
+# Options:
+# - S444: 1x1, 不做降采样
+# - S422: 2x1, 横向1/2采样
+# - S440: 1x2, 纵向1/2采样(运算性能较差)
+# - S420: 2x2, 横向和纵向均1/2采样(默认设置)
+# - S411: 4x1, 横向1/4采样(运算性能较差)
+# - SGRAY: 0x0, 无色度信息(仅测试使用)
+requires #SaveRaw == 'false'
+mutable enum JpegSamp = S420; options S444, S422, S420, SGRAY, S440, S411

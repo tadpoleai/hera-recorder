@@ -31,6 +31,7 @@
 
 #include "device_data.hpp"
 #include "display_data.hpp"
+#include "parameter.hpp"
 #include "sensor_data.hpp"
 
 namespace wayz {
@@ -88,7 +89,7 @@ public:
            ipc::IPCQueue<data::SensorData>* const ipc_queue,
            storage::StorageManager* const storage,
            const size_t history_depth,
-           const std::vector<std::string>& essential_parameter_types);
+           ParametersInterface* const parameter);
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
 
@@ -226,7 +227,7 @@ public:
     ///
     /// @return sequence
     ///
-    inline double get_sequence() const noexcept
+    inline auto get_sequence() const noexcept
     {
         return sequence_;
     }
@@ -234,11 +235,12 @@ public:
     ///
     /// @brief Update and get the disp data object
     ///
+    /// @param is_detail_disp_data show detail
     /// @return updated disp_data
     ///
-    inline auto update_get_disp_data()
+    inline auto update_get_disp_data(const bool is_detail_disp_data = false)
     {
-        disp_data_->update_from(history());
+        disp_data_->update_from(history(), is_detail_disp_data);
         return disp_data_;
     }
 
@@ -246,9 +248,13 @@ public:
     /// @brief Get the parameters
     ///
     /// @return ParametersType parameters in map<string, string>
-    ParametersMap get_parameters() const noexcept
+    nlohmann::json get_parameters_json() const
     {
-        return parameters_;
+        if (parameters_) {
+            return parameters_->dump();
+        } else {
+            return nlohmann::json::object();
+        }
     }
 
 protected:
@@ -323,17 +329,23 @@ protected:
     /// @note This function should be implemented by derived class.
     /// @note Caller must check if return value is broken_data
     /// @note Do not return nullptr in derived implementions
-    virtual data::SensorDataPtr convert(data::DeviceDataPtr& storage_data)
+    virtual data::SensorDataPtr convert(const data::DeviceDataPtr& storage_data)
     {
         return data::SensorData::broken_data();
     }
 
+protected:
+    ///
+    /// @brief Clear history of display data
+    ///
+    void clear_display_history();
+
 private:
     ///
-    /// @brief Check whether essential parameters of a specific device are all settled
+    /// @brief Check whether parameters of a specific device are all settled
     ///
-    /// @return true all essential parameters all settled
-    /// @return false some of essential parameters not settled
+    /// @return true all parameters all settled
+    /// @return false some of parameters not settled
     bool check_parameter();
 
     ///
@@ -358,8 +370,8 @@ protected:
     const std::string vendor_type_;  ///< device vendor type
     const std::string name_;         ///< device name
 
-    ParametersMap parameters_;  ///< Parameters set by define_parameter()
-    uint32_t sequence_;         ///< Data sequence, increased by 1 when a valid data comes
+    ParametersInterface* const parameters_;
+    uint32_t sequence_;  ///< Data sequence, increased by 1 when a valid data comes
 
 private:
     const size_t history_depth_;  ///< history depth of device data
@@ -378,8 +390,6 @@ private:
     ipc::IPCQueue<data::SensorData>* ipc_queue_;           ///< IPC queue for sensor data forwarding
 
     const std::shared_ptr<data::DisplayData> disp_data_;  ///< Pointer to display data;
-
-    const std::vector<std::string> essential_parameter_types_;  ///< essential parameters types
 };
 
 }  // namespace device

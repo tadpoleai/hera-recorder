@@ -39,17 +39,16 @@ public:
     ///
     /// @return std::vector<std::string> const name of valid device types
     ///
-    static std::vector<std::string> types();
+    static std::vector<std::string> plugin_types();
 
     ///
     /// @brief Get meta info of specific type's parameters
     ///
     /// @param vendor_type vendor_type in string
-    /// @return std::pair<std::vector<std::string>, std::vector<std::string>> pair of essential parameters and valid
+    /// @return rules of parameter in json
     /// parameters
     ///
-    static std::pair<std::vector<std::string>, std::vector<std::string>> parameter_types(
-            const std::string& vendor_type);
+    static std::string plugin_parameter_rules(const std::string& vendor_type);
 
     ///
     /// @brief Check vendor_type
@@ -91,16 +90,17 @@ public:
     /// @param data device data to convert
     /// @return SensorDataPtr converted data if succeed, otherwise broken_data()
     ///
-    static data::SensorDataPtr convert(data::DeviceDataPtr& data);
+    static data::SensorDataPtr convert(const data::DeviceDataPtr& data, const ParametersInterface* parameters);
 
 public:
-    using CreateFunction = std::function<DevicePtr(const uint32_t id,
-                                                   const std::string& vendor_type,
-                                                   const std::string& name,
-                                                   const bool forward,
-                                                   ipc::IPCQueue<data::SensorData>* const ipc_queue,
-                                                   storage::StorageManager* const storage)>;
-    using ConvertFunction = std::function<data::SensorDataPtr(data::DeviceDataPtr&)>;
+    using CreateFunction = std::function<Device*(const uint32_t id,
+                                                 const std::string& vendor_type,
+                                                 const std::string& name,
+                                                 const bool forward,
+                                                 ipc::IPCQueue<data::SensorData>* const ipc_queue,
+                                                 storage::StorageManager* const storage)>;
+    using ConvertFunction =
+            std::function<data::SensorDataPtr(const data::DeviceDataPtr&, const ParametersInterface* parameters)>;
 
     struct DeviceHandle {
         DeviceVendorType type;
@@ -108,8 +108,7 @@ public:
         std::string version;
         CreateFunction create;
         ConvertFunction convert;
-        std::vector<std::string> essential_parameter_types;  ///< Essential Parameters for device
-        std::vector<std::string> optional_parameter_types;   ///< Optional Parameters for device
+        nlohmann::json rules;
     };
 
 private:

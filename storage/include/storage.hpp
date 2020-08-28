@@ -122,6 +122,12 @@ public:
     /// @return empty vector if device id out of range
     std::vector<device::data::DeviceDataPtr> history(const uint32_t device_id) const;
 
+    /// 
+    /// @brief Clear history data (write mode)
+    /// 
+    /// @param device_id device id of device
+    void clear_history(const uint32_t device_id);
+
     ///
     /// @brief Get total size of data written
     ///

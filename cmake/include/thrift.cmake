@@ -15,22 +15,43 @@ if(ARCHITECTURE STREQUAL "arm64")
                         "${Escape}[m")
   endif()
 else() # AMD64
-  find_library(THRIFT thrift)
-  if(NOT THRIFT)
-    message(FATAL_ERROR "${Escape}[31m" "Thrift not found! CMake aborted!"
-                        "${Escape}[m")
-  else()
-    message(STATUS "${Escape}[32m" "Thrift found: " ${THRIFT} "${Escape}[m")
-  endif()
+  if(${LINUX}) # LINUX
+    find_library(THRIFT thrift)
+    if(NOT THRIFT)
+      message(FATAL_ERROR "${Escape}[31m" "Thrift not found! CMake aborted!"
+                          "${Escape}[m")
+    else()
+      message(STATUS "${Escape}[32m" "Thrift found: " ${THRIFT} "${Escape}[m")
+    endif()
+  elseif(${DARWIN}) # DARWIN
+    set(BOOST_INCLUDE_DIR /usr/local/opt/boost/include)
+    set(THRIFT_ROOT_DIR /usr/local/opt/thrift)
+    set(THRIFT_INCLUDE_DIR ${THRIFT_ROOT_DIR}/include)
+    set(THRIFT_LIBRARY_DIR ${THRIFT_ROOT_DIR}/lib)
+    set(THRIFT_LIBS ${THRIFT_LIBRARY_DIR}/libthrift.dylib)
+    set(THRIFT ${THRIFT_LIBS})
 
-  # Check thrift IDL compiler
-  execute_process(
-    COMMAND "thrift" "--version"
-    OUTPUT_QUIET
-    RESULT_VARIABLE THRIFT_CHECK)
-  if(${THRIFT_CHECK})
-    message(
-      FATAL_ERROR "${Escape}[31m" "Thrift version check failed! CMake aborted!"
-                  "${Escape}[m")
+    if(EXISTS ${THRIFT_LIBS} AND EXISTS ${THRIFT_INCLUDE_DIR}/thrift/Thrift.h)
+      message(STATUS "${Escape}[32m" "Thrift-Darwin found" "${Escape}[m")
+    else()
+      message(
+        FATAL_ERROR "${Escape}[31m" "Thrift-Darwin not found! CMake aborted!"
+                    "${Escape}[m")
+    endif()
+    message(STATUS "${Escape}[32m" "Thrift found: " ${THRIFT} "${Escape}[m")
+  else()
+    message(FATAL_ERROR "${Escape}[31m"
+                        "Unknown System! CMake aborted!" "${Escape}[m")
   endif()
-endif() # AMD64
+endif() # ARCH
+
+# Check thrift IDL compiler
+execute_process(
+  COMMAND "thrift" "--version"
+  OUTPUT_QUIET
+  RESULT_VARIABLE THRIFT_CHECK)
+if(${THRIFT_CHECK})
+  message(
+    FATAL_ERROR "${Escape}[31m" "Thrift version check failed! CMake aborted!"
+                "${Escape}[m")
+endif()

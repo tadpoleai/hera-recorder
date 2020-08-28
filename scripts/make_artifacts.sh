@@ -55,10 +55,10 @@ while ((arch_index < 2)); do
 
     # Plugins
     cp -r \
-        build_$arch/device/libhera-device-plugin-*-base.so \
+        build_$arch/device/base/libhera-device-plugin-*-base.so \
         artifacts/plugin/$arch/base
     cp -r \
-        build_$arch/device/libhera-device-plugin-*-driver.so \
+        build_$arch/device/driver/libhera-device-plugin-*-driver.so \
         artifacts/plugin/$arch/driver
 
     ((arch_index++))

@@ -73,6 +73,10 @@ gen-js/
 gen-ts/
 gen-cpp/
 
+# Parameter Generated
+*.param.hpp
+plugin_param.hpp
+
 # Git Info
 git_info.ts
 git_info.cpp

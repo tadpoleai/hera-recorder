@@ -24,10 +24,11 @@ Device::Device(const uint32_t id,
                ipc::IPCQueue<data::SensorData>* const ipc_queue,
                storage::StorageManager* const storage,
                const size_t history_depth,
-               const std::vector<std::string>& essential_parameter_types) :
+               ParametersInterface* const parameters) :
     id_(id),
     vendor_type_(vendor_type),
     name_(name),
+    parameters_(parameters),
     sequence_(0),
     history_depth_(history_depth),
     status_(DeviceStatus::BeforeConnect),
@@ -38,8 +39,7 @@ Device::Device(const uint32_t id,
     is_forward_(forward),
     thread_forward_(nullptr),
     ipc_queue_(ipc_queue),
-    disp_data_(new data::DisplayData()),
-    essential_parameter_types_(essential_parameter_types)
+    disp_data_(new data::DisplayData())
 {
     if (storage_) {
         storage_->add_device(vendor_type_ + "/" + name_, history_depth_);
@@ -144,15 +144,19 @@ HeraErrno Device::parameter(const std::string& type, const std::string& value)
     if (status == DeviceStatus::Terminated) {
         return HeraErrno::DeviceAlreadyClosed;
     }
+    if (!parameters_) {
+        return HeraErrno::DeviceNotReady;
+    }
 
-    auto result = HeraErrno::OK;
+    if (!parameters_->set(type, value)) {
+        return handle_error(HeraErrno::InvalidParameterValue, type + ":" + value);
+    }
+
     if (status == DeviceStatus::Connected) {
-        result = adjust_parameter(type, value);
+        return adjust_parameter(type, value);
     }
-    if (result == OK) {
-        parameters_[type] = value;
-    }
-    return result;
+
+    return HeraErrno::OK;
 }
 
 /// Read history of device data
@@ -173,6 +177,14 @@ std::vector<data::SensorDataPtr> Device::history()
     return sensor_datas;
 }
 
+void Device::clear_display_history()
+{
+    storage_->clear_history(id_);
+    if (disp_data_) {
+        disp_data_->clear_all();
+    }
+}
+
 /// Set status to DeviceStatus::Error, and set reason
 ///
 HeraErrno Device::handle_error(HeraErrno e, std::string&& reason)
@@ -187,10 +199,14 @@ HeraErrno Device::handle_error(HeraErrno e, std::string&& reason)
 /// is settled with define_parameter() by testing parameters
 bool Device::check_parameter()
 {
-    for (const auto& type : essential_parameter_types_) {
-        if (!parameters_.count(type)) {
-            return false;
-        }
+    if (!parameters_) {
+        return false;
+    }
+
+    std::string reason;
+    if (!parameters_->check(reason)) {
+        reason_ = reason;
+        return false;
     }
     return true;
 }

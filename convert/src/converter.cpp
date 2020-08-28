@@ -23,7 +23,7 @@ namespace convert {
 Converter::Converter(const std::string& src_filename,
                      const std::string& bagfile,
                      common::RemapperPtr&& remapper,
-                     const bool only_print_header,
+                     const std::vector<std::tuple<std::string, std::string, std::string>>& parameter_tuple_list,
                      const int32_t start_time,
                      const int32_t duration) :
     bagfile_(bagfile),
@@ -38,18 +38,14 @@ Converter::Converter(const std::string& src_filename,
     storage_(storage::StorageManager::open(src_filename, true, false, false)),
     publish_sem_(new sem_t),
     receive_sem_(new sem_t),
-    message(std::move(ROSMessage::create<ROSMessageType::BrokenData>()))
+    message(ROSMessage::create<ROSMessageType::BrokenData>())
 {
     sem_init(publish_sem_, 0, 1);
     sem_init(receive_sem_, 0, 0);
 
     if (storage_->header != nullptr) {
-        if (!only_print_header) {
-            log::info << "Converter: Printing info\n" << *storage_->header << log::endl;
-        } else {
-            std::cout << *storage_->header << std::endl;
-            return;
-        }
+        log::info << "Converter: Printing info\n" << *storage_->header << log::endl;
+
         total_duration_ = storage_->header->timestamp_end - storage_->header->timestamp_start;
 
         if (param_start_time_sec_ > 0) {
@@ -141,7 +137,7 @@ void Converter::read_thread_function()
             break;
         }
 
-        auto sensor_data = device::Factory::convert(data);
+        auto sensor_data = device::Factory::convert(data, {});
         if (sensor_data->sensor_data_type != device::SensorDataType::Broken) {
             try {
                 const auto& topic_prefix = topic_prefixes_[sensor_data->sensor_id];
@@ -155,13 +151,13 @@ void Converter::read_thread_function()
             }
         }
     }
-    publish(std::move(ROSMessage::create<ROSMessageType::EndOfFile>()));
+    publish(ROSMessage::create<ROSMessageType::EndOfFile>());
 }
 
 void Converter::bag_thread_function()
 {
     while (running_) {
-        auto message = std::move(receive());
+        auto message = receive();
         if (message->type != ROSMessageType::EndOfFile) {
             try {
                 bag_ << std::move(message);

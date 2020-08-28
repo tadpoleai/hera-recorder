@@ -2,6 +2,7 @@
 // Copyright 2018 Wayz.ai. All Rights Reserved.
 //
 
+#include <csignal>
 #include <regex>
 
 #include "logger/logger.hpp"
@@ -53,8 +54,8 @@ void Logger::register_back_trace()
         ::abort();
     });
 
-    static const std::set<int> SignalsToIgnore = {SIGCONT, SIGURG, SIGIO, SIGPOLL, SIGCHLD, SIGWINCH};
-    for (auto i = 0; i <= SIGRTMAX; i++) {
+    static const std::set<int> SignalsToIgnore = {SIGCONT, SIGURG, SIGIO, SIGCHLD, SIGWINCH};
+    for (auto i = 0; i <= 32; i++) {
         if (SignalsToIgnore.count(i) == 0) {
             ::signal(i, &Logger::singal_handler);
         }
@@ -127,9 +128,9 @@ void Logger::singal_handler(int signo)
     case SIGTTOU:
         log::error << "FATAL: Received SIGTTOU: Background write to control terminal." << log::endl;
         break;
-    case SIGPOLL:
-        log::error << "FATAL: Received SIGPOLL: Pollable event occurred (System V)." << log::endl;
-        break;
+    // case SIGPOLL:
+    //     log::error << "FATAL: Received SIGPOLL: Pollable event occurred (System V)." << log::endl;
+    //     break;
     case SIGXCPU:
         log::error << "FATAL: Received SIGXCPU: CPU time limit exceeded." << log::endl;
         break;
@@ -178,8 +179,8 @@ void Logger::back_trace(int signo)
 
             auto sep_pos = trace.find('(');
             auto obj_name = trace.substr(0, sep_pos);
-            auto left_pos = trace.find('[');
-            auto right_pos = trace.find(']');
+            auto left_pos = trace.find('(');
+            auto right_pos = trace.find(')');
             auto offset_str = trace.substr(left_pos + 1, right_pos - left_pos - 1);
 
             if (obj_name.size() > 0 && obj_name[0] != '/') {

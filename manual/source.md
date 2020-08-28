@@ -130,19 +130,11 @@ Hera 的错误码, 实现于 [hera_errno.hpp](../common/include/hera_errno.h)
 
 #### 源码规则
 
-子类传感器需要在对应的 namespace 中先定义子类传感器使用的原始储存数据,然后定义一个子类继承基类 `device::Device`, 并实现上一节提到的抽象方法
+子类传感器需要在对应的 namespace 中先定义子类传感器使用的原始储存数据, 然后定义一个子类继承基类 `device::Device`, 并实现上一节提到的抽象方法
 
-其中, 虚析构函数需要显式调用基类的 `stop()` 函数, `convert` 的实现为调用子类的静态 `do_convert` 函数
-
-除此之外,还需要额外定义一些静态成员
-
-- `static const std::vector<std::string> EssentialParameterTypes`, 定义该传感器必需的参数类型
-- `static const std::vector<std::string> OptionalParameterTypes`, 定义该传感器可选的参数类型
-- `static constexpr size_t HistoryDepth_`, 该传感器历史数据在内存中保留的深度(和`DisplayData`有关)
-
-在 cpp 文件中, 需要使用宏 `HERA_DEVICE_DRIVER_EXPORT_PLUGIN(type_enum_param, type_name_param, class_name_param)`来导出符号  
-`type_enum_param` 为 `DeviceVendorType` 中枚举的名称, `type_name_param` 为字符串形式的名称(如`camera/flir`), `class_name_param` 为源代码中子类的名字  
-如 `HERA_DEVICE_DRIVER_EXPORT_PLUGIN(DummyFoobar, "dummy/foobar", Foobar);`
+在 cpp 文件中, 需要使用宏 `HERA_PLUGIN_EXPORT(type_enum_param, type_name_param)`来导出符号  
+`type_enum_param` 为 `DeviceVendorType` 中枚举的名称, `type_name_param` 为字符串形式的名称(如`camera/flir`)
+如 `HERA_PLUGIN_EXPORT(DummyFoobar, "dummy/foobar");`
 
 #### 工厂函数
 
@@ -167,7 +159,7 @@ Hera 的错误码, 实现于 [hera_errno.hpp](../common/include/hera_errno.h)
    - 在 [display](../device/display/) 适当的位置, 编写将该传感器数据转换为显示数据的函数
 
    ```cpp
-      template<> SingleDisplayData SingleDisplayData::parse<SensorDataType::NEW_TYPE>(std::vector<SensorDataPtr>&& sensor_datas)
+      template<> SingleDisplayData SingleDisplayData::parse<SensorDataType::NEW_TYPE>(std::vector<SensorDataPtr>&& sensor_datas, const bool is_detail)
    ```
 
    - 在 [ros_message_impl](../convert/src/ros_message_impl) 文件夹中适当的位置, 编写将该传感器数据转换为 ROS 数据的函数
