@@ -107,6 +107,7 @@ export default class Monitor extends Vue {
   }
 
   async timeoutFunction() {
+    await this.fetch();
     if (this.active) {
       this.timeoutHandler = setTimeout(this.timeoutFunction, this.intervalPeriod);
     }
