@@ -5,8 +5,8 @@ van-cell-group(
   van-cell(
     title="传感器配置"
     :value="currentProfileName"
-    is-link
     @click="onClickProfileName()"
+    :is-link="!immutable"
   )
   van-cell(
     title="在线建图"
@@ -16,6 +16,7 @@ van-cell-group(
       slot="right-icon"
       :value="fetchedData.operatorInfo.slam"
       @input="setOperatorInfoSlam"
+      :disabled="immutable"
       size="24px"
     )
   CheckedField(
@@ -23,6 +24,7 @@ van-cell-group(
     :value="fetchedData.operatorInfo.operatorName"
     @input="setLocalOperatorInfoOperatorName"
     @change="updateOperatorInfoOperatorName"
+    :disabled="immutable"
     regex="^[a-zA-Z0-9]+$"
     label="采集操作员"
     input-align="right"
@@ -32,6 +34,7 @@ van-cell-group(
     :value="fetchedData.operatorInfo.place"
     @input="setLocalOperatorInfoPlace"
     @change="updateOperatorInfoPlace"
+    :disabled="immutable"
     regex="^[a-zA-Z0-9]+$"
     placeholder="请输入采集地点(英文)"
     input-align="right"
@@ -45,6 +48,7 @@ import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
 
 import CheckedField from '@/components/CheckedField.vue';
 
+const AcquisitionControlModule = namespace('AcquisitionControl');
 const AcquisitionSettingModule = namespace('AcquisitionSetting');
 
 @Component({
@@ -55,6 +59,7 @@ export default class Home extends Vue {
 
   // Getters
   @AcquisitionSettingModule.Getter currentProfileName;
+  @AcquisitionControlModule.Getter immutable;
 
   // Actions
   @AcquisitionSettingModule.Action fetch;
@@ -71,7 +76,9 @@ export default class Home extends Vue {
   }
 
   onClickProfileName() {
-    this.$router.push('profiles');
+    if (!this.immutable) {
+      this.$router.push('profiles');
+    }
   }
 }
 </script>

@@ -5,7 +5,7 @@
   van-cell(
     title="数据监视"
     :is-link="started"
-    @click="$router.push('monitor')"
+    @click="onClickMonitorLink"
   )
 
   DiskUsage(
@@ -32,5 +32,11 @@ const AcquisitionControlModule = namespace('AcquisitionControl');
 })
 export default class Home extends Vue {
   @AcquisitionControlModule.Getter started;
+
+  onClickMonitorLink() {
+    if (this.started) {
+      this.$router.push('monitor');
+    }
+  }
 }
 </script>

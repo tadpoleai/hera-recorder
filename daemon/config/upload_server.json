@@ -1,0 +1,19 @@
+{
+  "name": "测试机",
+  "protocol": "RSYNC",
+  "parameter": "",
+  "broadcast": {
+    "mode": false,
+    "ifs": [
+      "eth_lan2",
+      "eth_lan3",
+      "eth_lan4",
+      "eth_lan5",
+      "eth_usb0",
+      "eth_lan2",
+      "lo",
+      "wlan0",
+      "docker0"
+    ]
+  }
+}

@@ -17,8 +17,10 @@ if(force-git-info)
     WRITE ${GIT_INFO_CPPSRC}
     "const char *GIT_COMMIT_HEAD = \"${force-git-info} - built ${BUILD_TIMESTAMP}\";"
   )
-  file(WRITE ${GIT_INFO_TS}
-       "export const GitVersion = \"${force-git-info} - built ${BUILD_TIMESTAMP}\";")
+  file(
+    WRITE ${GIT_INFO_TS}
+    "export const GitVersion = \"${force-git-info} - built ${BUILD_TIMESTAMP}\";"
+  )
 
   include(cmake/include/cpp_common.cmake)
   add_library(hera-git-info STATIC ${GIT_INFO_CPPSRC})
@@ -40,7 +42,7 @@ else()
     add_definitions(-DGIT_INFO_ENABLED)
 
     add_custom_command(
-      OUTPUT ${GIT_INFO_CPPSRC}
+      OUTPUT ${GIT_INFO_CPPSRC} ${GIT_INFO_TS}
       DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/.git/logs/HEAD"
       COMMAND
         echo "`" "git" "log" "--decorate=short" "-1" "|" "head" "-1" "|" "sed"

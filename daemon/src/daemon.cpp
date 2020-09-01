@@ -24,7 +24,7 @@
 #include "device/include/version.hpp"
 #include "storage/include/version.hpp"
 //
-#include "broadcast.hpp"
+#include "broadcast/broadcaster.hpp"
 #include "service.hpp"
 
 using namespace ::apache::thrift;
@@ -33,9 +33,9 @@ using namespace ::apache::thrift::transport;
 using namespace ::apache::thrift::server;
 using namespace ::wayz::hera;
 
-TThreadedServer* g_server_ptr = nullptr;       ///< global pointer to TSimpleServer
-daemon::Service* g_handler_ptr = nullptr;      ///< global pointer to Service
-daemon::Broadcast* g_broadcast_ptr = nullptr;  ///< global pointer to Broadcast
+TThreadedServer* g_server_ptr = nullptr;           ///< global pointer to TSimpleServer
+daemon::Service* g_handler_ptr = nullptr;          ///< global pointer to Service
+daemon::Broadcaster* g_broadcaster_ptr = nullptr;  ///< global pointer to Broadcast
 
 ///
 /// @brief Handler Ctrl+C(SIGINT)
@@ -48,8 +48,8 @@ void sig_int_handler_func(int s)
         g_server_ptr->stop();
         g_handler_ptr->reset();
     }
-    if (g_broadcast_ptr) {
-        delete g_broadcast_ptr;
+    if (g_broadcaster_ptr) {
+        delete g_broadcaster_ptr;
     }
     exit(1);
 }
@@ -140,12 +140,12 @@ int main(int argc, char** argv)
     std::shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
     g_server_ptr = new TThreadedServer(processor, serverTransport, transportFactory, protocolFactory);
 
-    g_broadcast_ptr = new daemon::Broadcast(name, broadcast_ifs, broadcast_whitelist);
+    g_broadcaster_ptr = new daemon::Broadcaster(name, broadcast_ifs, broadcast_whitelist);
 
     log::info << "HeraMain: Daemon Started" << log::endl;
     g_server_ptr->serve();
 
-    delete g_broadcast_ptr;
+    delete g_broadcaster_ptr;
     log::info << "HeraMain: Daemon Stoped" << log::endl;
     return 0;
 }
