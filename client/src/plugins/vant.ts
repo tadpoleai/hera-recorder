@@ -1,5 +1,7 @@
 import Vue from 'vue';
 import '@vant/touch-emulator';
+import 'vant/lib/icon/local.css';
+
 import {
   ActionSheet,
   Button,

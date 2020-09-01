@@ -42,7 +42,7 @@ export default class ProfileEdit extends Vue {
 
   created() {
     this.fetchMeta();
-    // (this.$router as any).history.current!.path !== '/' && this.$router.replace({ path: '/' });
+    (this.$router as any).history.current!.path !== '/' && this.$router.replace({ path: '/' });
   }
 
   onClickNavBack() {

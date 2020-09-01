@@ -1,0 +1,16 @@
+[Unit]
+Description=Daemon of Hera Upload Server
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/run/hera-upload-server.pid
+ExecStart=/bin/sh -c '/usr/local/bin/hera-upload-server /var/hera/upload_server.json'
+OOMScoreAdjust=-1000
+Restart=on-failure
+RestartSec=42s
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

@@ -58,44 +58,13 @@
             )
               p.pdata(v-for="line in renderStringData(singleDisplayData.textData)") {{line}}
 
-  //- van-cell-group(
-  //-   v-if="status.local.operatorInfo.slam"
-  //-   title="实时建图"
-  //- )
-  //-   img.device-data-image(
-  //-     v-if="status.slamResultValid"
-  //-     :ref="'imageslam'"
-  //-   )
-  //-   van-empty(
-  //-     v-else
-  //-     image="error"
-  //-     description="尚无建图结果"
-  //-   )
-  
-  //- van-overlay(
-  //-   v-if="dataDetailIndex >= 0"
-  //-   :show="showDataDetail"
-  //-   @click="onClickData(-1)"
-  //- )
-  //-   .data-detail-wrapper
-  //-     .data-detail
-  //-       van-panel.device-panel
-  //-         van-cell(slot="header")
-  //-           div()
-  //-             span {{status.deviceDatas[dataDetailIndex].type + '/' + status.deviceDatas[dataDetailIndex].name}}
-  //-           div(style="display: flex; justify-content: space-between;")
-  //-             span(style="font-size: 90%;") {{status.deviceDatas[dataDetailIndex].sequence}}
-  //-             span(style="font-size: 90%;") {{renderFrequency(status.deviceDatas[dataDetailIndex].frequency)}}
-  //-             span(style="font-size: 90%;") {{(status.deviceDatas[dataDetailIndex].dataSizeKB / 1024).toFixed(1) + 'M'}}
-
-  //-         img.device-data-image(
-  //-           v-if="status.deviceDatas[dataDetailIndex].isJpeg"
-  //-           :ref="'imageDetail'")
-  //-         template(v-else)
-  //-           p.pdata(
-  //-             v-for="line in renderStringData(status.deviceDatas[dataDetailIndex].data)"
-  //-           ) {{line}}
-
+  van-cell-group(
+    v-if="fetchedData.slamResultValid"
+    title="实时建图"
+  )
+    JpegImage(
+      :jpeg="fetchedData.slamResult"
+    )
 </template>
 
 <script lang="ts">
@@ -133,12 +102,14 @@ export default class Monitor extends Vue {
   }
 
   destroyed() {
+    this.active = false;
     clearTimeout(this.timeoutHandler);
   }
 
   async timeoutFunction() {
-    await this.fetch();
-    this.timeoutHandler = setTimeout(this.timeoutFunction, this.intervalPeriod);
+    if (this.active) {
+      this.timeoutHandler = setTimeout(this.timeoutFunction, this.intervalPeriod);
+    }
   }
 
   onResize() {
@@ -185,6 +156,8 @@ export default class Monitor extends Vue {
   dataRefreshRate = 1;
 
   timeoutHandler!: NodeJS.Timeout;
+
+  active = true;
 }
 </script>
 

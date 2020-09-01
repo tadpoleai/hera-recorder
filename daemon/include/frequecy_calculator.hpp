@@ -7,6 +7,8 @@
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
+#pragma once
+
 #include <algorithm>
 #include <atomic>
 #include <thread>
