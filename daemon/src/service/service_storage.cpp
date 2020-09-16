@@ -59,6 +59,10 @@ void Service::append_storage_status(std::vector<StorageRecordFile>& result)
         auto header = storage::StorageDataHeader::read_from(in_file, false, false);
         in_file.close();
 
+        if (!header) {
+            continue;
+        }
+
         StorageRecordFile info;
         info.name = file.basename;
         info.sizeKB = file.size / 1024;

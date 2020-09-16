@@ -29,12 +29,12 @@ const routes = [
     path: '/monitor',
     name: '数据监视',
     component: ViewMonitor
+  },
+  {
+    path: '/storage',
+    name: '数据管理',
+    component: ViewStorage
   }
-  // {
-  //   path: '/storage',
-  //   name: '数据管理',
-  //   component: ViewStorage
-  // }
 ];
 
 const router = new VueRouter({

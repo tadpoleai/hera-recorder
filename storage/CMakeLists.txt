@@ -17,6 +17,9 @@ if(GIT_INFO_ENABLED)
   target_link_libraries(${PROJECT_NAME} hera-git-info)
 endif()
 
+include("../cmake/include/libnfs.cmake")
+target_link_libraries(${PROJECT_NAME} ${LIBNFS_LIBRARIES})
+
 file(GLOB_RECURSE TOOL_SRC "tool/*.cpp")
 add_executable(${PROJECT_NAME}-tool ${TOOL_SRC})
 target_link_libraries(${PROJECT_NAME}-tool hera-common hera-storage hera-device)

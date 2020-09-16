@@ -30,7 +30,7 @@ namespace hera {
 namespace storage {
 namespace upload {
 
-BETTER_ENUM(UploadProtocol, int32_t, RSYNC);
+BETTER_ENUM(UploadProtocol, int32_t, RSYNC, NFS);
 
 ///
 /// @brief Configuration of a upload transmission

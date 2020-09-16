@@ -28,7 +28,7 @@ export const actions: ActionTree<AcquisitionControlState, RootState> = {
     const data = await client.stop();
     commit('setFromFetch', data);
   },
-  
+
   async setRecord({ commit }, record: boolean) {
     const client = connect((err: any) => {
       commit('Main/setConnectionError', err.toString(), { root: true });

@@ -1,27 +1,23 @@
-import { DeviceParameterState } from './types';
+import { StorageState } from './types';
 import { ActionTree } from 'vuex';
 import { RootState } from '../types';
 
 import { Hera, connect } from '@/api';
 
-export const actions: ActionTree<DeviceParameterState, RootState> = {
+export const actions: ActionTree<StorageState, RootState> = {
   async fetch({ commit }) {
     const client = connect((err: any) => {
       commit('Main/setConnectionError', err.toString(), { root: true });
     });
-    const data = await client.getDeviceAndParameterses();
+    const data = await client.getStorage();
     commit('setFromFetch', data);
   },
 
-  async adjustDeviceParameter({ commit, state, rootState }, payload: { type: string; value: string }) {
+  async deleteStorage({ commit }, name: string) {
     const client = connect((err: any) => {
       commit('Main/setConnectionError', err.toString(), { root: true });
     });
-    const data = await client.adjustDeviceParameter(
-      rootState['DeviceData'].selectDetailDeviceIndex,
-      payload.type,
-      payload.value
-    );
+    const data = await client.deleteStorage(name);
     commit('setFromFetch', data);
   }
 };
