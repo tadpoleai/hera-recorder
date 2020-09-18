@@ -46,6 +46,8 @@ enum class DeviceVendorType : uint16_t {
     LidarVelodyne = 0x0501,      ///< Lidar, outputs PointsXYZI, vendor is Velodyne
     OdometryS32VGeely = 0x0601,  ///< Odometry, only for S32V, by CAN-bus, only for Car vendorGeely
     OdometryAEHaitai = 0x0611,   ///< Odometry, absolute encoder connected by serial, vendor is haitai
+
+    ExternalAndroid = 0xF001,  ///< External Sensor, Android Record Program, no driver
 };
 
 ///
@@ -70,8 +72,16 @@ enum class DeviceDataType : uint16_t {
     CameraS32VSalCompressedImage = 0x0404,  ///< For S32vMipi's camera's compressed image
     LidarVelodynePacket = 0x0501,           ///< For Velodyne's raw UDP packet
     LidarVelodynePacketUnsync = 0x0502,     ///< For Velodyne's raw UDP packet, sync input is invalid
+    Lidar3iroBotixPacket = 0x0503,          ///< 2D Lidar Raw Packet, vendor is 3irobotix
     OdometryS32VGeelyCANFrame = 0x0601,     ///< For OdometryS32V Geely
     OdometryAEHaitaiData = 0x0611,          ///< For OdometryS32V Geely
+
+    ExternalAndroidCompressedImage = 0xF001,  ///< ExternalAndroid, Camera Compressed Image
+    // ExternalAndroidRawImage = 0xF002,         ///< ExternalAndroid, Camera Raw Image
+    ExternalAndroidImuMagneticField = 0xF011,  ///< ExternalAndroid, Imu Data and Magentic Data
+    ExternalAndroidLocation = 0xF021,          ///< ExternalAndroid, Position
+    ExternalAndroidLaserScan = 0xF031,         ///< ExternalAndroid, 2D Lidar Scan
+    // ExternalAndroidPoints = 0xF032,           ///< ExternalAndroid, 3D Lidar Scan
 };
 
 }  // namespace device

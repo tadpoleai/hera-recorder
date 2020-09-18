@@ -29,6 +29,7 @@ enum class ROSMessageType : int32_t {
     ROS_MESSAGE_TYPE_DEFINE(sensor_msgs, Imu)
     ROS_MESSAGE_TYPE_DEFINE(sensor_msgs, MagneticField)
     ROS_MESSAGE_TYPE_DEFINE(sensor_msgs, PointCloud2)
+    ROS_MESSAGE_TYPE_DEFINE(sensor_msgs, LaserScan)
     ROS_MESSAGE_TYPE_DEFINE(sensor_msgs, CompressedImage)
     ROS_MESSAGE_TYPE_DEFINE(sensor_msgs, Image)
     ROS_MESSAGE_TYPE_DEFINE(sensor_msgs, NavSatFix)
