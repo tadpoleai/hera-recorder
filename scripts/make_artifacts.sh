@@ -7,6 +7,7 @@ mkdir -p artifacts/manual
 mkdir -p artifacts/header/hera/common
 mkdir -p artifacts/header/hera/storage
 mkdir -p artifacts/header/hera/device
+mkdir -p artifacts/header/hera/convert
 mkdir -p artifacts/script
 mkdir -p artifacts/script/daemon
 mkdir -p artifacts/share
@@ -18,6 +19,7 @@ cp -r build_client/* artifacts/client
 cp -r common/include/* artifacts/header/hera/common
 cp -r device/include/* artifacts/header/hera/device
 cp -r storage/include/* artifacts/header/hera/storage
+cp -r convert/include/* artifacts/header/hera/convert
 
 archs=("amd64" "arm")
 arch_index=0
@@ -32,6 +34,7 @@ while ((arch_index < 2)); do
     # Binaries
     if (($arch_index == 0)); then
         cp -r build_$arch/convert/hera-* artifacts/bin/$arch
+        cp -r build_$arch/convert/libhera-convert-ros-message.so artifacts/lib/$arch
         cp -r \
             build_$arch/slam/bridge/hera-slam-* \
             build_$arch/slam/caller/hera-slam-* \

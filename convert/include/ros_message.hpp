@@ -13,10 +13,16 @@
 #include <cstdint>
 #include <memory>
 
+#ifdef HERA_COMPILE_IN_REPO
 #include "common/include/utils/remapper.hpp"
 #include "device/include/include.hpp"
 #include "direct_bag/direct_bag.h"
 #include "ros_message_types.hpp"
+#else
+#include <hera/common/utils/remapper.hpp>
+#include <hera/device/include.hpp>
+#include "ros_message_types.hpp"
+#endif
 
 namespace wayz {
 namespace hera {
@@ -47,7 +53,9 @@ class ROSMessage {
     ///
     /// @param bag a ros bag file handler, implemented by DirectBag
     /// @param message pointer to a ROSMessage
+#ifdef HERA_COMPILE_IN_REPO
     friend void operator<<(rosbag_direct_write::DirectBag& bag, ROSMessagePtr&& message);
+#endif
 
 public:
     ///
