@@ -7,9 +7,10 @@
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
-#include "android.hpp"
+#include "plugin_common.hpp"
+#include "plugin_data.hpp"
+#include "plugin_param.hpp"
 
-#include "../../plugin_impl.hpp"
 #include "data/camera_data.hpp"
 #include "data/gnss_data.hpp"
 #include "data/imu_data.hpp"
@@ -21,13 +22,17 @@ namespace device {
 namespace external {
 namespace android {
 
-const std::vector<std::string> Android::EssentialParameterTypes = {};
+///
+/// @brief A dummy device foobar, for sample, Derived from Device
+///
+HERA_PLUGIN_DEFINE_START(5)
 
-const std::vector<std::string> Android::OptionalParameterTypes = {};
+HERA_PLUGIN_DEFINE_END
 
-HERA_DEVICE_DRIVER_EXPORT_PLUGIN(ExternalAndroid, "external/android", Android)
+HERA_PLUGIN_EXPORT(ExternalAndroid, "external/android")
 
-data::SensorDataPtr Android::do_convert(data::DeviceDataPtr& storage_data)
+data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
+                                             const ParametersInterface* parameter)
 {
     if (storage_data->is_type(DeviceDataType::ExternalAndroidCompressedImage)) {
         // Raw DeviceData of Derived Type

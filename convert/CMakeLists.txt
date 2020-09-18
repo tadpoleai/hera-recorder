@@ -13,13 +13,31 @@ find_package(Threads REQUIRED)
 find_package(rosbag REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-file(GLOB_RECURSE ALL_SRC "src/*.cpp" "src/**/*.cpp")
-include_directories(".." include ${rosbag_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS}
+include_directories(.. src include ${rosbag_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS}
                     ${EIGEN3_INCLUDE_DIR})
-add_executable(${PROJECT_NAME} ${ALL_SRC})
-target_link_libraries(${PROJECT_NAME} hera-common hera-device
-                      ${rosbag_LIBRARIES})
 
+# ROS Message Library
+set(ROS_MESSAGE_LIB ${PROJECT_NAME}-ros-message)
+file(GLOB_RECURSE ROS_MESSAGE_SRC "src/ros_message_impl/*.cpp")
+add_library(${ROS_MESSAGE_LIB} SHARED "src/ros_message.cpp" "src/direct_bag/direct_bag.cpp" ${ROS_MESSAGE_SRC})
+target_link_libraries(${ROS_MESSAGE_LIB} ${rosbag_LIBRARIES} hera-common hera-device)
+
+# Main executable
+add_executable(${PROJECT_NAME} "src/converter.cpp" "src/main.cpp")
+target_link_libraries(${PROJECT_NAME} ${ROS_MESSAGE_LIB})
+
+# Install shared libraries
+install(
+  TARGETS ${ROS_MESSAGE_LIB}
+  PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE
+              WORLD_READ
+  DESTINATION lib)
+
+# Install headers
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+        DESTINATION include/hera/convert/)
+
+# Install executable
 install(
   TARGETS hera-convert
   PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE
