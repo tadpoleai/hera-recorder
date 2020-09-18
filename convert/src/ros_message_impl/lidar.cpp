@@ -56,6 +56,45 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::PointsXYZ
     return ret;
 }
 
+template<>
+std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::LaserScan>(
+        device::data::SensorDataPtr& sensor_data,
+        const std::string& topic_prefix,
+        const std::string& frame_id,
+        const common::Remapper* remapper)
+{
+    auto data_impl = reinterpret_cast<device::data::LaserScan*>(sensor_data.get());
+    auto message = ROSMessage::create<ROSMessageType::LaserScan>();
+    auto ros_message = reinterpret_cast<sensor_msgs::LaserScan*>(message->ptr);
+    std::vector<ROSMessagePtr> ret;
+
+    message->topic_name = remapper->remap(topic_prefix + "laser_scan");
+    message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+    ros_message->header.seq = sensor_data->sequence;
+    ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+    ros_message->header.frame_id = frame_id;
+
+    ros_message->angle_min = data_impl->angle_min;
+    ros_message->angle_max = data_impl->angle_max;
+    ros_message->angle_increment = data_impl->angle_increment;
+
+    ros_message->time_increment = data_impl->time_increment;
+    ros_message->scan_time = data_impl->scan_time;
+
+    ros_message->range_min = data_impl->range_min;
+    ros_message->range_max = data_impl->range_max;
+
+    ros_message->ranges.resize(data_impl->ranges_length);
+    ros_message->intensities.resize(data_impl->intensities_length);
+    memcpy(ros_message->ranges.data(), &data_impl->ranges_intensities_data, sizeof(float) * data_impl->ranges_length);
+    memcpy(ros_message->intensities.data(),
+           &data_impl->ranges_intensities_data[data_impl->ranges_length],
+           sizeof(float) * data_impl->intensities_length);
+
+    ret.emplace_back(std::move(message));
+    return ret;
+}
+
 }  // namespace convert
 }  // namespace hera
 }  // namespace wayz

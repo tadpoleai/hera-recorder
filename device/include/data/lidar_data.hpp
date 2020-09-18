@@ -20,6 +20,29 @@ namespace data {
 #pragma pack(push, 1)
 
 ///
+/// @brief Same as ROS LaserScan
+///
+class LaserScan final : public SensorData {
+public:
+    float angle_min;        ///< start angle of the scan [rad]
+    float angle_max;        ///< end angle of the scan [rad]
+    float angle_increment;  ///< angular distance between measurements [rad]
+
+    float time_increment;  ///< time between measurements [seconds] - if your scanner
+                           /// is moving, this will be used in interpolating position
+                           /// of 3d points
+    float scan_time;       ///< time between scans [seconds]
+
+    float range_min;  ///< minimum range value [m]
+    float range_max;  ///< maximum range value [m]
+
+    int32_t ranges_length;             ///< range data [m] (Note: values < range_min or > range_max should be discarded)
+    int32_t intensities_length;        ///< intensity data [device-specific units].  If your  device does not provide
+                                       ///< intensities, please leave the array empty.
+    float ranges_intensities_data[0];  /// < Access ranges and intensites by ptr
+};
+
+///
 /// @brief SensorData for Lidar
 ///
 class PointsXYZI final : public SensorData {
