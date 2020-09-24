@@ -58,23 +58,23 @@ enum class DeviceVendorType : uint16_t {
 /// @see DeviceData
 ///
 enum class DeviceDataType : uint16_t {
-    DummyFoobarData = 0x0101,               ///< A dummy device's device data
-    DummyImageData = 0x0102,                ///< A dummy image device's data
-    ImuAceinnaData = 0x0201,                ///< For Wayz Tron Sync Board's serial output
-    ImuS32VSalData = 0x0202,                ///< IMU Data from S32VSal
-    GnssSerialsyncNmea = 0x0301,            ///< For Nmea Sentence
-    GnssSerialNmea = 0x0302,                ///< For Nmea Sentence with time sync
-    GnssS32VSalData = 0x0303,               ///< GNSS Data from S32VSal
-    InsNovatelSpanBinaryData = 0x0381,      ///< Binary Data of InsNovatelSpan
-    CameraFlirCompressedImage = 0x0401,     ///< For Flir's camera's compressed image
-    CameraFlirRawImage = 0x0402,            ///< For Flir's camera's raw image
-    CameraS32VSalRawImage = 0x0403,         ///< For S32vMipi's camera's raw image
-    CameraS32VSalCompressedImage = 0x0404,  ///< For S32vMipi's camera's compressed image
-    LidarVelodynePacket = 0x0501,           ///< For Velodyne's raw UDP packet
-    LidarVelodynePacketUnsync = 0x0502,     ///< For Velodyne's raw UDP packet, sync input is invalid
-    Lidar3iroBotixPacket = 0x0503,          ///< 2D Lidar Raw Packet, vendor is 3irobotix
-    OdometryS32VGeelyCANFrame = 0x0601,     ///< For OdometryS32V Geely
-    OdometryAEHaitaiData = 0x0611,          ///< For OdometryS32V Geely
+    DummyFoobarData = 0x0101,                 ///< A dummy device's device data
+    DummyImageData = 0x0102,                  ///< A dummy image device's data
+    ImuAceinnaData = 0x0201,                  ///< For Wayz Tron Sync Board's serial output
+    ImuS32VSalData = 0x0202,                  ///< IMU Data from S32VSal
+    GnssSerialsyncNmea = 0x0301,              ///< For Nmea Sentence
+    GnssSerialNmea = 0x0302,                  ///< For Nmea Sentence with time sync
+    GnssS32VSalData = 0x0303,                 ///< GNSS Data from S32VSal
+    InsNovatelSpanBinaryData = 0x0381,        ///< Binary Data of InsNovatelSpan
+    CameraFlirCompressedImage = 0x0401,       ///< For Flir's camera's compressed image
+    CameraFlirRawImage = 0x0402,              ///< For Flir's camera's raw image
+    CameraS32VSalRawImage = 0x0403,           ///< For S32vMipi's camera's raw image
+    CameraS32VSalCompressedImage = 0x0404,    ///< For S32vMipi's camera's compressed image
+    LidarVelodynePacketFullSynced = 0x0501,   ///< For Velodyne's raw UDP packet
+    LidarVelodynePacketUnSynced = 0x0502,     ///< For Velodyne's raw UDP packet, sync input is invalid
+    LidarVelodynePacketLocalSynced = 0x0503,  ///< For Velodyne's raw UDP packet, sync input is valid, but time is local
+    OdometryS32VGeelyCANFrame = 0x0601,       ///< For OdometryS32V Geely
+    OdometryAEHaitaiData = 0x0611,            ///< For OdometryS32V Geely
 
     ExternalAndroidCompressedImage = 0xF001,  ///< ExternalAndroid, Camera Compressed Image
     // ExternalAndroidRawImage = 0xF002,         ///< ExternalAndroid, Camera Raw Image

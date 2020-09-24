@@ -64,7 +64,7 @@ int main(int argc, char** argv)
     sigaction(SIGINT, &sig_int_handler, NULL);
 
     if (argc != 2) {
-        std::cout << "Usage: " << argv[0] << " config.json" << std::endl;
+        std::cout << "Usage: " << argv[0] << " daemon.json" << std::endl;
         exit(-1);
     }
 
@@ -83,40 +83,74 @@ int main(int argc, char** argv)
         json config;
         i >> config;
 
-        name = config["name"];
-        std::cout << "Name = " << name << std::endl;
-
-        plugin_folder = config["pluginFolder"];
-        std::cout << "PluginFolder = " << plugin_folder << std::endl;
-
-        storage_folder = config["storageFolder"];
-        std::cout << "StorageFolder = " << storage_folder << std::endl;
-
-        setting_json = config["settingJson"];
-        std::cout << "ProfileJson = " << setting_json << std::endl;
-
-        log_prefix = config["logPrefix"];
-        std::cout << "LogPrefix = " << log_prefix << std::endl;
-
-        listen_port = config["listenPort"];
-        std::cout << "ListenPort = " << listen_port << std::endl;
-
-        for (const auto& ur_json : config["remoteServers"]) {
-            daemon::RemoteServerType ur;
-            ur.remark = ur_json["remark"];
-            ur.protocol = ur_json["protocol"];
-            ur.destination = ur_json["destination"];
-
-            std::cout << "RemoteServer: " << ur_json << std::endl;
-            remote_servers.emplace_back(std::move(ur));
+        try {
+            name = config["name"];
+            std::cout << "Name = " << name << std::endl;
+        } catch (...) {
+            std::cout << "Error: Daemon json file missing field 'name'!";
         }
 
-        json broadcast = config["broadcast"];
-        broadcast_whitelist = broadcast["mode"].get<bool>();
-        std::cout << "Broadcast Mode: " << int(broadcast_whitelist) << std::endl;
-        for (const auto& ifname : broadcast["ifs"]) {
-            broadcast_ifs.push_back(ifname);
-            std::cout << "Broadcast Interface: " << ifname << std::endl;
+        try {
+            plugin_folder = config["pluginFolder"];
+            std::cout << "PluginFolder = " << plugin_folder << std::endl;
+        } catch (...) {
+            std::cout << "Error: Daemon json file missing field 'pluginFolder'!";
+        }
+
+        try {
+            storage_folder = config["storageFolder"];
+            std::cout << "StorageFolder = " << storage_folder << std::endl;
+        } catch (...) {
+            std::cout << "Error: Daemon json file missing field 'storageFolder'!";
+        }
+
+        try {
+            setting_json = config["settingJson"];
+            std::cout << "SettingJson = " << setting_json << std::endl;
+        } catch (...) {
+            std::cout << "Error: Daemon json file missing field 'settingJson'!";
+        }
+
+        try {
+            log_prefix = config["logPrefix"];
+            std::cout << "LogPrefix = " << log_prefix << std::endl;
+        } catch (...) {
+            std::cout << "Error: Daemon json file missing field 'logPrefix'!";
+        }
+
+        try {
+            listen_port = config["listenPort"];
+            std::cout << "ListenPort = " << listen_port << std::endl;
+        } catch (...) {
+            std::cout << "Error: Daemon json file missing field 'listenPort'!";
+        }
+
+
+        try {
+            for (const auto& ur_json : config["remoteServers"]) {
+                daemon::RemoteServerType ur;
+                ur.remark = ur_json["remark"];
+                ur.protocol = ur_json["protocol"];
+                ur.destination = ur_json["destination"];
+
+                std::cout << "RemoteServer: " << ur_json << std::endl;
+                remote_servers.emplace_back(std::move(ur));
+            }
+        } catch (...) {
+            std::cout << "Error: Daemon json file missing field 'remoteServers' or format error!";
+        }
+
+
+        try {
+            json broadcast = config["broadcast"];
+            broadcast_whitelist = broadcast["mode"].get<bool>();
+            std::cout << "Broadcast Mode: " << int(broadcast_whitelist) << std::endl;
+            for (const auto& ifname : broadcast["ifs"]) {
+                broadcast_ifs.push_back(ifname);
+                std::cout << "Broadcast Interface: " << ifname << std::endl;
+            }
+        } catch (...) {
+            std::cout << "Error: Daemon json file missing field 'broadcast' or format error!";
         }
     } catch (std::exception& e) {
         std::cout << "Error occured when parsing json file " << argv[1] << ": " << e.what() << std::endl;
