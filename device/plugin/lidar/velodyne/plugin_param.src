@@ -10,6 +10,19 @@ immutable integer ListenPort = 2368; range 0, 65535, 1
 # 设定范围从 300rpm 到 1200rpm
 mutable integer Speed = 600; range 300, 1200, 50
 
-# 不使用同步
-# 当Velodyne无法从外部信号同步时, 开启此选项
-mutable boolean DisableSync = false;
+# 同步方式
+# 根据连接到 Velodyne 同步信号的类型选择
+# Options:
+# - Full: 完全同步
+# --- Velodyne 的同步信号有效, 且时间基准与工控机时间对齐,
+# --- 在该选项下, Velodyne 数据包报告的时分秒将被采用为传感器时间, 日期则使用工控机的日期,
+# --- 另外, 当数据包的报告的时分秒与工控机时间相差过大(差异大于30秒时), 数据包将被丢弃;
+# - Local: 本地同步
+# --- Velodyne 的同步信号有效, 但时间基准未和主控制器时间对齐,
+# --- 在该选项下, Velodyne 数据包报告的时分秒将被采用为传感器时间, 日期被设置为0,
+# --- 工控机的时间和Velodyne 数据包报告的时间没有关系;
+# - Disabled: 未同步
+# --- Velodyne 的同步信号未连接
+# --- 在该选项下, Velodyne 数据包报告的时分秒将不被采用,
+# --- 而是采用数据包到达工控机时的接受时间作为传感器时间;
+immutable enum SyncType = Full; options Full, Local, Disabled

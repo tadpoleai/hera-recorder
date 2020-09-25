@@ -119,10 +119,19 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
     // Total length of device data
     auto length = sizeof(VelodynePacket);
-    auto data_type = DeviceDataType::LidarVelodynePacket;
-    if (local_parameters_.get_DisableSync()) {
-        data_type = DeviceDataType::LidarVelodynePacketUnsync;
+    auto data_type = DeviceDataType::LidarVelodynePacketFullSynced;
+    switch (local_parameters_.get_SyncType()) {
+    case SyncType::Full:
+        data_type = DeviceDataType::LidarVelodynePacketFullSynced;
+        break;
+    case SyncType::Local:
+        data_type = DeviceDataType::LidarVelodynePacketLocalSynced;
+        break;
+    case SyncType::Disabled:
+        data_type = DeviceDataType::LidarVelodynePacketUnSynced;
+        break;
     }
+
     auto data = data::DeviceData::create(length, id_, DeviceVendorType::LidarVelodyne, data_type, sequence_++);
     auto derived_data = static_cast<VelodynePacket*>(data.get());
 
@@ -157,8 +166,9 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (!storage_data->is_type(DeviceDataType::LidarVelodynePacket) &&
-        !storage_data->is_type(DeviceDataType::LidarVelodynePacketUnsync)) {
+    if (!storage_data->is_type(DeviceDataType::LidarVelodynePacketFullSynced) &&
+        !storage_data->is_type(DeviceDataType::LidarVelodynePacketLocalSynced) &&
+        !storage_data->is_type(DeviceDataType::LidarVelodynePacketUnSynced)) {
         return data::SensorData::broken_data();
     }
 
@@ -279,7 +289,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     lidar_sensor_data->point_number = point_number;
 
     // Calculate laser firing timestamp of the first laser beam
-    if (storage_data->is_type(DeviceDataType::LidarVelodynePacket)) {
+    if (storage_data->is_type(DeviceDataType::LidarVelodynePacketFullSynced)) {
         int64_t t_recv_us = (raw_data->get_timestamp_receive_ns()) / UsToNs_;
         int64_t t_packet_us = (int64_t)(raw_data->data.timestamp);
         int64_t t_fire_us = HourToUs_ * ((t_recv_us - t_packet_us + HalfHourToUs_) / HourToUs_) + t_packet_us;
@@ -292,6 +302,9 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
             return data::SensorData::broken_data();
         }
         lidar_sensor_data->timestamp_intrinsic_ns = t_fire_us * UsToNs_;
+    } else if (storage_data->is_type(DeviceDataType::LidarVelodynePacketLocalSynced)) {
+        int64_t t_packet_us = (int64_t)(raw_data->data.timestamp);
+        lidar_sensor_data->timestamp_intrinsic_ns = t_packet_us * UsToNs_;
     } else {
         lidar_sensor_data->timestamp_intrinsic_ns = raw_data->get_timestamp_receive_ns();
     }
