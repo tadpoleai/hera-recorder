@@ -57,8 +57,17 @@ public:
         VendorLeishen = 0x800
     };
 
+    enum class ReturnType : uint32_t {
+        Strongest = 0x0,  ///< Single Strongest Return
+        Last = 0x1,       ///< Last Return
+        Dual = 0x2,       ///< Dual Return
+        First = 0x3       ///< First Return
+    };
+
     struct MetaType {
         LidarVendor vendor;
+
+        ReturnType return_type;
 
         int32_t rotation_direction;
 
@@ -90,7 +99,10 @@ public:
     MetaType meta;
     uint32_t point_number;  ///< Number of points
     PointXYZI points[0];    ///< Array of points, variable-lengthed
-};                          // namespace data
+                            /// For single-return-type lidar data, data are arranged sequencently
+                            /// For dual-return-type lidar data, first-return data are arranged first, after which
+                            /// second-return data are arranged
+};
 
 #pragma pack(pop)
 
