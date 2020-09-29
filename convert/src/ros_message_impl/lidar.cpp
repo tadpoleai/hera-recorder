@@ -25,34 +25,77 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::PointsXYZ
         const common::Remapper* remapper)
 {
     auto data_impl = reinterpret_cast<device::data::PointsXYZI*>(sensor_data.get());
-    auto message = ROSMessage::create<ROSMessageType::PointCloud2>();
-    auto ros_message = reinterpret_cast<sensor_msgs::PointCloud2*>(message->ptr);
+
     std::vector<ROSMessagePtr> ret;
 
-    message->topic_name = remapper->remap(topic_prefix + "point_cloud2");
-    message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
-    ros_message->header.seq = sensor_data->sequence;
-    ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
-    ros_message->header.frame_id = frame_id;
-
-    pcl::PointCloud<pcl::PointXYZI> pcl_cloud;
-    pcl_cloud.resize(data_impl->point_number);
-    float* dst_ptr = reinterpret_cast<float*>(pcl_cloud.points.data());
-    float* src_ptr = reinterpret_cast<float*>(data_impl->points);
-    const float* dst_ptr_end = dst_ptr + (size_t)(data_impl->point_number) * (sizeof(pcl::PointXYZI) / sizeof(float));
-
-    using Pt = device::data::PointsXYZI::PointXYZI;
-    for (; dst_ptr < dst_ptr_end;) {
-        memcpy(dst_ptr, src_ptr, sizeof(Pt));
-        dst_ptr += sizeof(pcl::PointXYZI) / sizeof(float);
-        src_ptr += sizeof(Pt) / sizeof(float);
+    size_t single_return_point_number = data_impl->point_number;
+    if (data_impl->meta.return_type == device::data::PointsXYZI::ReturnType::Dual) {
+        single_return_point_number /= 2;
     }
-    pcl::toROSMsg(pcl_cloud, *ros_message);
-    ros_message->header.seq = sensor_data->sequence;
-    ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
-    ros_message->header.frame_id = frame_id;
 
-    ret.emplace_back(std::move(message));
+    {
+        auto message = ROSMessage::create<ROSMessageType::PointCloud2>();
+        auto ros_message = reinterpret_cast<sensor_msgs::PointCloud2*>(message->ptr);
+
+        message->topic_name = remapper->remap(topic_prefix + "point_cloud2");
+        message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+        ros_message->header.seq = sensor_data->sequence;
+        ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+        ros_message->header.frame_id = frame_id;
+
+        pcl::PointCloud<pcl::PointXYZI> pcl_cloud;
+        pcl_cloud.resize(single_return_point_number);
+        float* dst_ptr = reinterpret_cast<float*>(pcl_cloud.points.data());
+        float* src_ptr = reinterpret_cast<float*>(data_impl->points);
+        const float* dst_ptr_end =
+                dst_ptr + (size_t)(single_return_point_number) * (sizeof(pcl::PointXYZI) / sizeof(float));
+
+        using Pt = device::data::PointsXYZI::PointXYZI;
+        for (; dst_ptr < dst_ptr_end;) {
+            memcpy(dst_ptr, src_ptr, sizeof(Pt));
+            dst_ptr += sizeof(pcl::PointXYZI) / sizeof(float);
+            src_ptr += sizeof(Pt) / sizeof(float);
+        }
+        pcl::toROSMsg(pcl_cloud, *ros_message);
+        ros_message->header.seq = sensor_data->sequence;
+        ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+        ros_message->header.frame_id = frame_id;
+
+        ret.emplace_back(std::move(message));
+    }
+
+    if (data_impl->meta.return_type != device::data::PointsXYZI::ReturnType::Dual) {
+        auto message = ROSMessage::create<ROSMessageType::PointCloud2>();
+        auto ros_message = reinterpret_cast<sensor_msgs::PointCloud2*>(message->ptr);
+
+        message->topic_name = remapper->remap(topic_prefix + "point_cloud2_last");
+        message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+        ros_message->header.seq = sensor_data->sequence;
+        ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+        ros_message->header.frame_id = frame_id;
+
+        pcl::PointCloud<pcl::PointXYZI> pcl_cloud;
+        pcl_cloud.resize(single_return_point_number);
+        float* dst_ptr = reinterpret_cast<float*>(pcl_cloud.points.data());
+        float* src_ptr = reinterpret_cast<float*>(data_impl->points) +
+                         (size_t)(single_return_point_number) * (sizeof(pcl::PointXYZI) / sizeof(float));
+        const float* dst_ptr_end =
+                dst_ptr + (size_t)(single_return_point_number) * (sizeof(pcl::PointXYZI) / sizeof(float));
+
+        using Pt = device::data::PointsXYZI::PointXYZI;
+        for (; dst_ptr < dst_ptr_end;) {
+            memcpy(dst_ptr, src_ptr, sizeof(Pt));
+            dst_ptr += sizeof(pcl::PointXYZI) / sizeof(float);
+            src_ptr += sizeof(Pt) / sizeof(float);
+        }
+        pcl::toROSMsg(pcl_cloud, *ros_message);
+        ros_message->header.seq = sensor_data->sequence;
+        ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+        ros_message->header.frame_id = frame_id;
+
+        ret.emplace_back(std::move(message));
+    }
+
     return ret;
 }
 

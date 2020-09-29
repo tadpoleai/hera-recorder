@@ -62,7 +62,8 @@ HeraErrno DevicePlugin::connect()
                << log::endl;
 
     int ret = system(("curl -m 0.2 --data \"motor=on&laser=on&rpm=" + std::to_string(local_parameters_.get_Speed()) +
-                      "\" http://" + local_parameters_.get_IpAddress() + "/cgi/setting")
+                      "&returns=" + local_parameters_.get_ReturnType()._to_string() + "\" http://" +
+                      local_parameters_.get_IpAddress() + "/cgi/setting")
                              .c_str());
     if (ret == 0) {
         log::info << "Velodyne::Succeeded to power on lidar " << get_name() << log::endl;
@@ -183,20 +184,40 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         raw_data->data.lidar_type == VelodynePacket::LidarType::HDL32E) {
     } else {
         // Unsupported lidar type;
+        log::warn << "Velodyne '" << storage_data->get_device_id() << "': Unknown lidar type '"
+                  << int32_t(raw_data->data.lidar_type) << "'" << log::endl;
         return data::SensorData::broken_data();
     }
-    if (raw_data->data.return_mode == VelodynePacket::ReturnMode::DualReturn) {
-        // Unsupported return mode
+
+    double is_dual = false;
+    data::PointsXYZI::ReturnType return_type;
+    switch (raw_data->data.return_mode) {
+    case VelodynePacket::ReturnMode::Strongest:
+        return_type = data::PointsXYZI::ReturnType::Strongest;
+        break;
+    case VelodynePacket::ReturnMode::LastReturn:
+        return_type = data::PointsXYZI::ReturnType::Last;
+        break;
+    case VelodynePacket::ReturnMode::DualReturn:
+        return_type = data::PointsXYZI::ReturnType::Dual;
+        is_dual = true;
+        break;
+    default:
+        log::warn << "Velodyne '" << storage_data->get_device_id() << "': Unknown return mode '"
+                  << int32_t(raw_data->data.return_mode) << "'" << log::endl;
         return data::SensorData::broken_data();
     }
 
     /// Get azimuth gap between data blocks
     /// @see @ref VLP-16C-Manual section: 9.5, Precision Azimuth Calculation, page: 65
-    double azimuth_gap =
-            ((int32_t)(raw_data->data.data_blocks[1].azimuth) - (int32_t)(raw_data->data.data_blocks[0].azimuth)) *
-            velodyne::AzimuthGranularity;
+    double azimuth_gap = ((int32_t)(raw_data->data.data_blocks[VelodynePacket::NumDataBlockPerPacket - 1].azimuth) -
+                          (int32_t)(raw_data->data.data_blocks[0].azimuth)) *
+                         velodyne::AzimuthGranularity / (VelodynePacket::NumDataBlockPerPacket - 1);
     if (azimuth_gap < 0) {
         azimuth_gap += 2 * M_PI;
+    }
+    if (is_dual) {
+        azimuth_gap *= 2;
     }
 
     // Create a temp vector
@@ -285,8 +306,22 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     auto lidar_sensor_data = static_cast<data::PointsXYZI*>(sensor_data.get());
 
     // Memcpy from temp vector
-    memcpy(lidar_sensor_data->points, lidar_points.data(), sizeof(data::PointsXYZI::PointXYZI) * point_number);
     lidar_sensor_data->point_number = point_number;
+
+    if (!is_dual) {
+        memcpy(lidar_sensor_data->points, lidar_points.data(), sizeof(data::PointsXYZI::PointXYZI) * point_number);
+    } else {
+        for (auto data_block_index = 0; data_block_index < VelodynePacket::NumDataBlockPerPacket / 2;
+             ++data_block_index) {
+            memcpy(&lidar_sensor_data->points[data_block_index * VelodynePacket::NumChannelPerDataBlock],
+                   &lidar_points[2 * data_block_index * VelodynePacket::NumChannelPerDataBlock],
+                   sizeof(data::PointsXYZI::PointXYZI) * VelodynePacket::NumChannelPerDataBlock);
+            memcpy(&lidar_sensor_data->points[data_block_index * VelodynePacket::NumChannelPerDataBlock +
+                                              VelodynePacket::NumPointsPerPacket / 2],
+                   &lidar_points[(2 * data_block_index + 1) * VelodynePacket::NumChannelPerDataBlock],
+                   sizeof(data::PointsXYZI::PointXYZI) * VelodynePacket::NumChannelPerDataBlock);
+        }
+    }
 
     // Calculate laser firing timestamp of the first laser beam
     if (storage_data->is_type(DeviceDataType::LidarVelodynePacketFullSynced)) {
@@ -310,6 +345,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     }
 
     // Fill Metadata
+    lidar_sensor_data->meta.return_type = return_type;
     switch (raw_data->data.lidar_type) {
     case VelodynePacket::LidarType::VLP16C:
         lidar_sensor_data->meta.vendor = data::PointsXYZI::LidarVendor::VelodyneVLP16C;
@@ -361,6 +397,10 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         lidar_sensor_data->meta.nominal_min_range = velodyne::hdl32e::MinNominalRange;
         lidar_sensor_data->meta.nominal_max_range = velodyne::hdl32e::MaxNominalRange;
         break;
+    }
+
+    if (is_dual) {
+        lidar_sensor_data->meta.total_time /= 2;
     }
 
     return sensor_data;
