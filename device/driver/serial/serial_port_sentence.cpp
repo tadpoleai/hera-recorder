@@ -49,6 +49,16 @@ common::ThreadQueue<SerialData>* SerialPortSentence::get_queue_handler() const
     return (common::ThreadQueue<SerialData>*)(&queue_);
 }
 
+size_t SerialPortSentence::write_port(const std::vector<uint8_t>& data)
+{
+    return port_->write_port(data);
+}
+
+size_t SerialPortSentence::write_port(const std::string& data)
+{
+    return port_->write_port(data);
+}
+
 void SerialPortSentence::fetch_thread_function()
 {
     while (thread_run_) {

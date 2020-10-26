@@ -31,6 +31,9 @@ public:
     common::ThreadQueue<SerialData>* get_queue_handler() const;
     bool is_opened() const;
 
+    size_t write_port(const std::vector<uint8_t>& data);
+    size_t write_port(const std::string& data);
+
 private:
     void fetch_thread_function();
 
