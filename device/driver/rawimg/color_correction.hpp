@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <iostream>
 
@@ -45,7 +46,7 @@ public:
 /// Output sBRG<3,1> = Gamma { CCM<3,3> @ Trunc[0,1]( WhiteBalanceDiag<3> * (U<3> - DarkLevelDiag<3>) * Input<3,1> ) }
 ///
 /// where, Input<3,1> is raw sensor input, ranges [0, 1) (0, 65535 in 16bit fixed-point number)
-/// 
+///
 class ColorCorrecterBGR16 final {
 public:
     ///
@@ -53,9 +54,18 @@ public:
     ///
     /// @param param
     /// @param gamma
-    ColorCorrecterBGR16(const ColorCorrectionParameter& param, const float gamma);
+    ColorCorrecterBGR16(const ColorCorrectionParameter& cc_param, const float gamma, const float color_temp);
+
+    void adjust_color_temp(const float color_temp);
 
     void process(void* bgr_data, uint8_t* dest_data, uint32_t image_pixel_num);
+
+private:
+    static std::array<float, 3> get_color_temp(const float color_temp);
+
+    void set_gamma_lut();
+
+    void set_ccm_lut();
 
 private:
 #pragma pack(push, 1)
@@ -65,6 +75,14 @@ private:
         uint16_t r;
     };
 #pragma pack(pop)
+
+private:
+    static const float ColorTempIntensityTable[391][3];
+
+private:
+    ColorCorrectionParameter cc_param_;
+    float gamma_;
+    float color_temp_;
 
 private:
     uint8_t GammaLUT[3 << 16];
