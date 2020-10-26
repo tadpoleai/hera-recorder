@@ -66,6 +66,9 @@ public:
     bool is_opened() const;
     void free();
 
+    size_t write_port(const std::vector<uint8_t>& data);
+    size_t write_port(const std::string& data);
+
 private:
     SerialTransport(const std::string& kernel, const SerialConfig& serial_config);
     SerialTransport(const SerialTransport&) = delete;

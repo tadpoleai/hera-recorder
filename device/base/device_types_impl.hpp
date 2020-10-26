@@ -48,6 +48,8 @@ enum class DeviceVendorType : uint16_t {
     OdometryAEHaitai = 0x0611,   ///< Odometry, absolute encoder connected by serial, vendor is haitai
 
     ExternalAndroid = 0xF001,  ///< External Sensor, Android Record Program, no driver
+
+    ControlRotor = 0xF101,  ///< Control for Rotor
 };
 
 ///

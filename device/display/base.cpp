@@ -44,7 +44,7 @@ namespace data {
 void DisplayData::update_from(std::vector<SensorDataPtr>&& sensor_datas, const bool is_detail)
 {
     if (sensor_datas.size() == 0) {
-        log::warn << "DisplayParser: Sensor data size is 0" << log::endl;
+        // log::warn << "DisplayParser: Sensor data size is 0" << log::endl;
         return;
     }
 

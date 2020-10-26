@@ -82,6 +82,24 @@ bool SerialTransport::is_opened() const
     return port_opened_;
 }
 
+size_t SerialTransport::write_port(const std::vector<uint8_t>& data)
+{
+    if (port_ != nullptr) {
+        return port_->write_port(data);
+    } else {
+        return 0;
+    }
+}
+
+size_t SerialTransport::write_port(const std::string& data)
+{
+    if (port_ != nullptr) {
+        return port_->write_port(data);
+    } else {
+        return 0;
+    }
+}
+
 common::ThreadQueue<SerialData>* SerialTransport::get_queue_handler(const int32_t msg_type)
 {
     if (msg_type < 0 || msg_type > (int32_t)MaxMsgType_) {

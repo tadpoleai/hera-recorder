@@ -84,7 +84,8 @@ bool SerialPort::open_port(const std::string& kernel, const SerialConfig& serial
         return die("Invalid data bits " + std::to_string(serial_config.stop_bits));
     }
 
-    writable_ = serial_config.writable;
+    // writable_ = serial_config.writable;
+    writable_ = true;
     fd_ = open(kernel.c_str(), writable_ ? O_RDWR : O_RDONLY);
     if (fd_ == -1) {
         return die("Error opening: " + kernel);
