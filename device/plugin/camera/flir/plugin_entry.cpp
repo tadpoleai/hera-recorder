@@ -296,7 +296,9 @@ HeraErrno DevicePlugin::connect()
         }
 
         log::debug << "Flir: " << get_name() << " CC Parameter:\n" << cc_param << log::endl;
-        correcter_ = std::make_unique<driver::ColorCorrecterBGR16>(cc_param, local_parameters_.get_Gamma());
+        correcter_ = std::make_unique<driver::ColorCorrecterBGR16>(cc_param,
+                                                                   local_parameters_.get_Gamma(),
+                                                                   local_parameters_.get_ColorTemp());
     }
 
 
@@ -517,6 +519,9 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
         return set_range_auto_shutter();
     } else if (type == "MinGain" || type == "MaxGain") {
         return set_range_auto_gain();
+    } else if (type == "ColorTemp") {
+        correcter_->adjust_color_temp(local_parameters_.get_ColorTemp());
+        return HeraErrno::OK;
     }
 
     return HeraErrno::OK;

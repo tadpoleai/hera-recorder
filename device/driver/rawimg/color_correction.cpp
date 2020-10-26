@@ -20,6 +20,10 @@ namespace hera {
 namespace device {
 namespace driver {
 
+const float ColorCorrecterBGR16::ColorTempIntensityTable[391][3] = {
+#include "color_temp_intensity_table.inc"
+};
+
 std::ostream& operator<<(std::ostream& os, const ColorCorrectionParameter& self)
 {
     os << "Dark Level = (" << self.dark_level[0] << ", " << self.dark_level[1] << ", " << self.dark_level[2] << ")\n";
@@ -35,21 +39,70 @@ std::ostream& operator<<(std::ostream& os, const ColorCorrectionParameter& self)
     return os;
 }
 
-ColorCorrecterBGR16::ColorCorrecterBGR16(const ColorCorrectionParameter& param, const float gamma)
+std::array<float, 3> ColorCorrecterBGR16::get_color_temp(const float color_temp)
+{
+    float applied_temp = color_temp;
+    std::array<float, 3> ret;
+    if (applied_temp > 20000) {
+        applied_temp = 20000;
+    }
+    if (applied_temp < 1000) {
+        applied_temp = 1000;
+    }
+
+    size_t index = applied_temp / 100 - 10;
+
+    ret[0] = ColorTempIntensityTable[index][0];
+    ret[1] = ColorTempIntensityTable[index][1];
+    ret[2] = ColorTempIntensityTable[index][2];
+
+    return ret;
+}
+
+void ColorCorrecterBGR16::adjust_color_temp(const float color_temp)
+{
+    color_temp_ = color_temp;
+    set_ccm_lut();
+}
+
+ColorCorrecterBGR16::ColorCorrecterBGR16(const ColorCorrectionParameter& cc_param,
+                                         const float gamma,
+                                         const float color_temp) :
+    cc_param_(cc_param),
+    gamma_(gamma),
+    color_temp_(color_temp)
+{
+    set_ccm_lut();
+
+    set_gamma_lut();
+}
+
+void ColorCorrecterBGR16::set_gamma_lut()
 {
     for (uint32_t i = 0; i < (1 << 16); i++) {
         GammaLUT[i] = 0;
     }
     for (uint32_t i = (1 << 16); i < (2 << 16); i++) {
-        GammaLUT[i] = ::pow((i - (1 << 16)) / (float)0xFFFF, 1.0 / gamma) * 0xFF;
+        GammaLUT[i] = ::pow((i - (1 << 16)) / (float)0xFFFF, 1.0 / gamma_) * 0xFF;
     }
     for (uint32_t i = (2 << 16); i < (3 << 16); i++) {
         GammaLUT[i] = 0xFF;
     }
+}
+
+void ColorCorrecterBGR16::set_ccm_lut()
+{
+    // todo: calculate (1/CCM) * (1/TEMP) * CCM * WB
+    // WIP: calculate 1/TEMP * WB
+    std::array<float, 3> white_balance;
+    auto color_temp_wb_multipliers = get_color_temp(color_temp_);
+    white_balance[0] = cc_param_.white_balance[0] / color_temp_wb_multipliers[2];
+    white_balance[1] = cc_param_.white_balance[1] / color_temp_wb_multipliers[1];
+    white_balance[2] = cc_param_.white_balance[2] / color_temp_wb_multipliers[0];
 
     for (auto ch = 0; ch < 3; ch++) {
-        const uint16_t DarkLevelCh = param.dark_level[ch] * (1 << 16);
-        const float DarkLevelRemainGain = 1 / (1 - param.dark_level[ch]);
+        const uint16_t DarkLevelCh = cc_param_.dark_level[ch] * (1 << 16);
+        const float DarkLevelRemainGain = 1 / (1 - cc_param_.dark_level[ch]);
         for (uint32_t level = 0; level < 0xFFFF; level++) {
             if (level < DarkLevelCh) {
                 CCMLUT[ch][3 * level + 0] = 0;
@@ -57,17 +110,14 @@ ColorCorrecterBGR16::ColorCorrecterBGR16(const ColorCorrectionParameter& param, 
                 CCMLUT[ch][3 * level + 2] = 0;
             } else {
                 CCMLUT[ch][3 * level + 0] =
-                        param.color_correction_matrix[0 + ch] *
-                        std::min((float)(1 << 16),
-                                 DarkLevelRemainGain * param.white_balance[ch] * (level - DarkLevelCh));
+                        cc_param_.color_correction_matrix[0 + ch] *
+                        std::min((float)(1 << 16), DarkLevelRemainGain * white_balance[ch] * (level - DarkLevelCh));
                 CCMLUT[ch][3 * level + 1] =
-                        param.color_correction_matrix[3 + ch] *
-                        std::min((float)(1 << 16),
-                                 DarkLevelRemainGain * param.white_balance[ch] * (level - DarkLevelCh));
+                        cc_param_.color_correction_matrix[3 + ch] *
+                        std::min((float)(1 << 16), DarkLevelRemainGain * white_balance[ch] * (level - DarkLevelCh));
                 CCMLUT[ch][3 * level + 2] =
-                        param.color_correction_matrix[6 + ch] *
-                        std::min((float)(1 << 16),
-                                 DarkLevelRemainGain * param.white_balance[ch] * (level - DarkLevelCh));
+                        cc_param_.color_correction_matrix[6 + ch] *
+                        std::min((float)(1 << 16), DarkLevelRemainGain * white_balance[ch] * (level - DarkLevelCh));
             }
 
             if (ch == 0) {

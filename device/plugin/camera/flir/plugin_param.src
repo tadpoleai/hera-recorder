@@ -129,6 +129,12 @@ mutable enum DeBayer = EdgeSense; options Nearest, EdgeSense, HQLinear, Rigorous
 requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12')
 immutable enum Correction = LOAD; options NONE, ONESHOT, STORE, LOAD
 
+# 色彩校准 - 白平衡(主光源色温)
+# 手动白平衡条件，假设光源为某个色温
+# 按该色温对应的光源色彩强度对相机成像进行校正
+requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12')
+mutable real ColorTemp = 6500; range 1000, 20000, 100
+
 # 色彩校准 - 暗电流本底[Blue]
 requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
 immutable real DarkB = 0; range 0, 0.5, 0.01
