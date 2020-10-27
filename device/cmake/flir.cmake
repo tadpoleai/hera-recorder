@@ -9,14 +9,24 @@ if(ARCHITECTURE STREQUAL "arm64")
 endif()
 
 if(NOT PLUGIN_EXIT)
-  if(EXISTS ${FLY_CAPTURE_LIBS}
-     AND EXISTS ${FLY_CAPTURE_INCLUDE_DIR}/flycapture/FlyCapture2.h)
-    message_plugin("FlyCapture found")
-    set(PLUGIN_DRIVER_FOUND 1)
+  find_package(OpenCV 3.4 REQUIRED)
+  if(OpenCV_FOUND)
+    message_plugin("OpenCV found, version = ${OpenCV_VERSION}")
 
-    set(PLUGIN_DRIVER_DEP_LIBS ${FLY_CAPTURE_LIBS})
+    if(EXISTS ${FLY_CAPTURE_LIBS}
+       AND EXISTS ${FLY_CAPTURE_INCLUDE_DIR}/flycapture/FlyCapture2.h)
+      message_plugin("FlyCapture found")
+      set(PLUGIN_DRIVER_FOUND 1)
+
+      set(PLUGIN_DRIVER_DEP_INCLUDE ${FLY_CAPTURE_INCLUDE_DIR}
+                                    ${OpenCV_INCLUDE_DIRS})
+      set(PLUGIN_DRIVER_DEP_LIBS ${FLY_CAPTURE_LIBS} ${OpenCV_LIBS})
+    else()
+      message_plugin("FlyCapture not found")
+      set(PLUGIN_DRIVER_FOUND 0)
+    endif()
   else()
-    message_plugin("FlyCapture not found")
+    message_plugin("OpenCV not found")
     set(PLUGIN_DRIVER_FOUND 0)
   endif()
 endif()
