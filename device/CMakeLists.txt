@@ -48,12 +48,13 @@ foreach(PLUGIN_SRC ${PLUGIN_SRC_LIST})
 
   # Find extra cmake file of each device
   unset(PLUGIN_DRIVER_FOUND)
+  unset(PLUGIN_DRIVER_DEP_INCLUDE)
   unset(PLUGIN_DRIVER_DEP_LIBS)
   set(PLUGIN_CMAKE_FILE ${PLUGIN_DIR}/plugin.cmake)
   if(EXISTS ${PLUGIN_CMAKE_FILE})
     # Define message_plugin
-    function(message_plugin arg)
-      message(STATUS "\t${PLUGIN_NAME}: " "${Escape}[33m" ${arg} "${Escape}[m")
+    function(message_plugin)
+      message(STATUS "\t${PLUGIN_NAME}: " "${Escape}[33m" ${ARGV} "${Escape}[m")
     endfunction()
 
     # Include cmake file
@@ -106,8 +107,10 @@ foreach(PLUGIN_SRC ${PLUGIN_SRC_LIST})
   if(PLUGIN_DRIVER_FOUND)
     add_library(${PLUGIN_DRIVER_LIB_NAME} SHARED ${PLUGIN_SRC}
                                                  ${PLUGIN_PARAMETER_GEN})
-    target_link_libraries(${PLUGIN_DRIVER_LIB_NAME} ${PROJECT_NAME}
-                          ${PLUGIN_DRIVER_DEP_LIBS})
+    target_include_directories(${PLUGIN_DRIVER_LIB_NAME}
+                               PRIVATE ${PLUGIN_DRIVER_DEP_INCLUDE})
+    target_link_libraries(${PLUGIN_DRIVER_LIB_NAME}
+                          PRIVATE ${PLUGIN_DRIVER_DEP_LIBS})
     target_compile_definitions(${PLUGIN_DRIVER_LIB_NAME} PRIVATE WITH_DRIVER=1)
     set_target_properties(
       ${PLUGIN_DRIVER_LIB_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY

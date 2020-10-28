@@ -21,6 +21,7 @@
 #ifdef WITH_DRIVER
 #include <arpa/inet.h>
 #include <flycapture/FlyCapture2.h>
+#include <opencv2/opencv.hpp>
 
 #include "device/driver/rawimg/color_correction.hpp"
 #include "flir_timestamp_calculator.hpp"
@@ -356,6 +357,9 @@ data::DeviceDataPtr DevicePlugin::fetch()
         }
     }
 
+    auto rows = raw_image.GetRows();
+    auto cols = raw_image.GetCols();
+
     if (local_parameters_.get_SaveRaw()) {
         auto raw_image_size = raw_image.GetDataSize();
         // Total length of device data
@@ -370,8 +374,8 @@ data::DeviceDataPtr DevicePlugin::fetch()
         // Copy data
         derived_data->timestamp_intrinsic_ns = timestamp_intrinsic_ns;
 
-        derived_data->image_meta.rows = raw_image.GetRows();
-        derived_data->image_meta.cols = raw_image.GetCols();
+        derived_data->image_meta.rows = rows;
+        derived_data->image_meta.cols = cols;
         derived_data->image_meta.stride = raw_image.GetStride();
 
         derived_data->image_meta.bayer_format = static_cast<data::Image::BayerFormat>(raw_image.GetBayerTileFormat());
@@ -386,48 +390,44 @@ data::DeviceDataPtr DevicePlugin::fetch()
         return data;
     }
 
-    // Convert raw image into RGB
-    if (local_parameters_.get_Format() == +Format::RAW8 || local_parameters_.get_Format() == +Format::RAW12) {
-        switch (local_parameters_.get_DeBayer()) {
-        case DeBayer::Nearest:
-            raw_image.SetColorProcessing(FlyCapture2::NEAREST_NEIGHBOR);
-            break;
-        case DeBayer::EdgeSense:
-            raw_image.SetColorProcessing(FlyCapture2::EDGE_SENSING);
-            break;
-        case DeBayer::HQLinear:
-            raw_image.SetColorProcessing(FlyCapture2::HQ_LINEAR);
-            break;
-        case DeBayer::Rigorous:
-            raw_image.SetColorProcessing(FlyCapture2::RIGOROUS);
-            break;
-        case DeBayer::IPP:
-            raw_image.SetColorProcessing(FlyCapture2::IPP);
-            break;
-        case DeBayer::Directional:
-            raw_image.SetColorProcessing(FlyCapture2::DIRECTIONAL_FILTER);
-            break;
-        case DeBayer::Weighted:
-            raw_image.SetColorProcessing(FlyCapture2::WEIGHTED_DIRECTIONAL_FILTER);
-            break;
-        }
-    }
-
     // auto t0 = time::Timestamp::now();
+    // Convert to 16bpp and Debayer
     FlyCapture2::Image converted_image;
-    error = raw_image.Convert(FlyCapture2::PIXEL_FORMAT_BGR16, &converted_image);
+    error = raw_image.Convert(FlyCapture2::PIXEL_FORMAT_RAW16, &converted_image);
     if (error != FlyCapture2::PGRERROR_OK) {
         log::warn << "Flir: " << get_name() << " can not convert, data abandoned" << log::endl;
         return nullptr;
     }
 
+    int32_t debayer_code;
+    switch (raw_image.GetBayerTileFormat()) {
+    case FlyCapture2::RGGB:
+        debayer_code = cv::COLOR_BayerRG2RGB_EA;
+        break;
+    case FlyCapture2::GRBG:
+        debayer_code = cv::COLOR_BayerGR2RGB_EA;
+        break;
+    case FlyCapture2::GBRG:
+        debayer_code = cv::COLOR_BayerGB2RGB_EA;
+        break;
+    case FlyCapture2::BGGR:
+        debayer_code = cv::COLOR_BayerBG2RGB_EA;
+        break;
+    default:
+        debayer_code = cv::COLOR_BayerRG2RGB_EA;
+        break;
+    }
+    cv::Mat mat_bayer(rows, cols, CV_16UC1, converted_image.GetData());
+    cv::Mat mat_rgb16(rows, cols, CV_16UC3);
+    cv::cvtColor(mat_bayer, mat_rgb16, debayer_code);
+
     // auto t1 = time::Timestamp::now();
-    const size_t ImagePixelNum = converted_image.GetCols() * converted_image.GetRows();
+    // Do color correction
+    const size_t ImagePixelNum = rows * cols;
     uint8_t* corrected_data = new uint8_t[3 * ImagePixelNum];
-    correcter_->process(converted_image.GetData(), corrected_data, ImagePixelNum);
+    correcter_->process(mat_rgb16.data, corrected_data, ImagePixelNum);
 
     // auto t2 = time::Timestamp::now();
-
     // Start Compression
     auto tj_instance = tjInitCompress();
     if (!tj_instance) {
@@ -463,9 +463,9 @@ data::DeviceDataPtr DevicePlugin::fetch()
     /// @todo Check source image format
     tjCompress2(tj_instance,
                 corrected_data,
-                converted_image.GetCols(),
+                cols,
                 0,
-                converted_image.GetRows(),
+                rows,
                 TJPF_BGR,                             // Source Image Format
                 &jpeg_image,                          // Output Image Pointer
                 &jpeg_image_size,                     // Output Image Size
@@ -491,7 +491,6 @@ data::DeviceDataPtr DevicePlugin::fetch()
     tjDestroy(tj_instance);
     tjFree(jpeg_image);
     delete[] corrected_data;
-
 
     // auto t3 = time::Timestamp::now();
 

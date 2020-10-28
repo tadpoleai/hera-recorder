@@ -104,20 +104,6 @@ immutable enum Format = RAW12; options MONO8, MONO12, RAW8, RAW12
 # 否则, 使用 JPEG 压缩
 immutable boolean SaveRaw = false;
 
-# 去马赛克方法
-# 指定将 RAW 图像处理为彩色图像时使用的算法
-# 仅当图像格式(Format)为 RAW8/RAW12, 且保存原始数据关闭时有效
-# Options:
-# - Nearest: Fastest but lowest quality.
-# - EdgeSense: Weights surrounding pixels based on localized edge orientation.
-# - HQLinear: Well-balanced speed and quality.
-# - Rigorous: Slowest but produces good results.
-# - IPP: Multithreaded with similar results to edge sensing.
-# - Directional: Best quality but much faster than rigorous.
-# - Weighted: Weighted pixel average from different directions.
-requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12')
-mutable enum DeBayer = EdgeSense; options Nearest, EdgeSense, HQLinear, Rigorous, IPP, Directional, Weighted
-
 # 色彩校准动作
 # 指定是否使用色彩校准(暗电流, 白平衡, 色彩矩阵校准等)
 # 另外, 还可以将校准参数写入相机内部的寄存器以永久保存校准参数
