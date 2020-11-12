@@ -44,6 +44,7 @@ public:
     inline float get_result(size_t index) const noexcept
     {
         if (index >= result_.size()) {
+            log::warn << "FrequecyCalculator: Accessing result with OOR index = " << index << log::endl;
             return 0.0f;
         } else {
             return std::max(0.0f, result_[index]);

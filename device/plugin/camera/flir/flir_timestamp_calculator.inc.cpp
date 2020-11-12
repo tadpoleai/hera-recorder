@@ -8,11 +8,10 @@
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
-#include "flir_timestamp_calculator.hpp"
-
 #include <cmath>
 
 #include "common/include/logger/logger.hpp"
+#include "flir_timestamp_calculator.hpp"
 
 namespace wayz {
 namespace hera {
@@ -70,7 +69,18 @@ FlirTimestampCalculator::FlirTimestampCalculator() :
     last_sync_time_multipler_(0),
     frame_count_(0),
     inited(false)
-{}
+{
+    set_fps(DefaultFps_);
+}
+
+void FlirTimestampCalculator::set_fps(const int32_t fps)
+{
+    Fps_ = fps;
+    PeriodUs_ = 1'000'000LL / fps;
+    PeriodNs_ = 1'000'000'000LL / fps;
+    MaxMatchedIntervalUs_ = PeriodUs_ + ShiftationUs_ + ShiftationToleranceUs_;
+    MinMatchedIntervalUs_ = PeriodUs_ + ShiftationUs_ - ShiftationToleranceUs_;
+}
 
 bool FlirTimestampCalculator::get_intrinsic_time(int64_t& out_ns,
                                                  const int64_t time_received_ns,

@@ -13,6 +13,10 @@ immutable boolean HighPerf = false;
 # 若该项开启，则当相机无法取得同步时，将丢弃采集到的数据
 immutable boolean NeedSync = true;
 
+# 帧率
+# 相机同步触发帧率, 需和同步板卡配置的帧率保持一致
+immutable integer Fps = 10; range 1, 10, 1
+
 # 自动曝光补偿
 immutable boolean AutoExposure = false;
 

@@ -93,6 +93,8 @@ HeraErrno DevicePlugin::connect()
     uint32_t ip_int;
     ip_int = ntohl(inet_addr(local_parameters_.get_IpAddress().c_str()));
 
+    timestamp_calculator_.set_fps(local_parameters_.get_Fps());
+
     // Connect to Camera
     FlyCapture2::Error error;
     FlyCapture2::BusManager bus_manager;

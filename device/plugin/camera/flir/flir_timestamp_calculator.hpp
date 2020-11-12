@@ -103,6 +103,13 @@ public:
     FlirTimestampCalculator& operator=(const FlirTimestampCalculator&) = delete;
 
     ///
+    /// @brief Set Fps of Flir Camera
+    ///
+    /// @param fps
+    /// @note must be same with real fps
+    void set_fps(const int32_t fps);
+
+    ///
     /// @brief Get the intrinsic timestamp
     ///
     /// @param [out] out the calculation result, intrinsic timestamp, in ns, if calculation succeed,
@@ -123,23 +130,6 @@ public:
                             const FlirEmbeddedShutter& embedded_shutter);
 
 private:
-    ///
-    /// @brief Frequency of camera image, in frame per second
-    ///
-    /// Identical to Tron Sync Board's frequency of camera trigger
-
-    static constexpr int32_t Fps_ = 10;
-
-    ///
-    /// @brief Period of camera image, in us
-    ///
-    static constexpr int64_t PeriodUs_ = 1'000'000LL / Fps_;
-
-    ///
-    /// @brief Period of camera image, in ns
-    ///
-    static constexpr int64_t PeriodNs_ = 1'000'000'000LL / Fps_;
-
     ///
     /// @brief Time shiftation of first trigger in a sync-cycle
     /// from it origin time, in us
@@ -168,15 +158,38 @@ private:
     /// @see @ref cam-sync "Principle of Tron Sync Board"
     static constexpr int64_t SyncCycleNs_ = 3 * 1'000'000'000LL;
 
+private:
+    ///
+    /// @brief Default Fps
+    ///
+    int32_t DefaultFps_ = 10;
+
+    ///
+    /// @brief Frequency of camera image, in frame per second
+    ///
+    /// Identical to Tron Sync Board's frequency of camera trigger
+    int32_t Fps_;
+
+    ///
+    /// @brief Period of camera image, in us
+    ///
+    int64_t PeriodUs_;
+
+    ///
+    /// @brief Period of camera image, in ns
+    ///
+    int64_t PeriodNs_;
+
     ///
     /// @brief Upper limit of interval duration of a shifted trigger
     ///
-    static constexpr int64_t MaxMatchedIntervalUs_ = PeriodUs_ + ShiftationUs_ + ShiftationToleranceUs_;
+    int64_t MaxMatchedIntervalUs_;
 
     ///
     /// @brief Lower limit of interval duration of a shifted trigger
     ///
-    static constexpr int64_t MinMatchedIntervalUs_ = PeriodUs_ + ShiftationUs_ - ShiftationToleranceUs_;
+    int64_t MinMatchedIntervalUs_;
+
 
 private:
     ///
