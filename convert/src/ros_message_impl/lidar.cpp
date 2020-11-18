@@ -64,7 +64,7 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::PointsXYZ
         ret.emplace_back(std::move(message));
     }
 
-    if (data_impl->meta.return_type != device::data::PointsXYZI::ReturnType::Dual) {
+    if (data_impl->meta.return_type == device::data::PointsXYZI::ReturnType::Dual) {
         auto message = ROSMessage::create<ROSMessageType::PointCloud2>();
         auto ros_message = reinterpret_cast<sensor_msgs::PointCloud2*>(message->ptr);
 
