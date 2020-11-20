@@ -46,19 +46,32 @@
           van-button(
             v-if="process.errored"
             size="small"
-            type="danger"
+            type="info"
             @click="onClickRetry()"
           ) 重试
+          van-button(
+            v-if="process.errored"
+            size="small"
+            type="danger"
+            @click="onClickCancel()"
+          ) 取消
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Hera, Api } from '@/api';
+import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
+import { Hera } from '@/api';
+
+const UploadModule = namespace('Upload');
 
 @Component({})
-export default class Upload extends Vue {
+export default class UploadProcess extends Vue {
   @Prop({ required: true })
   process!: Hera.UploadProcess;
+
+  @UploadModule.Action completeUpload;
+  @UploadModule.Action retryUpload;
+  @UploadModule.Action abortUpload;
 
   get percentage() {
     if (!this.process.running && !this.process.errored) {
@@ -83,19 +96,25 @@ export default class Upload extends Vue {
 
   onClickPanel() {
     if (!this.process.running && !this.process.errored) {
-      Api.completeUpload(this.process.request as Hera.UploadRequest);
+      this.completeUpload(this.process.request);
     }
   }
 
   onClickRetry() {
     if (!this.process.running && this.process.errored) {
-      Api.retryUpload(this.process.request as Hera.UploadRequest);
+      this.retryUpload(this.process.request);
     }
   }
 
   onClickAbort() {
     if (this.process.running) {
-      Api.abortUpload(this.process.request as Hera.UploadRequest);
+      this.abortUpload(this.process.request);
+    }
+  }
+
+  onClickCancel() {
+    if (!this.process.running) {
+      this.completeUpload(this.process.request);
     }
   }
 }

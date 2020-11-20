@@ -22,7 +22,7 @@ export default class CheckField extends Vue {
   @Prop({ required: true }) private regex!: string;
 
   @Prop({ required: true }) private value!: string;
-  
+
   get regExp(): RegExp {
     return new RegExp(this.regex);
   }

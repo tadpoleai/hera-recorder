@@ -12,6 +12,8 @@ import { DeviceData } from './DeviceData';
 import { DeviceParameter } from './DeviceParameter';
 import { DiskUsage } from './DiskUsage';
 import { ProfileEdit } from './ProfileEdit';
+import { Storage } from './Storage';
+import { Upload } from './Upload';
 
 Vue.use(Vuex);
 
@@ -24,7 +26,9 @@ const store: StoreOptions<RootState> = {
     DiskUsage,
     DeviceData,
     DeviceParameter,
-    ProfileEdit
+    ProfileEdit,
+    Storage,
+    Upload
   },
   strict: true
 };

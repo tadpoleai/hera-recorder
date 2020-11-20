@@ -2,7 +2,7 @@
 # Copyright 2018 Wayz.ai. All Rights Reserved.
 #
 
-# TAG: v0.8
+# TAG: v0.9
 # Everytime this file is modified, please add TAG by 0.1
 
 FROM registry.newayz.com/autonomy/leta-localization_core:latest
@@ -85,6 +85,12 @@ COPY ./opencv-3.4.12.tar.xz ./
 COPY ./install-opencv.sh ./
 RUN ./install-opencv.sh && \
     rm -rf ./opencv-3.4.12.tar.xz /var/lib/apt/lists/*
+
+#instal libnfs
+COPY ./libnfs-master.zip ./
+COPY ./install-libnfs.sh ./
+RUN ./install-libnfs.sh && \
+    rm -rf ./libnfs-master*
 
 # source dynamic lib
 RUN ldconfig

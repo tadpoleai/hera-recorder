@@ -8,9 +8,12 @@
     @click="onClickMonitorLink"
   )
 
-  DiskUsage(
-    :refresh="true"
+  div(
+    @click="onClickDiskUsage"
   )
+    DiskUsage(
+      :refresh="true"
+    )
 
   AcquisitionSetting
 
@@ -37,6 +40,11 @@ export default class Home extends Vue {
     if (this.started) {
       this.$router.push('monitor');
     }
+  }
+
+  onClickDiskUsage() {
+    console.log('Paro igo ya!');
+    this.$router.push('storage');
   }
 }
 </script>

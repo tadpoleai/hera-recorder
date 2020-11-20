@@ -19,7 +19,7 @@ const state: AcquisitionSettingState = {
     })
   }),
   isProfileEditing: false,
-  profileEditingIndex: -1,
+  profileEditingIndex: -1
 };
 
 const namespaced = true;

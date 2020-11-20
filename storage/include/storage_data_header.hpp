@@ -56,6 +56,8 @@ public:
     ///
     /// @return StorageDataHeaderPtr shared pointer to StorageDataHeader
     /// @return nullptr when either data read is invalid or ifs is closed/empty/ended
+    ///
+    /// @note must check whether return value is nullptr
     static StorageDataHeaderPtr read_from(std::ifstream& ifs, const bool is_extra = true, const bool is_logs = true);
 
     ///

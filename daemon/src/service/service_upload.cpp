@@ -94,6 +94,7 @@ void Service::requestUpload(std::vector<UploadProcess>& result, const UploadRequ
     }
 
     // Find source file
+    log::debug << "Finding source file, " << request.name << log::endl;
     auto folder = file::get_folder_content(StorageFolder_);
     bool file_found = false;
     std::string fullname;
@@ -110,6 +111,7 @@ void Service::requestUpload(std::vector<UploadProcess>& result, const UploadRequ
     }
 
     // Find remote server
+    log::debug << "Finding remote server, " << request.remote << log::endl;
     bool server_found = false;
     RemoteServerType server;
     for (auto& r : remote_servers_) {
@@ -123,6 +125,8 @@ void Service::requestUpload(std::vector<UploadProcess>& result, const UploadRequ
     if (!server_found) {
         return append_upload_processes(result);
     }
+
+    log::debug << "Found!" << log::endl;
 
     try {
         auto protocol = storage::upload::UploadProtocol::_from_string_nocase(server.protocol.c_str());

@@ -9,7 +9,9 @@
 
 #include "upload.hpp"
 
-#include "upload/rsync.hpp"
+#include "common/include/logger/logger.hpp"
+#include "upload/nfs/nfs.hpp"
+#include "upload/rsync/rsync.hpp"
 
 namespace wayz {
 namespace hera {
@@ -20,7 +22,13 @@ std::unique_ptr<Manager> Manager::create(const Config& config)
 {
     switch (config.remote_protocol) {
     case UploadProtocol::RSYNC:
+        log::debug << "New RSYNC Process" << log::endl;
         return std::make_unique<Rsync>(config);
+        break;
+
+    case UploadProtocol::NFS:
+        log::debug << "New NFS Process" << log::endl;
+        return std::make_unique<Nfs>(config);
         break;
 
     default:
@@ -32,6 +40,8 @@ void Manager::set_error(const std::string& reason)
 {
     status_.stage = Stage::Error;
     status_.error_reason += reason + " \n ";
+
+    log::error << "UploadManager: Error, " << reason << log::endl;
 }
 
 }  // namespace upload
