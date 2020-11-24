@@ -24,6 +24,12 @@ Timestamp::Timestamp(uint64_t ts_ns)
     tv_nsec = ts_ns % OneSecondToNs;
 }
 
+Timestamp::Timestamp(uint64_t tv_sec_in, uint64_t tv_nsec_in)
+{
+    tv_sec = tv_sec_in;
+    tv_nsec = tv_nsec_in;
+}
+
 Timestamp::operator uint64_t() const noexcept
 {
     return OneSecondToNs * (uint64_t)(tv_sec) + (uint64_t)(tv_nsec);
