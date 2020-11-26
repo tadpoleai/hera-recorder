@@ -16,7 +16,7 @@ if [ $? -ne 0 ]; then
     echo "cmake error"
 fi
 
-make -j
+make -j4
 if [ $? -ne 0 ]; then
     echo "build error"
 fi
