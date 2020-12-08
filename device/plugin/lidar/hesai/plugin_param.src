@@ -3,24 +3,27 @@ immutable string IpAddress = ""; regex ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9
 
 # 传感器监听端口
 # 必须每个传感器有单独的端口, 并且没有被其他程序占用
-immutable integer ListenPort = 2368; range 0, 65535, 1
+immutable integer ListenPort = 2372; range 0, 65535, 1
 
 # 激光转速
-# 该项控制激光转动的速度
-# 设定范围从 300rpm 到 1200rpm
-mutable integer Speed = 600; range 300, 1200, 50
+# 该项控制激光转动的速度, 离散值
+# Options:
+# - S300: 300rpm
+# - S600: 600rpm
+# - S1200: 1200rpm
+mutable enum Speed = S600; options S300, S600, S1200
 
 # 激光回波模式
 # Options:
-# - Strongest: 最强回波模式 
-# --- Sensor provides only the strongest detected return;
 # - Last: 最晚回波模式 
 # --- Sensor provides only the last (temporally) detected return;
+# - Strongest: 最强回波模式 
+# --- Sensor provides only the strongest detected return;
 # - Dual: 双回波模式
 # --- Sensor provides both the strongest and last returns,
 # --- If the last is also the strongest, the sensor provides the second-strongest return;
 # --- If only one return is detected, the two values will be identical;
-immutable enum ReturnType = Strongest; options Strongest, Last, Dual
+immutable enum ReturnType = Strongest; options Last, Strongest, Dual
 
 # 同步方式
 # 根据连接到激光雷达同步信号的类型选择

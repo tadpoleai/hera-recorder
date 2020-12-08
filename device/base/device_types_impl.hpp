@@ -44,6 +44,7 @@ enum class DeviceVendorType : uint16_t {
     CameraFlir = 0x0401,         ///< Camera, outputs RawImage or CompressedImage, vendor is FLIR
     CameraS32VSal = 0x0402,      ///< Camera, outputs RawImage, only for S32V, by mipi-csi, library provided by S32VSal
     LidarVelodyne = 0x0501,      ///< Lidar, outputs PointsXYZI, vendor is Velodyne
+    LidarHesai = 0x0511,         ///< Lidar, outputs PointsXYZI, vendor is Hesai
     OdometryS32VGeely = 0x0601,  ///< Odometry, only for S32V, by CAN-bus, only for Car vendorGeely
     OdometryAEHaitai = 0x0611,   ///< Odometry, absolute encoder connected by serial, vendor is haitai
 
@@ -75,6 +76,9 @@ enum class DeviceDataType : uint16_t {
     LidarVelodynePacketFullSynced = 0x0501,   ///< For Velodyne's raw UDP packet
     LidarVelodynePacketUnSynced = 0x0502,     ///< For Velodyne's raw UDP packet, sync input is invalid
     LidarVelodynePacketLocalSynced = 0x0503,  ///< For Velodyne's raw UDP packet, sync input is valid, but time is local
+    LidarHesaiPacketFullSynced = 0x0511,      ///< For Hesai's raw UDP packet
+    LidarHesaiPacketUnSynced = 0x0512,        ///< For Hesai's raw UDP packet, sync input is invalid
+    LidarHesaiPacketLocalSynced = 0x0513,     ///< For Hesai's raw UDP packet, sync input is valid, but time is local
     OdometryS32VGeelyCANFrame = 0x0601,       ///< For OdometryS32V Geely
     OdometryAEHaitaiData = 0x0611,            ///< For OdometryS32V Geely
 

@@ -31,6 +31,7 @@ private:
     int64_t duration_ns_;
 };
 
+constexpr Duration OneMicroSecond = 1'000LL;
 constexpr Duration OneSecond = 1'000'000'000LL;
 constexpr Duration OneMinute = OneSecond * 60;
 constexpr Duration OneHour = OneMinute * 60;
@@ -44,6 +45,7 @@ public:
 
     Timestamp() = default;
     Timestamp(uint64_t ts_ns);
+    Timestamp(uint64_t tv_sec, uint64_t tv_nsec);
     Timestamp(const Timestamp&) = default;
     Timestamp& operator=(const Timestamp&) = default;
     Timestamp(Timestamp&&) = default;
