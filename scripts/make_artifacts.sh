@@ -21,9 +21,10 @@ cp -r device/include/* artifacts/header/hera/device
 cp -r storage/include/* artifacts/header/hera/storage
 cp -r convert/include/* artifacts/header/hera/convert
 
-archs=("amd64" "arm")
+# archs=("amd64" "arm")
+archs=("amd64")
 arch_index=0
-while ((arch_index < 2)); do
+while ((arch_index < 1)); do
     arch=${archs[arch_index]}
 
     mkdir -p artifacts/bin/$arch/
