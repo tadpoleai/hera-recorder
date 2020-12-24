@@ -8,7 +8,7 @@ rm -rf artifacts
 # rm -rf build_client
 
 bash scripts/build_amd64.sh $1
-bash scripts/build_arm_host.sh $1
+# bash scripts/build_arm_host.sh $1
 bash scripts/build_client.sh $1
 
 bash scripts/make_artifacts.sh

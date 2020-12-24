@@ -8,7 +8,7 @@ set -e
 set -v
 
 sudo apt-get update
-sudo apt-get install -y nodejs nodejs-legacy npm
+sudo apt-get install -y nodejs npm
 sudo npm config set registry https://registry.npm.taobao.org
 
 sudo npm install n -g

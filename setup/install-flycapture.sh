@@ -7,31 +7,43 @@
 set -e
 set -v
 
-FLYCAPTURE_PREFIX="flycapture2-2.12.3.31-amd64"
-FLYCAPTURE_PKG=$FLYCAPTURE_PREFIX-pkg.tgz
+SYSTEM="Ubuntu18.04"
+FLYCAPTURE_PREFIX="flycapture2-2.13.3.31-amd64"
+FLYCAPTURE_PKG="flycapture2-2.13.3.31"-$SYSTEM\_amd64-pkg.tgz
 
 if [ ! -f "./$FLYCAPTURE_PKG" ]; then
     if [ -f "/mnt/nfs/hdmap/software/$FLYCAPTURE_PKG" ]; then
         cp /mnt/nfs/hdmap/software/$FLYCAPTURE_PKG .
     else
-        wget "https://github.com/LeeXujie/Ubuntu16.04-FlyCapture-OpenCV/raw/master/$FLYCAPTURE_PKG"
+        echo "$FLYCAPTURE_PKG doesn't exist!"
+        exit 1
     fi
 fi
 
 sudo apt-get update
 sudo apt-get install -y \
-    libraw1394-11 libavcodec-ffmpeg56 libavformat-ffmpeg56 libswscale-ffmpeg3 \
-    libswresample-ffmpeg1 libavutil-ffmpeg54 libgtkmm-2.4-dev libglademm-2.4-dev \
-    libgtkglextmm-x11-1.2-dev libusb-1.0-0
+   libraw1394-11 \
+   libusb-1.0-0 \
+   libgtkmm-2.4-1v5 \
+   libglademm-2.4-1v5 \
+   libgtkmm-2.4-dev \
+   libgtkglextmm-x11-1.2-dev \
+   libglademm-2.4-dev
 
 tar -xvf $FLYCAPTURE_PKG
 pushd $FLYCAPTURE_PREFIX > /dev/null
 
-sudo dpkg -i libptgreyvideoencoder-2*
+#####################################
+# The following code is copy from flycapture offical 'install_flycapture.h',
+# but remove the confirm in it.
+#####################################
+
 sudo dpkg -i libflycapture-2*
 sudo dpkg -i libflycapturegui-2*
+sudo dpkg -i libflycapturevideo-2*
 sudo dpkg -i libflycapture-c-2*
 sudo dpkg -i libflycapturegui-c-2*
+sudo dpkg -i libflycapturevideo-c-2*
 sudo dpkg -i libmultisync-2*
 sudo dpkg -i libmultisync-c-2*
 sudo dpkg -i flycap-2*
@@ -106,3 +118,10 @@ echo "SUBSYSTEM==\"firewire\", GROUP=\"$grpname\"" | sudo tee -a $UdevFile
 echo "SUBSYSTEM==\"usb\", GROUP=\"$grpname\"" | sudo tee -a $UdevFile
 
 sudo /etc/init.d/udev restart
+
+
+echo
+echo "Configuration complete. A reboot may be required on some systems for changes to take effect";
+echo
+
+exit 0
