@@ -210,12 +210,15 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
 
     /// Get azimuth gap between data blocks
     /// @see @ref VLP-16C-Manual section: 9.5, Precision Azimuth Calculation, page: 65
-    double azimuth_gap = ((int32_t)(raw_data->data.data_blocks[VelodynePacket::NumDataBlockPerPacket - 1].azimuth) -
-                          (int32_t)(raw_data->data.data_blocks[0].azimuth)) *
-                         velodyne::AzimuthGranularity / (VelodynePacket::NumDataBlockPerPacket - 1);
-    if (azimuth_gap < 0) {
-        azimuth_gap += 2 * M_PI;
+    double azimuth_diff_overall =
+            ((int32_t)(raw_data->data.data_blocks[VelodynePacket::NumDataBlockPerPacket - 1].azimuth) -
+             (int32_t)(raw_data->data.data_blocks[0].azimuth)) *
+            velodyne::AzimuthGranularity;
+    if (azimuth_diff_overall < 0) {
+        azimuth_diff_overall += 2 * M_PI;
     }
+
+    double azimuth_gap = azimuth_diff_overall / (VelodynePacket::NumDataBlockPerPacket - 1);
     if (is_dual) {
         azimuth_gap *= 2;
     }
