@@ -51,7 +51,7 @@ private:
 
     static const size_t BuffSize_ = 65536;
     uint8_t raw_buff_[BuffSize_];
-    static const size_t DecodeBuffSize_ = 240;
+    static const size_t DecodeBuffSize_ = 65536;
     uint8_t decode_buff_[DecodeBuffSize_];
     size_t buff_write_index_ = 0;
     size_t buff_read_index_ = 0;
