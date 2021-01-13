@@ -33,15 +33,16 @@ namespace device {
 /// @note Use term 'GNSS' rather than 'GPS', 'GPS' is one of 'GNSS'
 ///
 enum class DeviceVendorType : uint16_t {
-    DummyFoobar = 0x0101,        ///< A dummy category for testing, vendor is Wayz
-    DummyImage = 0x0102,         ///< A dummy category for testing, outputs dummy image
-    ImuAceinna = 0x0201,         ///< An 9-axis Imu, vendor is Aceinna, embedded in Wayz Tron Sync Board
-    ImuS32VSal = 0x0202,         ///< IMU, driver is provided by S32VSal
-    GnssSerialsync = 0x0301,     ///< RTK-GNSS, outputs NavSatFix, vendor is any that outpus NMEA
-    GnssSerial = 0x0302,         ///< For Nmea Sentence with it's UTC time already synced to system time
-    GnssS32VSal = 0x0303,        ///< GNSS, driver is provided by S32VSal
-    InsNovatelSpan = 0x0381,     ///< INS vendored by Novatel, product name is SPAN, connected by usb-serial
-    CameraFlir = 0x0401,         ///< Camera, outputs RawImage or CompressedImage, vendor is FLIR
+    DummyFoobar = 0x0101,           ///< A dummy category for testing, vendor is Wayz
+    DummyImage = 0x0102,            ///< A dummy category for testing, outputs dummy image
+    ImuAceinna = 0x0201,            ///< An 9-axis Imu, vendor is Aceinna, embedded in Wayz Tron Sync Board
+    ImuS32VSal = 0x0202,            ///< IMU, driver is provided by S32VSal
+    GnssSerialsync = 0x0301,        ///< RTK-GNSS, outputs NavSatFix, vendor is any that outpus NMEA
+    GnssSerial = 0x0302,            ///< For Nmea Sentence with it's UTC time already synced to system time
+    GnssS32VSal = 0x0303,           ///< GNSS, driver is provided by S32VSal
+    GnssSerialRemotesync = 0x0304,  ///< For Nmea Sentence with time synced by sync board
+    InsNovatelSpan = 0x0381,        ///< INS vendored by Novatel, product name is SPAN, connected by usb-serial
+    CameraFlir = 0x0401,            ///< Camera, outputs RawImage or CompressedImage, vendor is FLIR
     CameraS32VSal = 0x0402,      ///< Camera, outputs RawImage, only for S32V, by mipi-csi, library provided by S32VSal
     LidarVelodyne = 0x0501,      ///< Lidar, outputs PointsXYZI, vendor is Velodyne
     LidarHesai = 0x0511,         ///< Lidar, outputs PointsXYZI, vendor is Hesai
@@ -68,6 +69,7 @@ enum class DeviceDataType : uint16_t {
     GnssSerialsyncNmea = 0x0301,              ///< For Nmea Sentence
     GnssSerialNmea = 0x0302,                  ///< For Nmea Sentence with time sync
     GnssS32VSalData = 0x0303,                 ///< GNSS Data from S32VSal
+    GnssSerialRemotesyncNmea = 0x0304,        ///< For Nmea Sentence with time sync by sync board
     InsNovatelSpanBinaryData = 0x0381,        ///< Binary Data of InsNovatelSpan
     CameraFlirCompressedImage = 0x0401,       ///< For Flir's camera's compressed image
     CameraFlirRawImage = 0x0402,              ///< For Flir's camera's raw image

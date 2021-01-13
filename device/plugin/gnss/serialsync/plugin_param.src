@@ -3,14 +3,14 @@
 immutable string Primary = "/dev/tty"; regex ^\/(\w+\/?)+$
 
 # 主串口设备波特率
-immutable integer BaudPrimary = 115200; range 120, 256000, 1
+immutable integer BaudPrimary = 115200; range 120, 2560000, 1
 
 # 同步板卡串口设备路径
 # 获取同步信息的串口设备在系统中的路径
 immutable string Auxiliary = "/dev/tty"; regex ^\/(\w+\/?)+$
 
 # 同步板卡串口波特率
-immutable integer BaudAux = 230400; range 120, 256000, 1
+immutable integer BaudAux = 230400; range 120, 2560000, 1
 
 # 同步信息串口帧识别号
 # 参考https://confluence.newayz.com/pages/viewpage.action?pageId=23200506

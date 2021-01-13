@@ -1,11 +1,11 @@
 # 串口设备路径
+# 获取 GNSS 报文的串口设备在系统中的路径
 immutable string Kernel = "/dev/tty"; regex ^\/(\w+\/?)+$
 
 # 串口设备波特率
 immutable integer Baud = 230400; range 120, 2560000, 1
 
-# IMU数据串口帧识别号
+# 同步信息串口帧识别号
 # 参考https://confluence.newayz.com/pages/viewpage.action?pageId=23200506
-# 通常为0, 不需修改
-immutable integer MsgType = 0; range 0, 7, 1
-
+# 通常为6, 不需修改
+immutable integer MsgType = 6; range 0, 7, 1
