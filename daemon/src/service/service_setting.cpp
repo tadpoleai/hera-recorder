@@ -48,8 +48,6 @@ void Service::dump_setting()
 
 void Service::getSetting(AcquisitionSetting& result)
 {
-    log::debug << "Daemon: getSetting called" << log::endl;
-
     result = acquisition_setting_;
 }
 

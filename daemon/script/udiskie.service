@@ -1,0 +1,16 @@
+[Unit]
+Description=Auto mount usb storage
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/run/udiskie.pid
+ExecStart=/usr/bin/udiskie -aCNTPFq
+OOMScoreAdjust=-1000
+Restart=on-failure
+RestartSec=15s
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

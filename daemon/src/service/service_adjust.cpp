@@ -38,8 +38,6 @@ void Service::getDeviceAndParameterses(std::vector<DeviceAndParameters>& result)
 {
     std::unique_lock<std::mutex> _(mutex_);
 
-    log::info << "Daemon: called getDeviceAndParameterses" << log::endl;
-
     append_device_parameterses(result);
 }
 
@@ -49,8 +47,6 @@ void Service::adjustDeviceParameter(std::vector<DeviceAndParameters>& result,
                                     const std::string& value)
 {
     std::unique_lock<std::mutex> _(mutex_);
-
-    log::info << "Daemon: called adjustDeviceParameter: " << deviceIndex << "," << type << "," << value << log::endl;
 
     if (!started_) {
         log::error << "Daemon: can not execute adjustDeviceParameter when devices stopped" << log::endl;

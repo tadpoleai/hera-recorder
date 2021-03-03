@@ -90,7 +90,7 @@ void StorageManager::close()
     }
 
     log::flush();
-    log::close_aux();
+    log::close_aux(&header->logs);
 
     if (!read_mode_ && out_file_opened_) {
         out_file_.flush();

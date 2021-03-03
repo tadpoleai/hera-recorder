@@ -20,15 +20,15 @@ if [ ! -f "./$FLYCAPTURE_PKG" ]; then
     fi
 fi
 
-sudo apt-get update
-sudo apt-get install -y \
-   libraw1394-11 \
-   libusb-1.0-0 \
-   libgtkmm-2.4-1v5 \
-   libglademm-2.4-1v5 \
-   libgtkmm-2.4-dev \
-   libgtkglextmm-x11-1.2-dev \
-   libglademm-2.4-dev
+# sudo apt-get update
+# sudo apt-get install -y \
+#    libraw1394-11 \
+#    libusb-1.0-0 \
+#    libgtkmm-2.4-1v5 \
+#    libglademm-2.4-1v5 \
+#    libgtkmm-2.4-dev \
+#    libgtkglextmm-x11-1.2-dev \
+#    libglademm-2.4-dev
 
 tar -xvf $FLYCAPTURE_PKG
 pushd $FLYCAPTURE_PREFIX > /dev/null
@@ -123,5 +123,7 @@ sudo /etc/init.d/udev restart
 echo
 echo "Configuration complete. A reboot may be required on some systems for changes to take effect";
 echo
+
+rm -rf flycapture*
 
 exit 0

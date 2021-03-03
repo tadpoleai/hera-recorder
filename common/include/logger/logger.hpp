@@ -46,6 +46,11 @@ inline void set_level(LogLevel level)
     return impl::Logger::set_level(level);
 }
 
+inline void set_sleep_before_exiting(bool value)
+{
+    impl::Logger::set_sleep_before_exiting(value);
+}
+
 inline bool open_aux(const std::string& aux_file)
 {
     return impl::Logger::open_aux(aux_file);
@@ -56,9 +61,9 @@ inline bool open_aux(std::vector<impl::LogString>* aux_vector)
     return impl::Logger::open_aux(aux_vector);
 }
 
-inline void close_aux()
+inline void close_aux(std::vector<impl::LogString>* aux_vector)
 {
-    return impl::Logger::close_aux();
+    return impl::Logger::close_aux(aux_vector);
 }
 
 }  // namespace log

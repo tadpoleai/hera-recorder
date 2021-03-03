@@ -9,8 +9,10 @@
 
 #pragma once
 
+#include <functional>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -30,8 +32,6 @@ namespace hera {
 namespace storage {
 namespace upload {
 
-BETTER_ENUM(UploadProtocol, int32_t, RSYNC, NFS);
-
 ///
 /// @brief Configuration of a upload transmission
 ///
@@ -40,13 +40,13 @@ struct Config {
 
     std::string source;  ///< Local source file name, only one file a time
 
-    UploadProtocol remote_protocol{UploadProtocol::RSYNC};  ///< Protocol using for uploading to remote
+    std::string protocol;  ///< Protocol using for uploading to remote
 
-    std::string remote_destination;  ///< Destination of upload to remote
+    std::string destination;  ///< Destination of upload to remote
 
-    std::string remote_remark;  ///< Remark of remote destination
+    std::string remark;  ///< Remark of remote destination
 
-    std::map<std::string, std::string> protocol_params{};  ///< Optional, extra params of uploading protocol
+    std::map<std::string, std::string> params{};  ///< Optional, extra params of uploading protocol
 
     ///
     /// @brief Use compression
@@ -103,27 +103,25 @@ struct Status {
     std::string error_reason{""};
 };
 
+
 ///
 /// @brief Manager of a upload transmission
 ///
-class Manager {
+class Transmission {
 public:
     ///
-    /// @brief Create a new Upload Manager
+    /// @brief Create a new Upload Transmission
     ///
     /// @param config
-    /// @return std::unique_ptr<Manager>
+    /// @return std::unique_ptr<Transmission>
     ///
-    static std::unique_ptr<Manager> create(const Config& config);
+    static std::unique_ptr<Transmission> create(const Config& config);
 
     ///
     /// @brief Terminate uploading
     ///
-    virtual void terminate() = 0;
+    virtual void terminate(){};
 
-    virtual ~Manager() = default;
-
-public:
     ///
     /// @brief Get if transmission is running
     ///
@@ -161,7 +159,7 @@ public:
     }
 
 protected:
-    Manager() = default;
+    Transmission() = default;
 
     ///
     /// @brief Set error with reason
@@ -171,6 +169,26 @@ protected:
     Config config_;  ///< config of transmission
 
     Status status_;  ///< status of transmission
+
+    /// Static Factory
+public:
+    using PluginCtor = std::function<Transmission*(const Config& config)>;
+
+    struct PluginEntry {
+        std::string name;
+        PluginCtor ctor;
+    };
+
+    ///
+    /// @brief Load upload plugins(dynamic libraries)
+    ///
+    /// @param plugins_path path to dynamic libraries
+    static void load_plugins(const std::string& plugins_path = "/usr/local/lib/hera/plugin");
+
+private:
+    static std::vector<PluginEntry> plugin_entries;  ///< Registered children
+    static std::mutex load_mutex;
+    static bool is_loaded;
 };
 
 }  // namespace upload

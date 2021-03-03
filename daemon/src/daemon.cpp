@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <unistd.h>
 
+#include <sys/stat.h>
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/server/TThreadedServer.h>
 #include <thrift/transport/TBufferTransports.h>
@@ -19,12 +20,13 @@
 #include <thrift/transport/TServerSocket.h>
 
 #include "common/include/logger/logger.hpp"
-#include "common/include/third_party/json.hpp"
 #include "common/include/version.hpp"
 #include "device/include/version.hpp"
+#include "storage/include/upload.hpp"
 #include "storage/include/version.hpp"
 //
 #include "broadcast/broadcaster.hpp"
+#include "config.hpp"
 #include "service.hpp"
 
 using namespace ::apache::thrift;
@@ -63,118 +65,37 @@ int main(int argc, char** argv)
     sig_int_handler.sa_flags = 0;
     sigaction(SIGINT, &sig_int_handler, NULL);
 
-    if (argc != 2) {
-        std::cout << "Usage: " << argv[0] << " daemon.json" << std::endl;
-        exit(-1);
+    std::string config_path = "/etc/hera.conf";
+    if (argc != 1) {
+        config_path = argv[1];
     }
 
-    std::string name = "Hera Default Daemon";
-    std::string plugin_folder = "/usr/local/lib/hera/plugin";
-    std::string storage_folder = "./";
-    std::string setting_json = "./setting.json";
-    std::string log_prefix = "hera-daemon";
-    int listen_port = 9090;
-    std::vector<daemon::RemoteServerType> remote_servers;
-    bool broadcast_whitelist = true;
-    std::vector<std::string> broadcast_ifs;
+    auto config = daemon::Config::read_config(config_path);
 
-    try {
-        std::ifstream i(argv[1]);
-        json config;
-        i >> config;
-
-        try {
-            name = config["name"];
-            std::cout << "Name = " << name << std::endl;
-        } catch (...) {
-            std::cout << "Error: Daemon json file missing field 'name'!";
-        }
-
-        try {
-            plugin_folder = config["pluginFolder"];
-            std::cout << "PluginFolder = " << plugin_folder << std::endl;
-        } catch (...) {
-            std::cout << "Error: Daemon json file missing field 'pluginFolder'!";
-        }
-
-        try {
-            storage_folder = config["storageFolder"];
-            std::cout << "StorageFolder = " << storage_folder << std::endl;
-        } catch (...) {
-            std::cout << "Error: Daemon json file missing field 'storageFolder'!";
-        }
-
-        try {
-            setting_json = config["settingJson"];
-            std::cout << "SettingJson = " << setting_json << std::endl;
-        } catch (...) {
-            std::cout << "Error: Daemon json file missing field 'settingJson'!";
-        }
-
-        try {
-            log_prefix = config["logPrefix"];
-            std::cout << "LogPrefix = " << log_prefix << std::endl;
-        } catch (...) {
-            std::cout << "Error: Daemon json file missing field 'logPrefix'!";
-        }
-
-        try {
-            listen_port = config["listenPort"];
-            std::cout << "ListenPort = " << listen_port << std::endl;
-        } catch (...) {
-            std::cout << "Error: Daemon json file missing field 'listenPort'!";
-        }
-
-
-        try {
-            for (const auto& ur_json : config["remoteServers"]) {
-                daemon::RemoteServerType ur;
-                ur.remark = ur_json["remark"];
-                ur.protocol = ur_json["protocol"];
-                ur.destination = ur_json["destination"];
-
-                std::cout << "RemoteServer: " << ur_json << std::endl;
-                remote_servers.emplace_back(std::move(ur));
-            }
-        } catch (...) {
-            std::cout << "Error: Daemon json file missing field 'remoteServers' or format error!";
-        }
-
-
-        try {
-            json broadcast = config["broadcast"];
-            broadcast_whitelist = broadcast["mode"].get<bool>();
-            std::cout << "Broadcast Mode: " << int(broadcast_whitelist) << std::endl;
-            for (const auto& ifname : broadcast["ifs"]) {
-                broadcast_ifs.push_back(ifname);
-                std::cout << "Broadcast Interface: " << ifname << std::endl;
-            }
-        } catch (...) {
-            std::cout << "Error: Daemon json file missing field 'broadcast' or format error!";
-        }
-    } catch (std::exception& e) {
-        std::cout << "Error occured when parsing json file " << argv[1] << ": " << e.what() << std::endl;
-        exit(-1);
-    }
-
-    log::init(log_prefix);
+    log::init(config.log_prefix);
+    log::set_sleep_before_exiting(true);
+    log::set_level(config.log_level);
 
     log::info << "libhera-common: " << common::get_version() << log::endl;
     log::info << "libhera-device: " << device::get_version() << log::endl;
     log::info << "libhera-storage: " << storage::get_version() << log::endl;
     log::info << "Copyright 2018 Wayz.ai. All Rights Reserved." << log::endl;
 
-    device::Factory::load_plugins(true, plugin_folder);
+    device::Factory::load_plugins(true, config.device_plugin_directory);
+    storage::upload::Transmission::load_plugins(config.upload_plugin_directory);
+    mkdir(config.data_directory.c_str(), 0775);
 
-    std::shared_ptr<daemon::Service> handler(new daemon::Service(storage_folder, setting_json, remote_servers));
+    log::flush();
+
+    std::shared_ptr<daemon::Service> handler(new daemon::Service(config));
     g_handler_ptr = handler.get();
     std::shared_ptr<TProcessor> processor(new daemon::ServiceProcessor(handler));
-    std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(listen_port));
+    std::shared_ptr<TServerTransport> serverTransport(new TServerSocket(config.listen_port));
     std::shared_ptr<TTransportFactory> transportFactory(new THttpServerTransportFactory());
     std::shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
     g_server_ptr = new TThreadedServer(processor, serverTransport, transportFactory, protocolFactory);
 
-    g_broadcaster_ptr = new daemon::Broadcaster(name, broadcast_ifs, broadcast_whitelist);
+    g_broadcaster_ptr = new daemon::Broadcaster(config.name, config.heartbeat_interfaces, config.heartbeat_mode);
 
     log::info << "HeraMain: Daemon Started" << log::endl;
     g_server_ptr->serve();

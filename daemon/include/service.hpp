@@ -11,6 +11,7 @@
 #include "common/include/hera_errno.h"
 #include "common/include/logger/logger.hpp"
 #include "common/include/third_party/json.hpp"
+#include "config.hpp"
 #include "daemon/rpc/gen-cpp/Service.h"
 #include "device/include/include.hpp"
 #include "frequecy_calculator.hpp"
@@ -22,35 +23,25 @@
 #include "slam/result/include/result.hpp"
 #endif
 
-
 using json = nlohmann::json;
 
 namespace wayz {
 namespace hera {
 namespace daemon {
 
-///
-/// @brief Struct of remote server to upload storage fileI
-///
-struct RemoteServerType {
-    std::string remark;       ///< Remark(name) in client
-    std::string protocol;     ///< Protocol, @see storage::upload::UploadProtocol
-    std::string destination;  ///< Destination of upload protocol, ip address or remark of ssh
-};
-
 class Service final : public ServiceIf {
 public:
-    Service(const std::string& storage_folder = ".",
-            const std::string& setting_filename = "./setting.json",
-            const std::vector<RemoteServerType>& remote_servers = {}) :
-        StorageFolder_(storage_folder),
+    Service(const Config& config) :
+        DataDirectory_(config.data_directory),
         FileNameSuffix_(".hera"),
-        AcquisitionSettingFileName_(setting_filename),
+        AcquisitionSettingFileName_(config.setting_file),
+        LocalDiskMountPoint_(config.localdisk_mountpoint),
         started_(false),
         recording_(false),
         start_time_sec_(0),
-        remote_servers_(remote_servers)
+        remote_servers_(config.upload_servers)
     {
+        log::open_aux(&log_messages_);
         generate_meta();
         load_setting();
 #ifdef WITH_SLAM
@@ -62,6 +53,7 @@ public:
     virtual ~Service()
     {
         reset();
+        log::close_aux(&log_messages_);
     }
 
     virtual void getMeta(Meta& _return) override;
@@ -89,12 +81,15 @@ public:
     virtual void getDiskUsageStatus(DiskUsageStatus& _return) override;
 
     virtual void getStorage(std::vector<StorageRecordFile>& _return) override;
-    virtual void deleteStorage(std::vector<StorageRecordFile>& _return, const std::string& name) override;
+    virtual void deleteStorage(std::vector<StorageRecordFile>& _return, const std::vector<std::string>& names) override;
 
     virtual void getUploadServers(std::vector<std::string>& _return) override;
     virtual void getUploadProcesses(std::vector<UploadProcess>& _return) override;
-    virtual void requestUpload(std::vector<UploadProcess>& _return, const UploadRequest& request) override;
-
+    virtual void getLocalDisks(std::vector<LocalDisk>& _return) override;
+    virtual void getLocalDiskFolders(std::vector<std::string>& _return, const std::vector<std::string>& path) override;
+    virtual void requestUpload(std::vector<UploadProcess>& _return,
+                               const std::vector<UploadRequest>& requests) override;
+    virtual void latestLogs(std::vector<LogMessage>& _return) override;
     void reset();
 
 private:
@@ -117,9 +112,10 @@ private:
     void append_upload_processes(std::vector<UploadProcess>& _return);
 
 private:
-    const std::string StorageFolder_;
+    const std::string DataDirectory_;
     const std::string FileNameSuffix_;
     const std::string AcquisitionSettingFileName_;
+    const std::string LocalDiskMountPoint_;
 
 private:
     std::mutex mutex_;
@@ -147,8 +143,11 @@ private:
 
     // Storage & Upload
     StorageStatus storage_status_;
-    std::vector<std::unique_ptr<storage::upload::Manager>> upload_managers_;
-    std::vector<RemoteServerType> remote_servers_;
+    std::vector<std::unique_ptr<storage::upload::Transmission>> upload_managers_;
+    std::vector<Config::UploadServer> remote_servers_;
+
+    // Log
+    std::vector<log::impl::LogString> log_messages_;
 };
 
 }  // namespace daemon

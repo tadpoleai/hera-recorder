@@ -5,6 +5,7 @@ project(${PROJECT_NAME})
 
 include("../cmake/include/cpp_common.cmake")
 include("../cmake/include/thrift.cmake")
+include("../cmake/include/libconfig.cmake")
 
 include_directories(.. . include ${THRIFT_INCLUDE_DIR} ${BOOST_INCLUDE_DIR})
 
@@ -33,12 +34,14 @@ file(GLOB_RECURSE ALL_SRC "src/*.cpp" "src/**/*.cpp")
 add_executable(
   ${PROJECT_NAME} ${ALL_SRC} ${RPC_GEN_CPP}/hera_types.cpp
                   ${RPC_GEN_CPP}/hera_constants.cpp ${RPC_GEN_CPP}/Service.cpp)
-target_link_libraries(${PROJECT_NAME} hera-common hera-storage hera-device
-                      ${PROJECT_NAME}-broadcast ${THRIFT})
-
-# Build upload server
-add_executable(hera-upload-server "upload_server/upload_server.cpp")
-target_link_libraries(hera-upload-server hera-common ${PROJECT_NAME}-broadcast)
+target_link_libraries(
+  ${PROJECT_NAME}
+  hera-common
+  hera-storage
+  hera-device
+  ${PROJECT_NAME}-broadcast
+  ${THRIFT}
+  ${LIBCONFIG})
 
 # Build finder
 add_executable(${PROJECT_NAME}-finder "finder/finder.cpp")
@@ -55,15 +58,7 @@ install(
   PERMISSIONS OWNER_EXECUTE OWNER_READ
   DESTINATION /lib/systemd/system)
 install(
-  FILES script/hera-upload-server.service
-  PERMISSIONS OWNER_EXECUTE OWNER_READ
-  DESTINATION /lib/systemd/system)
-install(
   TARGETS hera-daemon
-  PERMISSIONS OWNER_EXECUTE OWNER_READ
-  DESTINATION bin)
-install(
-  TARGETS hera-upload-server
   PERMISSIONS OWNER_EXECUTE OWNER_READ
   DESTINATION bin)
 install(
@@ -71,9 +66,6 @@ install(
   PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE
               WORLD_READ
   DESTINATION bin)
-# install( FILES config/daemon.json PERMISSIONS OWNER_READ DESTINATION
-# /var/hera) install( FILES config/daemon.json PERMISSIONS OWNER_READ
-# DESTINATION /var/hera)
 install(
   CODE "execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/script/install-extra.sh)"
 )

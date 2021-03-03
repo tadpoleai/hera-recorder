@@ -1,6 +1,6 @@
 <template lang="pug">
 van-cell(
-  :title="rule.name"
+  :title="rule.label"
   center
 )
   template(
@@ -86,7 +86,7 @@ van-cell(
 
 <script lang="ts">
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator';
-import { ParameterRule } from '../store/Meta/types';
+import ParameterRule from '@/interfaces/ParameterRule';
 import { Dialog } from 'vant';
 
 import CheckedField from '@/components/CheckedField.vue';
@@ -162,13 +162,12 @@ export default class Parameter extends Vue {
 
   @Emit('asyncInput') setAsyncValue(): string {
     this.modified = false;
-    console.log(this.localValue);
     return this.localValue;
   }
 
   showInformation() {
     Dialog({
-      title: this.rule.name,
+      title: this.rule.label,
       message: this.rule.comment,
       messageAlign: 'left',
       theme: 'round-button',

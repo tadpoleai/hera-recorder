@@ -1,6 +1,6 @@
 <template lang="pug">
 div
-  van-cell-group(title="采集控制")
+  van-cell-group(title="采集监控")
     van-cell(
       title="采集开关"
       center
@@ -38,7 +38,7 @@ div
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
+import { namespace } from 'vuex-class';
 
 const AcquisitionControlModule = namespace('AcquisitionControl');
 
@@ -59,10 +59,6 @@ export default class AcquisitionControl extends Vue {
   @AcquisitionControlModule.Action setRecord;
 
   @AcquisitionControlModule.Action clearError;
-
-  async created() {
-    await this.fetch();
-  }
 
   async onClickSwitchStart(value: boolean) {
     this.isSwitchStartLoading = true;

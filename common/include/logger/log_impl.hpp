@@ -30,6 +30,7 @@ class Logger {
 public:
     static void onlyprint();
     static void clear_line();
+    static void set_sleep_before_exiting(bool value);
     static void ignore_signal(int signo);
     static void flush();
     static bool init(const std::string& file);
@@ -37,13 +38,15 @@ public:
     static void stop();
     static bool open_aux(const std::string& aux_file);
     static bool open_aux(std::vector<LogString>* aux_vector);
-    static void close_aux();
+    static void close_aux(std::vector<LogString>* aux_vector);
     static LogStringStream create_string(LogLevel level);
     static std::string format(const LogString& data);
 
 private:
     static std::unique_ptr<Logger> instance_;
     static std::set<int> signal_to_ignore_user_;
+    static bool sleep_before_exiting_;
+    static constexpr auto SleepDurationUs = 3 * 1000000;
 
 private:
     Logger();
@@ -55,7 +58,6 @@ private:
     void write_thread_function();
     void write(LogString&& data);
 
-
     void register_back_trace();
     static void singal_handler(int signo);
     static void back_trace(int signo);
@@ -64,7 +66,7 @@ private:
     bool inited_;
 
     std::ofstream file_;
-    std::vector<LogString>* aux_vector_;
+    std::vector<std::vector<LogString>*> aux_vector_vector_;
 
     LogLevel level_;
     LogQueue queue_;

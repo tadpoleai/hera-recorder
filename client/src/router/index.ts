@@ -6,6 +6,8 @@ import ViewProfiles from '@/views/Profiles.vue';
 import ViewProfileEdit from '@/views/ProfileEdit.vue';
 import ViewMonitor from '@/views/Monitor.vue';
 import ViewStorage from '@/views/Storage.vue';
+import ViewUpload from '@/views/Upload.vue';
+import ViewLog from '@/views/Log.vue';
 
 Vue.use(VueRouter);
 
@@ -34,6 +36,16 @@ const routes = [
     path: '/storage',
     name: '数据管理',
     component: ViewStorage
+  },
+  {
+    path: '/upload',
+    name: '数据上传',
+    component: ViewUpload
+  },
+  {
+    path: '/log',
+    name: '日志',
+    component: ViewLog
   }
 ];
 

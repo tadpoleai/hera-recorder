@@ -45,4 +45,3 @@ sudo make install
 cd ../..
 
 rm -rf opencv*
-rm -rf opencv_*

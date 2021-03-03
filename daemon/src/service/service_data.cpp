@@ -23,13 +23,15 @@ void Service::append_data_status(DataStatus& result)
             data.id = device->get_id();
             data.type = device->get_vendor_type();
             data.name = device->get_name();
-            data.dataSizeKB = device->get_volume() / 1024;
+            data.dataSize = device->get_volume();
+
+            data.health = device->get_health();
+            data.statusMessage = device->get_status_message();
 
             const bool is_detail_disp_data = (data.id == detail_device_index_);
             const auto disp_datas = device->update_get_disp_data(is_detail_disp_data);
             for (const auto& category: disp_datas->categorized_disp_data) {
                 daemon::SingleDisplayData single_data;
-                single_data.jpegData = category.second.jpeg_data;
                 single_data.jpegData = category.second.jpeg_data;
                 single_data.textData = category.second.text_data;
                 data.dispData.emplace_back(std::move(single_data));
@@ -84,8 +86,6 @@ void Service::selectDetailDevice(DataStatus& result, const int32_t deviceIndex)
 {
     std::unique_lock<std::mutex> _(mutex_);
 
-    log::info << "Daemon: called selectDetailDevice: " << deviceIndex << log::endl;
-
     detail_device_index_ = deviceIndex;
 
     append_data_status(result);
@@ -94,8 +94,6 @@ void Service::selectDetailDevice(DataStatus& result, const int32_t deviceIndex)
 void Service::clearDetailDevice(DataStatus& result)
 {
     std::unique_lock<std::mutex> _(mutex_);
-
-    log::info << "Daemon: called clearDetailDevice: " << log::endl;
 
     detail_device_index_ = -1;
 

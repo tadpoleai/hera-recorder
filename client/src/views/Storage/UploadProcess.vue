@@ -59,7 +59,7 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
+import { namespace } from 'vuex-class';
 import { Hera } from '@/api';
 
 const UploadModule = namespace('Upload');
@@ -77,7 +77,7 @@ export default class UploadProcess extends Vue {
     if (!this.process.running && !this.process.errored) {
       return 100;
     }
-    return (this.process.processedSizeKB / this.process.totalSizeKB) * 100;
+    return (this.process.processedSize / this.process.totalSize) * 100;
   }
 
   get processStatus() {

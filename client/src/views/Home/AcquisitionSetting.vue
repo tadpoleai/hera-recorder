@@ -44,7 +44,7 @@ van-cell-group(
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
+import { namespace } from 'vuex-class';
 
 import CheckedField from '@/components/CheckedField.vue';
 
@@ -70,10 +70,6 @@ export default class Home extends Vue {
   @AcquisitionSettingModule.Action updateOperatorInfoOperatorName;
   @AcquisitionSettingModule.Action setLocalOperatorInfoPlace;
   @AcquisitionSettingModule.Action updateOperatorInfoPlace;
-
-  async created() {
-    await this.fetch();
-  }
 
   onClickProfileName() {
     if (!this.immutable) {

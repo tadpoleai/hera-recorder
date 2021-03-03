@@ -18,8 +18,6 @@ namespace daemon {
 
 void Service::getStatus(AcquisitionStatus& result)
 {
-    log::debug << "Daemon::get called" << log::endl;
-
     std::unique_lock<std::mutex> _(mutex_);
 
     append_acquisition_status(result);
@@ -92,7 +90,7 @@ void Service::start(AcquisitionStatus& result)
 
     // Start calling factory function
     auto device_id = 0;
-    std::string full_storage_name = StorageFolder_ + "/" + storage_filename + FileNameSuffix_;
+    std::string full_storage_name = DataDirectory_ + "/" + storage_filename + FileNameSuffix_;
     storage_ = storage::StorageManager::open(full_storage_name, false);
     for (const auto& device : profile.devices) {
         devices_.emplace_back(device::Factory::create(
@@ -110,7 +108,7 @@ void Service::start(AcquisitionStatus& result)
     storage_->finish_add_device();
 
     // Write Extra Info
-    storage_->header->extra_info["profile"] = acquisition_setting_.profiles;
+    storage_->header->extra_info["profile"] = profile;
     storage_->header->extra_info["operator"] = acquisition_setting_.operatorInfo.operatorName;
     storage_->header->extra_info["place"] = acquisition_setting_.operatorInfo.place;
     storage_->header->extra_info["slam"] = acquisition_setting_.operatorInfo.slam;

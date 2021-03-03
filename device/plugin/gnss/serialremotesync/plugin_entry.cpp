@@ -102,23 +102,20 @@ data::DeviceDataPtr DevicePlugin::fetch()
     /// @todo calculate time
     memcpy((void*)&derived_data->data, serial_data_str->data(), data_length);
 
-    auto logger = log::info << "Received: Data = [";
+    // auto logger = log::info << "Received: Data = [";
+    // auto nmea_data = (SerialRemotesyncNmea::SerialRemotesyncNmeaUnion*)(void*)serial_data_str->data();
 
-    auto nmea_data = (SerialRemotesyncNmea::SerialRemotesyncNmeaUnion*)(void*)serial_data_str->data();
+    // if (nmea_data->timestamp_valid) {
+    //     logger << "Valid, ";
+    // } else {
+    //     logger << "Invalid, ";
+    // }
 
-    if (nmea_data->timestamp_valid) {
-        logger << "Valid, ";
-    } else {
-        logger << "Invalid, ";
-    }
-
-    logger << "Time =" << time::Timestamp(nmea_data->timestamp_ns) << ", Sentence = ";
-
-    for (size_t i = 0; i < nmea_data->nmea_sentence_length; i++) {
-        logger << nmea_data->nmea_sentence[i];
-    }
-
-    logger << log::endl;
+    // logger << "Time =" << time::Timestamp(nmea_data->timestamp_ns) << ", Sentence = ";
+    // for (size_t i = 0; i < nmea_data->nmea_sentence_length; i++) {
+    //     logger << nmea_data->nmea_sentence[i];
+    // }
+    // logger << log::endl;
 
     return data;
 }
@@ -159,8 +156,8 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
 
     // Return if time::Timestamp is not valid
     if (raw_data->data.timestamp_valid == 0) {
-        // log::warn << "Timestamp is not valid!" << log::endl;
-        return sensor_data;
+        log::warn << "Timestamp is not valid!" << log::endl;
+        return data::SensorData::broken_data();
     } else {
         // log::info << "Timestamp is valid!" << log::endl;
     }
@@ -181,8 +178,6 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         std::string nmea_sentence_str =
                 std::string((char*)raw_data->data.nmea_sentence, raw_data->data.nmea_sentence_length);
         std::stringstream nmea(nmea_sentence_str);
-
-        log::debug << "Sentence = '" << nmea_sentence_str << "'" << log::endl;
 
         // Sentence Identifier (Token 1)
         if (!getline(nmea, token, ',')) {

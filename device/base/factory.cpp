@@ -59,12 +59,14 @@ void Factory::load_plugins(const bool load_driver, const std::string& plugins_pa
             continue;
         }
 
-        auto device_handle = static_cast<DeviceHandle*>(exports);
-        device_handles.push_back(*device_handle);
+        typedef DeviceHandle (*exportsType)();
+        auto device_handle = (reinterpret_cast<exportsType>(exports))();
+        device_handles.emplace_back(device_handle);
     }
 
     for (const auto& device_handle : device_handles) {
-        log::debug << "Factory: Registered " << device_handle.type_name << log::endl;
+        log::debug << "Factory: Registered " << device_handle.type_name << ", built " << device_handle.version
+                   << log::endl;
     }
 };
 
@@ -91,7 +93,7 @@ bool Factory::check_type(const std::string& vendor_type)
     return std::find(Types.begin(), Types.end(), vendor_type) != Types.end();
 }
 
-std::string Factory::plugin_parameter_rules(const std::string& vendor_type)
+std::string Factory::plugin_description(const std::string& vendor_type)
 {
     if (!is_loaded) {
         load_plugins();
@@ -99,16 +101,16 @@ std::string Factory::plugin_parameter_rules(const std::string& vendor_type)
 
     if (!check_type(vendor_type)) {
         log::warn << "Factory::type_parameters: Unknown vendor type: " << vendor_type << log::endl;
-        return "[]";
+        return R"({"comment":"", "label": "", "parameters": []})";
     }
 
     for (const auto& device_handle : device_handles) {
         if (vendor_type == device_handle.type_name) {
-            return device_handle.rules;
+            return device_handle.description;
         }
     }
 
-    return "[]";
+    return R"({"comment":"", "label": "", "parameters": []})";
 }
 
 DevicePtr Factory::create(const uint32_t id,
