@@ -3,6 +3,10 @@
 //
 
 #include "service.hpp"
+//
+#include "common/include/version.hpp"
+#include "device/include/version.hpp"
+#include "storage/include/version.hpp"
 
 namespace wayz {
 namespace hera {
@@ -16,9 +20,12 @@ void Service::generate_meta()
     for (const auto& type : DeviceTypes) {
         DeviceRule device_rule;
         device_rule.name = type;
-        device_rule.parameterRulesJson = device::Factory::plugin_parameter_rules(type);
+        device_rule.description = device::Factory::plugin_description(type);
         meta_.deviceRules.emplace_back(device_rule);
     }
+
+    meta_.daemonVersion = "Common: " + common::get_version() + "\n" + "Device: " + device::get_version() + "\n" +
+                          "Storage: " + storage::get_version();
 }
 
 void Service::getMeta(Meta& result)

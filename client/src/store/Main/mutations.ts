@@ -6,5 +6,18 @@ export const mutations: MutationTree<MainState> = {
     state.isConnectionErrored = true;
     state.connectionErrorReason = reason;
     console.log(reason);
+  },
+
+  clearConnectionError(state) {
+    state.isConnectionErrored = false;
+    state.connectionErrorReason = '';
+  },
+
+  setHostUrl(state, value: string) {
+    state.hostUrl = value;
+  },
+
+  setHostPort(state, value: number) {
+    state.hostPort = value;
   }
 };

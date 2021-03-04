@@ -4,19 +4,20 @@ import 'error-polyfill';
 
 import * as Hera from './gen-ts';
 
-import config from './config';
+import store from '@/store/Main';
 
 function connect(callback: (err: any | void) => void): Hera.Service.Client {
-  const connection = createHttpConnection(config.defaultHost, config.defaultPort, {
+  const connection = createHttpConnection(store.hostUrl, store.hostPort, {
     transport: TBufferedTransport,
     protocol: TBinaryProtocol,
-    https: config.defaultHttps,
-    path: config.defaultPath,
+    https: false,
+    path: '',
     headers: {
-      Host: config.defaultHost
+      Host: store.hostUrl
     }
   });
   connection.on('error', callback);
+
   return createHttpClient(Hera.Service.Client, connection);
 }
 

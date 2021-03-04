@@ -60,22 +60,22 @@
 ///
 /// @brief Use this macro in a device's cpp file to export an plugin for hera device
 ///
-#define HERA_PLUGIN_EXPORT(type_enum_param, type_name_param)                  \
-    extern "C" {                                                                     \
-    Device* static_create(const uint32_t id,                                         \
-                          const std::string& vendor_type,                            \
-                          const std::string& name,                                   \
-                          const bool forward,                                        \
-                          ipc::IPCQueue<data::SensorData>* const ipc_queue,          \
-                          storage::StorageManager* const storage)                    \
-    {                                                                                \
-        return new DevicePlugin(id, vendor_type, name, forward, ipc_queue, storage); \
-    }                                                                                \
-                                                                                     \
-    Factory::DeviceHandle exports = {.type = DeviceVendorType::type_enum_param,      \
-                                     .type_name = type_name_param,                   \
-                                     .version = __DATE__,                            \
-                                     .create = static_create,                        \
-                                     .convert = &DevicePlugin::do_convert,           \
-                                     .rules = LocalParameters::static_rules()};      \
+#define HERA_PLUGIN_EXPORT(type_enum_param, type_name_param)                                \
+    extern "C" {                                                                            \
+    Device* static_create(const uint32_t id,                                                \
+                          const std::string& vendor_type,                                   \
+                          const std::string& name,                                          \
+                          const bool forward,                                               \
+                          ipc::IPCQueue<data::SensorData>* const ipc_queue,                 \
+                          storage::StorageManager* const storage)                           \
+    {                                                                                       \
+        return new DevicePlugin(id, vendor_type, name, forward, ipc_queue, storage);        \
+    }                                                                                       \
+                                                                                            \
+    Factory::DeviceHandle exports = {.type = DeviceVendorType::type_enum_param,             \
+                                     .type_name = type_name_param,                          \
+                                     .version = __DATE__,                                   \
+                                     .create = static_create,                               \
+                                     .convert = &DevicePlugin::do_convert,                  \
+                                     .description = LocalParameters::static_description()}; \
     }

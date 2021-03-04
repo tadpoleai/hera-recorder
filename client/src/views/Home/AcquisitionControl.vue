@@ -60,10 +60,6 @@ export default class AcquisitionControl extends Vue {
 
   @AcquisitionControlModule.Action clearError;
 
-  async created() {
-    await this.fetch();
-  }
-
   async onClickSwitchStart(value: boolean) {
     this.isSwitchStartLoading = true;
     if (value) {
