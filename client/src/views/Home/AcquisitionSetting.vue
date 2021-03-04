@@ -71,10 +71,6 @@ export default class Home extends Vue {
   @AcquisitionSettingModule.Action setLocalOperatorInfoPlace;
   @AcquisitionSettingModule.Action updateOperatorInfoPlace;
 
-  async created() {
-    await this.fetch();
-  }
-
   onClickProfileName() {
     if (!this.immutable) {
       this.$router.push('profiles');

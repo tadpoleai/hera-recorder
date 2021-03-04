@@ -9,7 +9,8 @@ import { MetaState } from './types';
 
 const state: MetaState = {
   isFetched: false,
-  deviceRulesMap: {}
+  deviceDescriptionMap: {},
+  daemonVersion: 'Unknown'
 };
 
 const namespaced = true;

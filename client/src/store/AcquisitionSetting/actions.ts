@@ -128,5 +128,6 @@ export const actions: ActionTree<AcquisitionSettingState, RootState> = {
     });
     const data = await client.setProfiles(newProfiles);
     commit('setFromFetch', data);
+    state.profileEditingIndex = state.fetchedData.profiles.length - 1;
   }
 };

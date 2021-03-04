@@ -1,6 +1,6 @@
 <template lang="pug">
 van-cell(
-  :title="rule.name"
+  :title="rule.label"
   center
 )
   template(
@@ -168,7 +168,7 @@ export default class Parameter extends Vue {
 
   showInformation() {
     Dialog({
-      title: this.rule.name,
+      title: this.rule.label,
       message: this.rule.comment,
       messageAlign: 'left',
       theme: 'round-button',

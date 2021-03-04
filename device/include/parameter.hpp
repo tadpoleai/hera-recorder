@@ -63,21 +63,24 @@ public:
     }
 
     ///
-    /// @brief Return rules of parameter in json
+    /// @brief Return description of parameter in json
     ///
-    /// @return std::string rules in json, format below:
+    /// @return std::string description in json, format below:
     /*
     [
-        {
-            { type : "enum"/"string"/"int"/"double" },
-            { default: },
-            { range: { min: MIN_V, max: MAX_V },            # only for numeric
-            { options: ["ENUM_VAL_0", "ENUM_VAL_1", ... ] } # only for enum
-            { regex: "REGEX" }                              # only for string
-        }, ...
+        label: string,
+        comment: string,
+        parameters: 
+            {
+                type : "enum"/"string"/"int"/"double" ,
+                default: ,
+                range: { min: MIN_V, max: MAX_V },           # only for numeric
+                options: ["ENUM_VAL_0", "ENUM_VAL_1", ... ]  # only for enum
+                regex: "REGEX"                               # only for string
+            }, ...
     ]
      */
-    virtual std::string rules() const = 0;
+    virtual std::string description() const = 0;
 
 protected:
     ParametersInterface() = default;

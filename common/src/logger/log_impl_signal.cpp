@@ -54,7 +54,7 @@ void Logger::register_back_trace()
         ::abort();
     });
 
-    static const std::set<int> SignalsToIgnore = {SIGCONT, SIGURG, SIGIO, SIGCHLD, SIGWINCH};
+    static const std::set<int> SignalsToIgnore = {SIGCONT, SIGURG, SIGPOLL, SIGHUP, SIGIO, SIGCHLD, SIGWINCH};
     for (auto i = 0; i <= 32; i++) {
         if (SignalsToIgnore.count(i) == 0) {
             ::signal(i, &Logger::singal_handler);
@@ -128,9 +128,9 @@ void Logger::singal_handler(int signo)
     case SIGTTOU:
         log::error << "FATAL: Received SIGTTOU: Background write to control terminal." << log::endl;
         break;
-    // case SIGPOLL:
-    //     log::error << "FATAL: Received SIGPOLL: Pollable event occurred (System V)." << log::endl;
-    //     break;
+    case SIGPOLL:
+        log::error << "FATAL: Received SIGPOLL: Pollable event occurred (System V)." << log::endl;
+        break;
     case SIGXCPU:
         log::error << "FATAL: Received SIGXCPU: CPU time limit exceeded." << log::endl;
         break;

@@ -12,7 +12,9 @@ export const actions: ActionTree<MetaState, RootState> = {
     const meta = await client.getMeta();
 
     meta.deviceRules.forEach(deviceRule => {
-      commit('addDeviceRule', { name: deviceRule.name, rule: JSON.parse(deviceRule.parameterRulesJson) });
+      commit('addDeviceDescription', { name: deviceRule.name, description: JSON.parse(deviceRule.description) });
     });
+
+    commit('setDaemonVersion', meta.daemonVersion);
   }
 };

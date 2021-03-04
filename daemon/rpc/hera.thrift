@@ -7,11 +7,12 @@ namespace cpp wayz.hera.daemon
 // Meta
 struct DeviceRule {
     1: required string name;
-    2: required string parameterRulesJson;
+    4: required string description;
 }
 
 struct Meta {
     1: required list<DeviceRule> deviceRules;
+    2: required string daemonVersion;
 }
 
 // AcquisitionSetting
@@ -67,14 +68,16 @@ struct DeviceData {
 
     5: required bool forward;
 
-    20: required i32 error;
-    21: required string reason;
+    20: required string health;
+    21: required string statusMessage;
 
     30: required i32 sequence;
     40: required double frequency;
     50: required i32 dataSizeKB;
 
     60: required list<SingleDisplayData> dispData;
+
+    70: required string status;
 }
 
 struct DataStatus {

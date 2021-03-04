@@ -11,9 +11,7 @@
   div(
     @click="onClickDiskUsage"
   )
-    DiskUsage(
-      :refresh="true"
-    )
+    DiskUsage
 
   AcquisitionSetting
 

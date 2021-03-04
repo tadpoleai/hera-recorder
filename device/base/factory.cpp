@@ -91,7 +91,7 @@ bool Factory::check_type(const std::string& vendor_type)
     return std::find(Types.begin(), Types.end(), vendor_type) != Types.end();
 }
 
-std::string Factory::plugin_parameter_rules(const std::string& vendor_type)
+std::string Factory::plugin_description(const std::string& vendor_type)
 {
     if (!is_loaded) {
         load_plugins();
@@ -104,7 +104,7 @@ std::string Factory::plugin_parameter_rules(const std::string& vendor_type)
 
     for (const auto& device_handle : device_handles) {
         if (vendor_type == device_handle.type_name) {
-            return device_handle.rules;
+            return device_handle.description;
         }
     }
 

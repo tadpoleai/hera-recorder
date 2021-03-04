@@ -43,9 +43,14 @@ std::ostream& operator<<(std::ostream& os, const std::vector<ParamDef>& self)
     return os;
 }
 
-bool parse(const std::string& input_filename, std::string& escaped_file_content, std::vector<ParamDef>& param_defs)
+bool parse(const std::string& input_filename, std::string& escaped_file_content, DeviceDesc& device_desc)
 {
     static const std::regex empty_pattern{R"(^\s*$)"};
+
+    ///
+    /// Device Comment
+    ///
+    static const std::regex device_comment_pattern{R"(^@\s*(.*)$)"};
 
     ///
     /// Comment
@@ -87,6 +92,7 @@ bool parse(const std::string& input_filename, std::string& escaped_file_content,
 
     std::string line;
     std::string param_comment;
+    std::string param_label;
     std::string requires_string;
 
     if (input_file.is_open()) {
@@ -99,65 +105,78 @@ bool parse(const std::string& input_filename, std::string& escaped_file_content,
             if (std::regex_search(line, matches, empty_pattern)) {
                 param_comment.clear();
                 requires_string.clear();
+            } else if (std::regex_search(line, matches, device_comment_pattern)) {
+                if (!device_desc.comment.empty()) {
+                    device_desc.comment += "\n";
+                } else {
+                    device_desc.label = matches[1].str();
+                }
+                device_desc.comment += matches[1].str();
             } else if (std::regex_search(line, matches, comment_pattern)) {
                 if (!param_comment.empty()) {
                     param_comment += "\n";
+                } else {
+                    param_label = matches[1].str();
                 }
                 param_comment += matches[1].str();
             } else if (std::regex_search(line, matches, requires_pattern)) {
                 requires_string = matches[1].str();
             } else if (std::regex_search(line, matches, boolean_pattern)) {
                 auto comment = param_comment;
-                param_defs.push_back({.category = ParamDef::Boolean,
-                                      .type = "bool",
-                                      .designator = matches[2].str(),
-                                      .default_value = matches[3].str(),
-                                      .comment = comment,
-                                      .is_mutable = matches[1].str() == "mutable",
-                                      .requirement = requires_string});
+                device_desc.parameters.push_back({.category = ParamDef::Boolean,
+                                                  .type = "bool",
+                                                  .designator = matches[2].str(),
+                                                  .label = param_label,
+                                                  .default_value = matches[3].str(),
+                                                  .comment = comment,
+                                                  .is_mutable = matches[1].str() == "mutable",
+                                                  .requirement = requires_string});
                 param_comment.clear();
                 requires_string.clear();
             } else if (std::regex_search(line, matches, enum_pattern)) {
                 auto comment = param_comment;
-                param_defs.push_back({.category = ParamDef::Enum,
-                                      .type = matches[2].str(),
-                                      .designator = matches[2].str(),
-                                      .default_value = matches[3].str(),
-                                      .comment = comment,
-                                      .is_mutable = matches[1].str() == "mutable",
-                                      .requirement = requires_string,
-                                      .options = matches[4].str()});
+                device_desc.parameters.push_back({.category = ParamDef::Enum,
+                                                  .type = matches[2].str(),
+                                                  .designator = matches[2].str(),
+                                                  .label = param_label,
+                                                  .default_value = matches[3].str(),
+                                                  .comment = comment,
+                                                  .is_mutable = matches[1].str() == "mutable",
+                                                  .requirement = requires_string,
+                                                  .options = matches[4].str()});
                 param_comment.clear();
                 requires_string.clear();
             } else if (std::regex_search(line, matches, numeric_pattern)) {
                 auto comment = param_comment;
-                param_defs.push_back({.category = ParamDef::Numeric,
-                                      .type = ((matches[2].str() == "real") ? "double" : "int"),
-                                      .designator = matches[3].str(),
-                                      .default_value = matches[4].str(),
-                                      .comment = comment,
-                                      .is_mutable = matches[1].str() == "mutable",
-                                      .requirement = requires_string,
-                                      .options = {},
-                                      .range_min = matches[5].str(),
-                                      .range_max = matches[6].str(),
-                                      .range_step = matches[7].str()});
+                device_desc.parameters.push_back({.category = ParamDef::Numeric,
+                                                  .type = ((matches[2].str() == "real") ? "double" : "int"),
+                                                  .designator = matches[3].str(),
+                                                  .label = param_label,
+                                                  .default_value = matches[4].str(),
+                                                  .comment = comment,
+                                                  .is_mutable = matches[1].str() == "mutable",
+                                                  .requirement = requires_string,
+                                                  .options = {},
+                                                  .range_min = matches[5].str(),
+                                                  .range_max = matches[6].str(),
+                                                  .range_step = matches[7].str()});
                 param_comment.clear();
                 requires_string.clear();
             } else if (std::regex_search(line, matches, string_pattern)) {
                 auto comment = param_comment;
-                param_defs.push_back({.category = ParamDef::String,
-                                      .type = "std::string",
-                                      .designator = matches[2].str(),
-                                      .default_value = matches[3].str(),
-                                      .comment = comment,
-                                      .is_mutable = matches[1].str() == "mutable",
-                                      .requirement = requires_string,
-                                      .options = {},
-                                      .range_min = {},
-                                      .range_max = {},
-                                      .range_step = {},
-                                      .regex = matches[4].str()});
+                device_desc.parameters.push_back({.category = ParamDef::String,
+                                                  .type = "std::string",
+                                                  .designator = matches[2].str(),
+                                                  .label = param_label,
+                                                  .default_value = matches[3].str(),
+                                                  .comment = comment,
+                                                  .is_mutable = matches[1].str() == "mutable",
+                                                  .requirement = requires_string,
+                                                  .options = {},
+                                                  .range_min = {},
+                                                  .range_max = {},
+                                                  .range_step = {},
+                                                  .regex = matches[4].str()});
                 param_comment.clear();
                 requires_string.clear();
             } else {

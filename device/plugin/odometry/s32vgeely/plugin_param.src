@@ -1,2 +1,4 @@
+@ S32V 吉利车里程计
+
 # CAN 端口号
 immutable integer CanChannel = 0; range 0, 15, 1

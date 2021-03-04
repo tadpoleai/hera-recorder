@@ -1,8 +1,14 @@
-# 串口设备路径
+@ 转速控制器
+@ 上位机通过串口向着下位转速控制器发送转速档位信号发送转速档位信息
+
+# 设备路径
+# 串口的设备路径, 通常以'/dev/tty'开头
 immutable string Kernel = "/dev/tty"; regex ^\/(\w+\/?)+$
 
+# 波特率
 # 串口设备波特率
 immutable integer Baud = 230400; range 120, 2560000, 1
 
-# 转速档位
+# 转速
+# 转速档位, 从 -63(反转) 到 63(正转)
 mutable integer RotorSpeed = 0; range -63, 63, 1

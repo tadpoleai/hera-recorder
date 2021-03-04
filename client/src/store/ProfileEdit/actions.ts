@@ -14,7 +14,7 @@ export const actions: ActionTree<ProfileEditState, RootState> = {
   },
 
   addDeviceByType({ commit, rootState }, type: string) {
-    const rules = rootState['Meta'].deviceRulesMap[type];
+    const rules = rootState['Meta'].deviceDescriptionMap[type].parameters;
     const defaultParameters = rules.map(rule => {
       return new Hera.Parameter({ type: rule.name, value: rule.defaultValue });
     });
