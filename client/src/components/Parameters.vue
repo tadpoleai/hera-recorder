@@ -30,11 +30,11 @@ export default class DetailData extends Vue {
 
   @Prop({ default: false, type: Boolean }) private isAdjustParameter!: boolean;
 
-  @MetaModule.State deviceDescriptionMap;
+  @MetaModule.State deviceRulesMap;
 
   get activeParameterRules(): Array<ParameterRule> {
     const ret: Array<ParameterRule> = [];
-    const parameterRules = this.deviceDescriptionMap[this.deviceType].parameters;
+    const parameterRules = this.deviceRulesMap[this.deviceType];
 
     parameterRules.forEach(parameterRule => {
       if (parameterRule.requirement.length == 0) {

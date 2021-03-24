@@ -2,21 +2,21 @@
 div
   van-sticky
     van-nav-bar(
+      :title="'HERA ' + $router.history.current.name"
       :left-arrow="$router.history.current.path != '/'"
       @click-left="onClickNavBack()"
       @click-right="onClickInfo()"
-      :style="{ 'background': bgColor }"
     )
-      template(slot="title")
-        span {{'HERA ' + $router.history.current.name}}
-      template(slot="right")
-        van-icon(
-          name="question-o"
-          size="24px"
-        )
+      van-icon(
+        slot="right"
+        name="question-o"
+        size="24px"
+      )
+
+    ControlStatusBar
 
   ConnectionError
-  
+
   router-view
 
 </template>
@@ -29,51 +29,20 @@ import { Toast, Dialog } from 'vant';
 import { GitVersion } from '../git_info';
 
 import ConnectionError from '@/views/App/ConnectionError.vue';
+import ControlStatusBar from '@/views/App/ControlStatusBar.vue';
 
-const MainModule = namespace('Main');
 const MetaModule = namespace('Meta');
-const AcquisitionControlModule = namespace('AcquisitionControl');
 
 @Component({
-  components: { ConnectionError }
+  components: { ConnectionError, ControlStatusBar }
 })
 export default class ProfileEdit extends Vue {
   // Actions
-  @MainModule.Action refreshAll;
+  @MetaModule.Action fetchMeta;
 
-  @MainModule.Action refreshStatus;
-
-  @MainModule.State isConnectionErrored;
-
-  @AcquisitionControlModule.State fetchedData;
-
-  @MetaModule.State daemonVersion;
-
-  mounted() {
-    this.active = true;
+  created() {
+    this.fetchMeta();
     (this.$router as any).history.current!.path !== '/' && this.$router.replace({ path: '/' });
-    this.refreshAll();
-    this.timeoutHandler = setTimeout(this.timeoutFunction, this.intervalPeriod);
-  }
-
-  active = false;
-
-  intervalPeriod = 8000;
-
-  timeoutHandler!: NodeJS.Timeout;
-
-  destroyed() {
-    this.active = false;
-    clearTimeout(this.timeoutHandler);
-  }
-
-  async timeoutFunction() {
-    if (!this.isConnectionErrored) {
-      await this.refreshStatus();
-    }
-    if (this.active) {
-      this.timeoutHandler = setTimeout(this.timeoutFunction, this.intervalPeriod);
-    }
   }
 
   onClickNavBack() {
@@ -85,27 +54,10 @@ export default class ProfileEdit extends Vue {
   onClickInfo() {
     Dialog({
       title: 'HERA采集软件',
-      message:
-        '客户端版本\n' +
-        GitVersion +
-        '\n服务端版本\n' +
-        this.daemonVersion +
-        '\n版权信息\nCopyright 2018 Wayz.ai. All Rights Reserved.',
+      message: '客户端版本\n' + GitVersion + '\n版权信息\nCopyright 2018 Wayz.ai. All Rights Reserved.',
       messageAlign: 'left',
       theme: 'round-button'
     });
-  }
-
-  get bgColor() {
-    if (this.isConnectionErrored) {
-      return 'red';
-    } else if (!this.fetchedData.started) {
-      return '';
-    } else if (this.fetchedData.recording) {
-      return 'pink';
-    } else {
-      return 'lightblue';
-    }
   }
 }
 </script>

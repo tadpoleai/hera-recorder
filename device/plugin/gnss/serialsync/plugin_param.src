@@ -1,31 +1,18 @@
-@ 同步板卡报文(方式1)
-@ GNSS设备的报文和秒信号会连接到同步板卡, 由板卡计算内部时间戳和报文时间戳的差值
-@ GNSS设备的报文会通过主串口直接发送给上位机
-@ 与此同时，板卡计算的时间戳插值将有副串口发送给上位机
-@ 上位机驱动结合两者的数据，计算解析出统一时间戳和报文对应的GNSS消息
-
-# 设备路径
 # 主串口设备路径
 # 获取 GNSS 报文的串口设备在系统中的路径
-# 通常以'/dev/tty'开头
 immutable string Primary = "/dev/tty"; regex ^\/(\w+\/?)+$
 
-# 波特率
 # 主串口设备波特率
 immutable integer BaudPrimary = 115200; range 120, 2560000, 1
 
-# 副设备路径
 # 同步板卡串口设备路径
 # 获取同步信息的串口设备在系统中的路径
-# 通常以'/dev/tty'开头
 immutable string Auxiliary = "/dev/tty"; regex ^\/(\w+\/?)+$
 
-# 副波特率
 # 同步板卡串口波特率
 immutable integer BaudAux = 230400; range 120, 2560000, 1
 
-# 帧识别号
 # 同步信息串口帧识别号
-# 参考 https://confluence.newayz.com/pages/viewpage.action?pageId=23200506
+# 参考https://confluence.newayz.com/pages/viewpage.action?pageId=23200506
 # 通常为1, 不需修改
 immutable integer MsgType = 1; range 0, 7, 1

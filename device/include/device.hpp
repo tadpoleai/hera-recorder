@@ -233,21 +233,6 @@ public:
     }
 
     ///
-    /// @brief Get device's health
-    ///
-    /// @return std::string health message
-    std::string get_health() const;
-
-    ///
-    /// @brief Get device's status message
-    ///
-    /// @return status message in string(non-data message to display)
-    inline auto get_status_message() const noexcept
-    {
-        return status_message_;
-    }
-
-    ///
     /// @brief Update and get the disp data object
     ///
     /// @param is_detail_disp_data show detail
@@ -282,15 +267,6 @@ protected:
     /// @note This function will set status to DeviceStatus::Error
     /// @note Typical usage is return handler_error(...) in connect()
     HeraErrno handle_error(HeraErrno e, std::string&& reason = "");
-
-    ///
-    /// @brief Replace status message
-    ///
-    /// @param value
-    void set_status_message(std::string&& value)
-    {
-        status_message_ = std::forward<std::string>(value);
-    }
 
 protected:
     ///
@@ -403,9 +379,6 @@ private:
     std::atomic<DeviceStatus> status_;  ///< device status
     HeraErrno hera_errno_;              ///< device error code
     std::string reason_;                ///< extra error reason
-
-    time::Timestamp last_data_recvtime_;
-    std::string status_message_;  ///< non-data message
 
     std::atomic<bool> is_record_;             ///< if device is recording
     std::thread* thread_fetch_;               ///< fetching thread

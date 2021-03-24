@@ -20,7 +20,6 @@ public:
 
     std::string type;
     std::string designator;
-    std::string label;
     std::string default_value;
     std::string comment;
     bool is_mutable;
@@ -35,17 +34,11 @@ public:
 
 std::ostream& operator<<(std::ostream& os, const std::vector<ParamDef>& self);
 
-struct DeviceDesc {
-    std::string label;
-    std::string comment;
-    std::vector<ParamDef> parameters;
-};
-
-bool parse(const std::string& input_filename, std::string& escaped_file_content, DeviceDesc& device_desc);
+bool parse(const std::string& input_filename, std::string& escaped_file_content, std::vector<ParamDef>& param_defs);
 
 bool output(const std::string& output_filename,
             const std::string& escaped_file_content,
-            const DeviceDesc& device_desc,
+            const std::vector<ParamDef>& param_defs,
             const std::string& category_name,
             const std::string& vendor_name);
 

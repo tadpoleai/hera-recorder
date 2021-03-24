@@ -16,15 +16,15 @@ int main(int argc, char** argv)
 
     std::string escaped_file_content;
 
-    parameter::DeviceDesc device_desc;
+    std::vector<parameter::ParamDef> param_defs;
 
-    if (!parameter::parse(input_filename, escaped_file_content, device_desc)) {
+    if (!parameter::parse(input_filename, escaped_file_content, param_defs)) {
         _exit(1);
     }
 
-    std::cout << input_filename << " parsed:" << device_desc.parameters << std::endl;
+    std::cout << input_filename << " parsed:" << param_defs << std::endl;
 
-    if (!parameter::output(output_filename, escaped_file_content, device_desc, category_name, vendor_name)) {
+    if (!parameter::output(output_filename, escaped_file_content, param_defs, category_name, vendor_name)) {
         _exit(1);
     }
 }

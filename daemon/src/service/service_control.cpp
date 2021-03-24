@@ -110,7 +110,7 @@ void Service::start(AcquisitionStatus& result)
     storage_->finish_add_device();
 
     // Write Extra Info
-    storage_->header->extra_info["profile"] = profile;
+    storage_->header->extra_info["profile"] = acquisition_setting_.profiles;
     storage_->header->extra_info["operator"] = acquisition_setting_.operatorInfo.operatorName;
     storage_->header->extra_info["place"] = acquisition_setting_.operatorInfo.place;
     storage_->header->extra_info["slam"] = acquisition_setting_.operatorInfo.slam;

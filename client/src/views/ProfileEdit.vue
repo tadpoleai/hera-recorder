@@ -28,38 +28,14 @@ div
       input-align="right"
     )
 
-  van-popup(
+  van-action-sheet(
     v-model="isShowSelectDeviceType"
-    round
-    position="bottom"
+    description="选择添加的传感器"
+    :actions="deviceTypesVantActions"
+    @select="onSelectDeviceType($event.name)"
+    close-on-click-action
+    cancel-text="取消"
   )
-    van-cell-group(title="选择添加的传感器类型")
-      van-collapse(
-        v-model="selectedDeviceCategory"
-        accordion
-      )
-        van-collapse-item(
-          v-for="category in categoriedDeviceTypes"
-          :title="category.text"
-          :name="category.value"
-        )
-          van-collapse(
-            v-model="selectedDeviceType"
-            accordion
-          )
-            van-collapse-item(
-              v-for="device in category.children"
-              :title="device.label + '(' + device.text + ')'"
-              :name="device.value"
-            )
-              p(
-                v-for="line in String(device.comment).split('\\n')"
-              ) {{line}}
-              van-button(
-                type="primary" block
-                @click="onSelectDeviceType(device.value)"
-              ) 添加
-
   van-cell-group
     template(slot="title")
       div(style="display: flex; justify-content: space-between;")
@@ -171,7 +147,6 @@ export default class ProfileEdit extends Vue {
   // Getters
   @MetaModule.Getter deviceTypes;
   @MetaModule.Getter deviceParameterRuleMapMap;
-  @MetaModule.Getter categoriedDeviceTypes;
 
   @AcquisitionSettingModule.Action finishEditingProfileAndSave;
 
@@ -225,20 +200,13 @@ export default class ProfileEdit extends Vue {
 
   onSelectDeviceType(deviceType: string) {
     this.isDeviceListEditMode = false;
-    this.addDeviceByType(this.selectedDeviceType);
-    this.selectedDeviceCategory = '';
-    this.selectedDeviceType = '';
-    this.isShowSelectDeviceType = false;
+    this.addDeviceByType(deviceType);
     this.activeDeviceIndex = this.profile.devices.length - 1;
   }
 
   isDeviceListEditMode = false;
 
   isShowSelectDeviceType = false;
-
-  selectedDeviceCategory = '';
-
-  selectedDeviceType = '';
 
   activeDeviceIndex: number | string = '';
 }

@@ -22,11 +22,17 @@ const DiskUsageModule = namespace('DiskUsage');
 
 @Component({})
 export default class DiskUsage extends Vue {
+  @Prop({ required: true }) private refresh!: boolean;
+
   @DiskUsageModule.State isFetched;
 
   @DiskUsageModule.State fetchedData;
 
   @DiskUsageModule.Action fetch;
+
+  created() {
+    this.fetch();
+  }
 
   get diskTotalSpaceText(): string {
     return dataSizeFormat(this.fetchedData.diskTotalSpaceKB);

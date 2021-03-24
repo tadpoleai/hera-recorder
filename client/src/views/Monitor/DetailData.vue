@@ -10,12 +10,8 @@ van-action-sheet(
     van-cell.device-panel-header(
       slot="header"
     )
-      div(style="display: flex; justify-content: space-between; margin-bottom: 8px")
-        div
-          van-tag(plain type="primary" style="margin-right: 12px")
-            | {{deviceData.type + '/' + deviceData.name}}
-          van-tag(:type="getHealth(deviceData.health).type")
-            | {{getHealth(deviceData.health).text}}
+      div(style="display: flex; justify-content: space-between;")
+        span {{deviceData.type + '/' + deviceData.name}}
         van-icon.title-right-icon.enabled-icon(
           name="edit"
           @click="isShowParameterEdit = !isShowParameterEdit"
@@ -23,10 +19,9 @@ van-action-sheet(
           v-bind:class="{ 'active-icon': isShowParameterEdit }"
         )
       div(style="display: flex; justify-content: space-between;")
-        van-tag(plain)
-          | {{frequencyFormat(deviceData.frequency)}}
-        van-tag(plain)
-          | {{dataSizeFormatShort(deviceData.dataSizeKB)}}
+        span {{frequencyFormat(deviceData.frequency)}}
+        span {{dataSizeFormatShort(deviceData.dataSizeKB)}}
+
     //- dispData
     div.device-panel-content
       //- Edit Parameters
@@ -34,7 +29,7 @@ van-action-sheet(
         v-if="isShowParameterEdit && isFetchedDeviceParameterses"
       )
         template(
-          v-for="parameterRule in deviceDescriptionMap[deviceData.type].parameters"
+          v-for="parameterRule in deviceRulesMap[deviceData.type]"
         )
           Parameter(
             :key="deviceData.type + '/' + deviceData.name + '/' + parameterRule.name"
@@ -65,7 +60,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
 import { Dialog } from 'vant';
 
-import { frequencyFormat, dataSizeFormatShort, getHealth } from '@/utils';
+import { frequencyFormat, dataSizeFormatShort } from '@/utils';
 
 import Parameter from '@/components/Parameter.vue';
 import JpegImage from '@/components/JpegImage.vue';
@@ -90,13 +85,11 @@ export default class DetailData extends Vue {
   @DeviceParameterModule.State('fetchedData') deviceParameterses;
   @DeviceParameterModule.Action adjustDeviceParameter;
 
-  @MetaModule.State deviceDescriptionMap;
+  @MetaModule.State deviceRulesMap;
 
   frequencyFormat = frequencyFormat;
 
   dataSizeFormatShort = dataSizeFormatShort;
-
-  getHealth = getHealth;
 
   created() {
     this.fetchDeviceParameterses();

@@ -6,19 +6,9 @@ import { mutations } from './mutations';
 
 import { MainState } from './types';
 
-const defaultHost = window.location.hostname;
-const env = process.env.NODE_ENV || 'production';
-let defaultPort = 9090;
-if (env != 'production') {
-  defaultPort = 9091;
-}
-
 const state: MainState = {
   isConnectionErrored: false,
-  connectionErrorReason: '',
-
-  hostUrl: defaultHost,
-  hostPort: defaultPort
+  connectionErrorReason: ''
 };
 
 const namespaced = true;

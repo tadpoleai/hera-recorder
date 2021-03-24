@@ -16,5 +16,5 @@ export const mutations: MutationTree<DeviceDataState> = {
   setSelectDetailDeviceIndex(state, data: number) {
     state.isShowDetailDevice = true;
     state.selectDetailDeviceIndex = data;
-  },
+  }
 };

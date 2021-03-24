@@ -15,7 +15,7 @@ namespace parameter {
 
 bool output(const std::string& output_filename,
             const std::string& escaped_file_content,
-            const DeviceDesc& device_desc,
+            const std::vector<ParamDef>& param_defs,
             const std::string& category_name,
             const std::string& vendor_name)
 {
@@ -42,7 +42,7 @@ namespace device {
     output_file << "namespace " << category_name << " {\n";
     output_file << "namespace " << vendor_name << " {\n";
 
-    for (auto& param : device_desc.parameters) {
+    for (auto& param : param_defs) {
         if (param.category == ParamDef::Enum) {
             output_file << "\nBETTER_ENUM(" << param.type << ", int32_t, " << param.options << ");\n";
         }
@@ -55,7 +55,7 @@ public:
     {
 )";
 
-    for (auto& param : device_desc.parameters) {
+    for (auto& param : param_defs) {
         if (param.category == ParamDef::Numeric) {
             output_file << "        set_" << param.designator << "(" << param.default_value << ");\n";
         } else {
@@ -76,20 +76,19 @@ private:
     } 
 
 public:
-    std::string description() const override {
-        return static_description();
+    std::string rules() const override {
+        return static_rules();
     }
 
-    static std::string static_description() {
+    static std::string static_rules() {
         return R"RR()R";
 
     nlohmann::json rules = nlohmann::json::array();
-    for (auto& param : device_desc.parameters) {
+    for (auto& param : param_defs) {
         nlohmann::json param_json = nlohmann::json::object();
         switch (param.category) {
         case ParamDef::Boolean: {
             param_json["type"] = "boolean";
-            param_json["label"] = param.label;
             param_json["name"] = param.designator;
             param_json["defaultValue"] = param.default_value;
             param_json["comment"] = param.comment;
@@ -99,7 +98,6 @@ public:
         } break;
         case ParamDef::Enum: {
             param_json["type"] = "enum";
-            param_json["label"] = param.label;
             param_json["name"] = param.designator;
 
             auto raw_options = param.options;
@@ -122,7 +120,6 @@ public:
         } break;
         case ParamDef::Numeric: {
             param_json["type"] = param.type;
-            param_json["label"] = param.label;
             param_json["name"] = param.designator;
             param_json["range"] = nlohmann::json::object();
             param_json["range"]["min"] = param.range_min;
@@ -136,7 +133,6 @@ public:
         } break;
         case ParamDef::String: {
             param_json["type"] = "string";
-            param_json["label"] = param.label;
             param_json["name"] = param.designator;
             param_json["regex"] = param.regex;
             param_json["defaultValue"] = param.default_value;
@@ -150,12 +146,7 @@ public:
         }
     }
 
-    nlohmann::json desc = nlohmann::json::object();
-    desc["parameters"] = rules;
-    desc["label"] = device_desc.label;
-    desc["comment"] = device_desc.comment;
-
-    output_file << desc.dump() << R"R()RR";
+    output_file << rules.dump() << R"R()RR";
     }
 
 public:
@@ -163,7 +154,7 @@ public:
     {
         bool good = true;
 )R";
-    for (auto& param : device_desc.parameters) {
+    for (auto& param : param_defs) {
         output_file << "        good &= set_" << param.designator << "(json_input[\"" << param.designator
                     << "\"].get<std::string>());\n";
     }
@@ -174,13 +165,13 @@ public:
     bool set(const std::string& type, const std::string& value) override
     {
 )";
-    for (auto& param : device_desc.parameters) {
+    for (auto& param : param_defs) {
         output_file << "        if (type == \"" << param.designator << "\") { return set_" << param.designator
                     << "(value);}\n";
     }
     output_file << "        return false;\n    }\n";
 
-    for (auto& param : device_desc.parameters) {
+    for (auto& param : param_defs) {
         // clang-format off
     output_file << R"(
 public:

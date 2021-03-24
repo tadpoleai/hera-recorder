@@ -33,7 +33,6 @@ Device::Device(const uint32_t id,
     history_depth_(history_depth),
     status_(DeviceStatus::BeforeConnect),
     hera_errno_(HeraErrno::OK),
-    last_data_recvtime_(0),
     is_record_(false),
     thread_fetch_(nullptr),
     storage_(storage),
@@ -160,33 +159,6 @@ HeraErrno Device::parameter(const std::string& type, const std::string& value)
     return HeraErrno::OK;
 }
 
-std::string Device::get_health() const
-{
-    static constexpr auto MaxDataPeriod = 3 * time::OneSecond;
-    switch (status_) {
-    case DeviceStatus::BeforeConnect:
-        return "Created";
-
-    case DeviceStatus::Connected: {
-        if (time::Timestamp::now() - last_data_recvtime_ < MaxDataPeriod) {
-            return "Running";
-        } else {
-            if (sequence_ == 0) {
-                return "NoData";
-            } else {
-                return "Aged";
-            }
-        }
-    }
-
-    case DeviceStatus::Terminated:
-        return "Stopped";
-
-    default:
-        return "Error";
-    }
-}
-
 /// Read history of device data
 /// and then convert
 std::vector<data::SensorDataPtr> Device::history()
@@ -248,7 +220,6 @@ void Device::fetch_thread_function()
         auto new_data = fetch();
 
         if (new_data != nullptr) {
-            last_data_recvtime_ = new_data->get_timestamp_receive_ns();
             if (is_forward_) {
                 forward_queue_.push(new_data);
             }
