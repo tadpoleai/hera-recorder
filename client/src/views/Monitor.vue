@@ -20,8 +20,6 @@
         v-model="dataRefreshRate"
         :size="24"
         :gutter="6"
-        icon="clock-o"
-        void-icon="circle"
       )
 
   van-cell-group(title="传感器数据")
@@ -39,15 +37,12 @@
           van-cell.device-panel-header(
             slot="header"
           )
-            div(style="display: flex; justify-content: space-between; margin-bottom: 8px")
-              van-tag(plain type="primary")
-                | {{deviceData.type + '/' + deviceData.name}}
-              van-tag(:type="getHealth(deviceData.health).type")
-                | {{getHealth(deviceData.health).text}}
+            div
+              span {{deviceData.type + '/' + deviceData.name}}
             div(style="display: flex; justify-content: space-between;")
-              van-tag(plain)
+              span(style="font-size: 75%;")
                 | {{frequencyFormat(deviceData.frequency)}}
-              van-tag(plain)
+              span(style="font-size: 75%;")
                 | {{dataSizeFormatShort(deviceData.dataSizeKB)}}
 
           //- dispData
@@ -77,7 +72,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
 import { Dialog } from 'vant';
 
-import { durationFormat, frequencyFormat, dataSizeFormatShort, getHealth } from '@/utils';
+import { durationFormat, frequencyFormat, dataSizeFormatShort } from '@/utils';
 import resize from 'vue-resize-directive';
 
 import DetailData from '@/views/Monitor/DetailData.vue';
@@ -137,8 +132,6 @@ export default class Monitor extends Vue {
   frequencyFormat = frequencyFormat;
 
   dataSizeFormatShort = dataSizeFormatShort;
-
-  getHealth = getHealth;
 
   get timeFromStart() {
     if (this.fetchedData.startTimeSec == 0) {

@@ -5,7 +5,6 @@ import 'vant/lib/icon/local.css';
 import {
   ActionSheet,
   Button,
-  Cascader,
   Cell,
   CellGroup,
   Col,
@@ -32,18 +31,15 @@ import {
   RadioGroup,
   Rate,
   Row,
-  Slider,
   Stepper,
   Sticky,
   SwipeCell,
   Switch,
-  Tag,
   Toast
 } from 'vant';
 
 Vue.use(ActionSheet);
 Vue.use(Button);
-Vue.use(Cascader);
 Vue.use(Cell);
 Vue.use(CellGroup);
 Vue.use(Col);
@@ -70,10 +66,8 @@ Vue.use(Radio);
 Vue.use(RadioGroup);
 Vue.use(Rate);
 Vue.use(Row);
-Vue.use(Slider);
 Vue.use(Stepper);
 Vue.use(Sticky);
 Vue.use(SwipeCell);
 Vue.use(Switch);
-Vue.use(Tag);
 Vue.use(Toast);

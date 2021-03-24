@@ -55,22 +55,3 @@ export function dataSizeFormatShort(datasizeKB: number): string {
 
   return (datasizeKB / 1048576).toFixed(1) + 'G';
 }
-
-export function getHealth(rawMessage: string) {
-  switch (rawMessage) {
-    case 'Created':
-      return { type: 'primary', text: '启动' };
-    case 'Running':
-      return { type: 'success', text: '运行' };
-    case 'NoData':
-      return { type: 'warning', text: '无数据' };
-    case 'Aged':
-      return { type: 'warning', text: '停滞' };
-    case 'Stopped':
-      return { type: 'primary', text: '终止' };
-    case 'Error':
-      return { type: 'danger', text: '出错' };
-    default:
-      return { type: 'danger', text: '未知' };
-  }
-}
