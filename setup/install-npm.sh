@@ -7,9 +7,16 @@
 set -e
 set -v
 
-sudo apt-get update
-sudo apt-get install -y nodejs npm
-sudo npm config set registry https://registry.npm.taobao.org
+mkdir npm_install
+cd npm_install
 
-sudo npm install n -g
-sudo n stable
+wget https://registry.npmjs.org/npm/-/npm-6.8.0.tgz
+tar -xzf npm-6.8.0.tgz
+cd package
+node bin/npm-cli.js install -gf ../npm-6.8.0.tgz
+
+cd ../..
+rm -rf npm_install
+
+npm config set registry https://registry.npm.taobao.org
+

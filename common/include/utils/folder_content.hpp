@@ -48,6 +48,7 @@ struct FilesystemStatus {
     FileSize total_space;
     FileSize free_space;
     FileSize used_space;
+    uint64_t device_id;
     FilesystemStatus() : opened(false), total_space(0), free_space(0), used_space(0) {}
 };
 

@@ -5,6 +5,6 @@ cd $(dirname "$0")/..
 mkdir -p build_client
 
 cd client
-npm install
+npm ci
 npm run thrift
 npm run build -- --dest ../build_client

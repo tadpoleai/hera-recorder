@@ -1,11 +1,18 @@
-# 串口设备路径
+@ 惯性测量单元/Aceinna9轴IMU
+@ 通过SPI方式连接到同步板卡
+@ 其采集时钟指示信号会被同步板卡捕捉解析后与源数据一并发送到采集上位机
+
+# 设备路径
+# 串口的设备路径, 通常以'/dev/tty'开头
 immutable string Kernel = "/dev/tty"; regex ^\/(\w+\/?)+$
 
+# 波特率
 # 串口设备波特率
 immutable integer Baud = 230400; range 120, 2560000, 1
 
+# 帧识别号
 # IMU数据串口帧识别号
-# 参考https://confluence.newayz.com/pages/viewpage.action?pageId=23200506
+# 参考 https://confluence.newayz.com/pages/viewpage.action?pageId=23200506
 # 通常为0, 不需修改
 immutable integer MsgType = 0; range 0, 7, 1
 

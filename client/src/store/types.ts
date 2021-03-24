@@ -1,23 +1,27 @@
 // store/types.ts
 
-import { MainState } from './Main/types';
-import { MetaState } from './Meta/types';
-import { AcquisitionSettingState } from './AcquisitionSetting/types';
-import { AcquisitionControlState } from './AcquisitionControl/types';
-import { DeviceDataState } from './DeviceData/types';
-import { DeviceParameterState } from './DeviceParameter/types';
-import { ProfileEditState } from './ProfileEdit/types';
-import { StorageState } from './Storage/types';
-import { UploadState } from './Upload/types';
+import { State as MainState } from './modules/main';
+import { State as MetaState } from './modules/meta';
+import { State as AcquisitionSettingState } from './modules/acquisitionSetting';
+import { State as AcquisitionControlState } from './modules/acquisitionControl';
+import { State as DeviceDataState } from './modules/deviceData';
+import { State as DeviceParameterState } from './modules/deviceParameter';
+import { State as ProfileEditState } from './modules/profileEdit';
+import { State as StorageState } from './modules/storage';
+import { State as UploadState } from './modules/upload';
+import { State as PreferenceState } from './modules/preference';
+import { State as LogState } from './modules/log';
 
 export interface RootState {
-  main: MainState;
-  meta: MetaState;
-  acquisitionSetting: AcquisitionSettingState;
-  acquisitionControl: AcquisitionControlState;
-  deviceData: DeviceDataState;
-  deviceParameter: DeviceParameterState;
-  profileEdit: ProfileEditState;
-  storage: StorageState;
-  upload: UploadState;
+  Main: MainState;
+  Meta: MetaState;
+  AcquisitionSetting: AcquisitionSettingState;
+  AcquisitionControl: AcquisitionControlState;
+  DeviceData: DeviceDataState;
+  DeviceParameter: DeviceParameterState;
+  ProfileEdit: ProfileEditState;
+  Storage: StorageState;
+  Upload: UploadState;
+  Preference: PreferenceState;
+  Log: LogState;
 }

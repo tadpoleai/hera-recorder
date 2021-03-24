@@ -45,10 +45,10 @@ public:
     /// @brief Get meta info of specific type's parameters
     ///
     /// @param vendor_type vendor_type in string
-    /// @return rules of parameter in json
+    /// @return descriptiones of parameter in json
     /// parameters
     ///
-    static std::string plugin_parameter_rules(const std::string& vendor_type);
+    static std::string plugin_description(const std::string& vendor_type);
 
     ///
     /// @brief Check vendor_type
@@ -108,7 +108,7 @@ public:
         std::string version;
         CreateFunction create;
         ConvertFunction convert;
-        nlohmann::json rules;
+        std::string description;
     };
 
 private:

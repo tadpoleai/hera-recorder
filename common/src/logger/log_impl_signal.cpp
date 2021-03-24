@@ -4,6 +4,9 @@
 
 #include <csignal>
 #include <regex>
+#include <unistd.h>
+
+#include <sys/time.h>
 
 #include "logger/logger.hpp"
 #include "version.hpp"
@@ -35,6 +38,9 @@ void Logger::register_back_trace()
             log::error << "what(): " << e.what() << log::endl;
         }
         log::error << "Aborting" << log::endl;
+        if (sleep_before_exiting_) {
+            ::usleep(SleepDurationUs);
+        }
         ::abort();
     });
 
@@ -51,10 +57,13 @@ void Logger::register_back_trace()
             log::error << "what(): " << e.what() << log::endl;
         }
         log::error << "Aborting" << log::endl;
+        if (sleep_before_exiting_) {
+            ::usleep(SleepDurationUs);
+        }
         ::abort();
     });
 
-    static const std::set<int> SignalsToIgnore = {SIGCONT, SIGURG, SIGIO, SIGCHLD, SIGWINCH};
+    static const std::set<int> SignalsToIgnore = {SIGCONT, SIGURG, SIGPOLL, SIGHUP, SIGIO, SIGCHLD, SIGWINCH};
     for (auto i = 0; i <= 32; i++) {
         if (SignalsToIgnore.count(i) == 0) {
             ::signal(i, &Logger::singal_handler);
@@ -128,9 +137,9 @@ void Logger::singal_handler(int signo)
     case SIGTTOU:
         log::error << "FATAL: Received SIGTTOU: Background write to control terminal." << log::endl;
         break;
-    // case SIGPOLL:
-    //     log::error << "FATAL: Received SIGPOLL: Pollable event occurred (System V)." << log::endl;
-    //     break;
+    case SIGPOLL:
+        log::error << "FATAL: Received SIGPOLL: Pollable event occurred (System V)." << log::endl;
+        break;
     case SIGXCPU:
         log::error << "FATAL: Received SIGXCPU: CPU time limit exceeded." << log::endl;
         break;
@@ -202,6 +211,9 @@ void Logger::back_trace(int signo)
         }
 
         logger << log::endl;
+        if (sleep_before_exiting_) {
+            ::usleep(SleepDurationUs);
+        }
         free(trace_strings);
         if (signal_to_ignore_user_.count(signo) == 0) {
             instance_.reset();
@@ -209,6 +221,9 @@ void Logger::back_trace(int signo)
     }
     if (signal_to_ignore_user_.count(signo) == 0) {
         log::error << "EXITING" << log::endl;
+        if (sleep_before_exiting_) {
+            ::usleep(SleepDurationUs);
+        }
         exit(-1);
     }
 }

@@ -22,16 +22,28 @@ export function durationFormat(durationSec: number): string {
   return ret;
 }
 
-export function dataSizeFormat(datasizeKB: number): string {
-  if (datasizeKB < 1024) {
-    return datasizeKB.toFixed(0) + 'KiB';
+export function timestampFormat(tsSec: number, tsNsec: number): string {
+  return new Date(tsSec * 1000 + tsNsec / 1000000).toISOString();
+}
+
+export function dataSizeFormat(datasize: number): string {
+  if (datasize < 1024) {
+    return datasize + 'B';
   }
 
-  if (datasizeKB < 1048576) {
-    return (datasizeKB / 1024).toFixed(2) + 'MiB';
+  if (datasize < 1048576) {
+    return (datasize / 1024).toFixed(1) + 'KiB';
   }
 
-  return (datasizeKB / 1048576).toFixed(2) + 'GiB';
+  if (datasize < 1048576 * 1024) {
+    return (datasize / 1048576).toFixed(2) + 'MiB';
+  }
+
+  if (datasize < 1048576 * 1048576) {
+    return (datasize / (1048576 * 1024)).toFixed(2) + 'GiB';
+  }
+
+  return (datasize / (1048576 * 1048576)).toFixed(2) + 'TiB';
 }
 
 export function frequencyFormat(frequency: number): string {
@@ -44,14 +56,41 @@ export function frequencyFormat(frequency: number): string {
   }
 }
 
-export function dataSizeFormatShort(datasizeKB: number): string {
-  if (datasizeKB < 1024) {
-    return datasizeKB.toFixed(1) + 'K';
+export function dataSizeFormatShort(datasize: number): string {
+  if (datasize < 1024) {
+    return datasize + 'B';
   }
 
-  if (datasizeKB < 1048576) {
-    return (datasizeKB / 1024).toFixed(1) + 'M';
+  if (datasize < 1048576) {
+    return (datasize / 1024).toFixed(0) + 'K';
   }
 
-  return (datasizeKB / 1048576).toFixed(1) + 'G';
+  if (datasize < 1048576 * 1024) {
+    return (datasize / 1048576).toFixed(1) + 'M';
+  }
+
+  if (datasize < 1048576 * 1048576) {
+    return (datasize / (1048576 * 1024)).toFixed(1) + 'G';
+  }
+
+  return (datasize / (1048576 * 1048576)).toFixed(1) + 'T';
+}
+
+export function getHealth(rawMessage: string) {
+  switch (rawMessage) {
+    case 'Created':
+      return { type: 'primary', text: '启动' };
+    case 'Running':
+      return { type: 'success', text: '运行' };
+    case 'NoData':
+      return { type: 'warning', text: '无数据' };
+    case 'Aged':
+      return { type: 'warning', text: '停滞' };
+    case 'Stopped':
+      return { type: 'primary', text: '终止' };
+    case 'Error':
+      return { type: 'danger', text: '出错' };
+    default:
+      return { type: 'danger', text: '未知' };
+  }
 }

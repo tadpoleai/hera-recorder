@@ -4,16 +4,18 @@ import Vue from 'vue';
 import Vuex, { StoreOptions } from 'vuex';
 import { RootState } from './types';
 
-import { Main } from './Main';
-import { Meta } from './Meta';
-import { AcquisitionControl } from './AcquisitionControl';
-import { AcquisitionSetting } from './AcquisitionSetting';
-import { DeviceData } from './DeviceData';
-import { DeviceParameter } from './DeviceParameter';
-import { DiskUsage } from './DiskUsage';
-import { ProfileEdit } from './ProfileEdit';
-import { Storage } from './Storage';
-import { Upload } from './Upload';
+import { store as Main } from './modules/main';
+import { store as Meta } from './modules/meta';
+import { store as AcquisitionControl } from './modules/acquisitionControl';
+import { store as AcquisitionSetting } from './modules/acquisitionSetting';
+import { store as DeviceData } from './modules/deviceData';
+import { store as DeviceParameter } from './modules/deviceParameter';
+import { store as DiskUsage } from './modules/diskUsage';
+import { store as ProfileEdit } from './modules/profileEdit';
+import { store as Storage } from './modules/storage';
+import { store as Upload } from './modules/upload';
+import { store as Preference } from './modules/preference';
+import { store as Log } from './modules/log';
 
 Vue.use(Vuex);
 
@@ -23,12 +25,14 @@ const store: StoreOptions<RootState> = {
     Meta,
     AcquisitionControl,
     AcquisitionSetting,
-    DiskUsage,
     DeviceData,
     DeviceParameter,
+    DiskUsage,
     ProfileEdit,
     Storage,
-    Upload
+    Upload,
+    Preference,
+    Log
   },
   strict: true
 };

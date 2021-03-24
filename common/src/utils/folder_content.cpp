@@ -13,15 +13,17 @@
 #include <string>
 #include <unistd.h>
 
-#include <sys/stat.h>
 #ifdef LINUX
+#include <sys/stat.h>
 #include <sys/statfs.h>
 #endif
 #ifdef DARWIN
-#include <sys/param.h>
 #include <sys/mount.h>
+#include <sys/param.h>
 #endif
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/statfs.h>
 
 namespace wayz {
 namespace hera {
@@ -96,8 +98,9 @@ FilesystemStatus get_filesystem_status(const std::string& path)
 {
     FilesystemStatus ret;
     struct statfs diskInfo;
+    struct stat dirInfo;
 
-    if (statfs(path.c_str(), &diskInfo) < 0) {
+    if (statfs(path.c_str(), &diskInfo) < 0 || stat(path.c_str(), &dirInfo) < 0) {
         ret.opened = false;
         return ret;
     } else {
@@ -106,6 +109,7 @@ FilesystemStatus get_filesystem_status(const std::string& path)
         ret.total_space = diskInfo.f_blocks * blocksize;
         ret.free_space = diskInfo.f_bavail * blocksize;
         ret.used_space = ret.total_space - ret.free_space;
+        ret.device_id = dirInfo.st_dev;
     }
     return ret;
 }

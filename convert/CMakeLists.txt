@@ -19,8 +19,11 @@ include_directories(.. src include ${rosbag_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS}
 # ROS Message Library
 set(ROS_MESSAGE_LIB ${PROJECT_NAME}-ros-message)
 file(GLOB_RECURSE ROS_MESSAGE_SRC "src/ros_message_impl/*.cpp")
-add_library(${ROS_MESSAGE_LIB} SHARED "src/ros_message.cpp" "src/direct_bag/direct_bag.cpp" ${ROS_MESSAGE_SRC})
-target_link_libraries(${ROS_MESSAGE_LIB} ${rosbag_LIBRARIES} hera-common hera-device)
+add_library(
+  ${ROS_MESSAGE_LIB} SHARED "src/ros_message.cpp"
+                            "src/direct_bag/direct_bag.cpp" ${ROS_MESSAGE_SRC})
+target_link_libraries(${ROS_MESSAGE_LIB} ${rosbag_LIBRARIES} hera-common
+                      hera-device)
 
 # Main executable
 add_executable(${PROJECT_NAME} "src/converter.cpp" "src/main.cpp")

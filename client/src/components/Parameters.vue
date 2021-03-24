@@ -13,8 +13,8 @@ div
 
 <script lang="ts">
 import { Component, Emit, Vue, Prop } from 'vue-property-decorator';
-import { ParameterRule } from '../store/Meta/types';
-import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
+import ParameterRule from '@/interfaces/ParameterRule';
+import { namespace } from 'vuex-class';
 import { Hera } from '@/api';
 
 import Parameter from '@/components/Parameter.vue';
@@ -30,11 +30,11 @@ export default class DetailData extends Vue {
 
   @Prop({ default: false, type: Boolean }) private isAdjustParameter!: boolean;
 
-  @MetaModule.State deviceRulesMap;
+  @MetaModule.State deviceDescriptionMap;
 
   get activeParameterRules(): Array<ParameterRule> {
     const ret: Array<ParameterRule> = [];
-    const parameterRules = this.deviceRulesMap[this.deviceType];
+    const parameterRules = this.deviceDescriptionMap[this.deviceType].parameters;
 
     parameterRules.forEach(parameterRule => {
       if (parameterRule.requirement.length == 0) {
@@ -62,7 +62,6 @@ export default class DetailData extends Vue {
   }
 
   get valuesMap(): Record<string, string> {
-    console.log('update');
     if (this.values instanceof Array) {
       const ret: Record<string, string> = {};
       (this.values as Array<Hera.Parameter>).forEach(element => {
@@ -75,12 +74,10 @@ export default class DetailData extends Vue {
   }
 
   @Emit('asyncInput') asyncInput(e: any) {
-    console.log('asyncInput');
     return e;
   }
 
   @Emit('syncInput') syncInput(e: any) {
-    console.log('syncInput');
     return e;
   }
 }

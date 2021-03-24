@@ -15,9 +15,16 @@ namespace impl {
 
 std::unique_ptr<Logger> Logger::instance_(new Logger());
 
+bool Logger::sleep_before_exiting_ = false;
+
 void Logger::onlyprint()
 {
     instance_->inited_ = true;
+}
+
+void Logger::set_sleep_before_exiting(bool value)
+{
+    sleep_before_exiting_ = value;
 }
 
 void Logger::clear_line()
@@ -53,17 +60,24 @@ void Logger::set_level(LogLevel level)
 bool Logger::open_aux(std::vector<LogString>* aux_vector)
 {
     if (aux_vector != nullptr) {
-        instance_->aux_vector_ = aux_vector;
-        return true;
+        if (std::find(instance_->aux_vector_vector_.begin(), instance_->aux_vector_vector_.end(), aux_vector) ==
+            instance_->aux_vector_vector_.end()) {
+            instance_->aux_vector_vector_.push_back(aux_vector);
+            return true;
+        }
     }
 
     return false;
 }
 
-void Logger::close_aux()
+void Logger::close_aux(std::vector<LogString>* aux_vector)
 {
-    if (instance_->aux_vector_ != nullptr) {
-        instance_->aux_vector_ = nullptr;
+    if (aux_vector != nullptr) {
+        auto pos = std::find(instance_->aux_vector_vector_.begin(), instance_->aux_vector_vector_.end(), aux_vector);
+
+        if (pos != instance_->aux_vector_vector_.end()) {
+            instance_->aux_vector_vector_.erase(pos);
+        }
     }
 }
 
@@ -78,7 +92,7 @@ LogStringStream Logger::create_string(LogLevel level)
 
 Logger::Logger() :
     inited_(false),
-    aux_vector_(nullptr),
+    aux_vector_vector_(),
     level_(LogLevel::Debug),
     queue_(0, 0, 5ms),
     running_(true),
@@ -124,8 +138,8 @@ void Logger::write(LogString&& data)
     if (file_.is_open()) {
         file_ << str << std::endl;
     }
-    if (aux_vector_ != nullptr) {
-        aux_vector_->emplace_back(std::move(data));
+    for (auto& aux_vector_ptr : aux_vector_vector_) {
+        aux_vector_ptr->emplace_back(std::move(data));
     }
 }
 

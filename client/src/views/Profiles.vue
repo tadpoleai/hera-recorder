@@ -55,8 +55,9 @@ div
 </template>
 
 <script lang="ts">
+import { Dialog } from 'vant';
 import { Component, Vue } from 'vue-property-decorator';
-import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
+import { namespace } from 'vuex-class';
 
 const AcquisitionSettingModule = namespace('AcquisitionSetting');
 
@@ -74,6 +75,8 @@ export default class Profiles extends Vue {
 
   @AcquisitionSettingModule.Action editExistingProfile;
 
+  @AcquisitionSettingModule.Getter indexValid;
+
   onClickAddProfile() {
     this.editNewProfile();
     this.$router.push('profileedit');
@@ -82,6 +85,24 @@ export default class Profiles extends Vue {
   onClickEditProfile(index: number) {
     this.editExistingProfile(index);
     this.$router.push('profileedit');
+  }
+
+  async onClickNavBack() {
+    if (!this.indexValid) {
+      try {
+        await Dialog.confirm({
+          title: '提示',
+          message: '未选择正确的配置文件, 确定要后退吗',
+          theme: 'round-button'
+        });
+
+        return true;
+      } catch {
+        return false;
+      }
+    } else {
+      return true;
+    }
   }
 }
 </script>

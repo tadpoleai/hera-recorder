@@ -20,6 +20,7 @@ cross_compile_toolset_path="/opt/fsl-auto/2.5.2/"
 install_carto=false
 install_client=false
 install_daemon=false
+install_daemon_config=false
 
 PrintUsage() {
     echo ""
@@ -27,10 +28,11 @@ PrintUsage() {
     echo "usage: $0 [-p <prefix>] [-m <module> [-m <module> ...]] [-c <cross_compile_toolset_path>] [-h]"
     echo "  -p  Install Prefix of Hera Headers, Binraries and Libraries, <prefix> default = '/usr/local/'"
     echo "  -c  Install Cross Compile and use Toolset_path = <cross_compile_toolset_path>, only available when host is x86_64"
-    echo "  -m  Install Specific Module, <module> = carto, client, daemon"
-    echo "      carto   Install Carto"
-    echo "      client  Install Client"
-    echo "      daemon  Install Daemon"
+    echo "  -m  Install Specific Module, <module> = carto, client, daemon, daemon_config"
+    echo "      carto               Install Carto"
+    echo "      client              Install Client"
+    echo "      daemon              Install Daemon"
+    echo "      daemon_config       To Override Config File of Daemon (/etc/hera.conf)"
     echo "  -h  Print Help Information"
     echo ""
     exit 1
@@ -51,6 +53,9 @@ while getopts "p:c:m:h" opt; do
             ;;
         daemon)
             install_daemon=true
+            ;;
+        daemon_config)
+            install_daemon_config=true
             ;;
         esac
         ;;
@@ -101,14 +106,17 @@ chmod 755 bin/$arch/*
 chmod 755 lib/$arch/*
 chmod 755 plugin/$arch/base/*
 chmod 755 plugin/$arch/driver/*
+chmod 755 plugin/$arch/upload/*
 mkdir -p ${install_prefix}/bin
 mkdir -p ${install_prefix}/lib
 mkdir -p ${install_prefix}/lib/hera/plugin/base
 mkdir -p ${install_prefix}/lib/hera/plugin/driver
+mkdir -p ${install_prefix}/lib/hera/plugin/upload
 cp -r bin/$arch/* ${install_prefix}/bin
 cp -r lib/$arch/* ${install_prefix}/lib
 cp -r plugin/$arch/base/* ${install_prefix}/lib/hera/plugin/base
 cp -r plugin/$arch/driver/* ${install_prefix}/lib/hera/plugin/driver
+cp -r plugin/$arch/upload/* ${install_prefix}/lib/hera/plugin/upload
 
 # Install CMake Module
 echo "set(HERA_INSTALL_PREFIX ${install_prefix})" >share/FindHera.cmake
@@ -137,6 +145,9 @@ fi
 if [[ ${install_daemon} == true ]] && [[ $hostarch == $arch ]]; then
     # Install hera-daemon's service
     cp script/daemon/hera-daemon.service /lib/systemd/system
+    
+    # Install udiskie service
+    cp script/daemon/udiskie.service /lib/systemd/system
 
     # Make directory for hera-daemon
     mkdir -p /var/hera/
@@ -144,8 +155,21 @@ if [[ ${install_daemon} == true ]] && [[ $hostarch == $arch ]]; then
     mkdir -p /var/hera/logs
 
     # Copy Config json
-    cp share/config/daemon.json /var/hera
+    if [[ -f "/etc/hera.conf" ]]; then
+        if [[ ${install_daemon_config} == true ]]; then
+            echo "Overwriting Daemon config /etc/hera.conf"
+            cp script/daemon/daemon.conf /etc/hera.conf
+        else
+            echo "Daemon config /etc/hera.conf exists, keeping"
+        fi
+    else
+        echo "Copying Daemon config /etc/hera.conf"
+        cp script/daemon/daemon.conf /etc/hera.conf
+    fi
 
     # Enable boot-up hera-daemon
     systemctl enable hera-daemon.service
+
+    # Enable boot-up udiskie
+    systemctl enable udiskie.service
 fi

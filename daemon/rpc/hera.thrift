@@ -7,11 +7,12 @@ namespace cpp wayz.hera.daemon
 // Meta
 struct DeviceRule {
     1: required string name;
-    2: required string parameterRulesJson;
+    4: required string description;
 }
 
 struct Meta {
     1: required list<DeviceRule> deviceRules;
+    2: required string daemonVersion;
 }
 
 // AcquisitionSetting
@@ -67,14 +68,16 @@ struct DeviceData {
 
     5: required bool forward;
 
-    20: required i32 error;
-    21: required string reason;
+    20: required string health;
+    21: required string statusMessage;
 
     30: required i32 sequence;
     40: required double frequency;
-    50: required i32 dataSizeKB;
+    50: required double dataSize;
 
     60: required list<SingleDisplayData> dispData;
+
+    70: required string status;
 }
 
 struct DataStatus {
@@ -99,12 +102,12 @@ struct DeviceAndParameters {
 struct StorageSingleDevice {
     1: required string typeName;
     2: required i32 messageNum;
-    3: required i32 dataSizeKB;
+    3: required double dataSize;
 }
 
 struct StorageRecordFile {
     1: required string name;
-    2: required i32 sizeKB;
+    2: required double size;
     10: required string startTime;
     11: required string endTime;
     20: required list<StorageSingleDevice> devices;
@@ -116,8 +119,8 @@ struct StorageStatus {
 
 // DiskUsageSpace
 struct DiskUsageStatus {
-    1: required i32 diskUsedSpaceKB;
-    2: required i32 diskTotalSpaceKB;
+    1: required double diskUsedSpace;
+    2: required double diskTotalSpace;
 }
 
 // Uploads
@@ -131,7 +134,8 @@ enum UploadOperationType {
 struct UploadRequest {
     1: required string name;
     2: required string remote;
-    3: required UploadOperationType operationType;
+    3: required string extraPath;
+    4: required UploadOperationType operationType;
     10: required bool compress;
 }
 
@@ -142,10 +146,26 @@ struct UploadProcess {
 
     10: UploadRequest request;
 
-    20: required i32 totalSizeKB;
-    21: required i32 processedSizeKB;
+    20: required double totalSize;
+    21: required double processedSize;
     22: required string speed;
     23: required string eta;
+}
+
+struct LocalDisk {
+    1: required string name;
+    2: required DiskUsageStatus diskUsageStatus;
+}
+
+// Log
+struct LogMessage {
+    1: required i32 index;
+
+    10: required i32 level;
+    11: required i32 tsSec;
+    12: required i32 tsNsec;
+
+    20: required string message;
 }
 
 service Service
@@ -179,10 +199,15 @@ service Service
 
     // Storage
     list<StorageRecordFile> getStorage();
-    list<StorageRecordFile> deleteStorage(1: string name);
+    list<StorageRecordFile> deleteStorage(1: list<string> names);
 
     // Upload
     list<string> getUploadServers();
+    list<LocalDisk> getLocalDisks();
+    list<string> getLocalDiskFolders(1: list<string> path);
     list<UploadProcess> getUploadProcesses();
-    list<UploadProcess> requestUpload(1: UploadRequest request);
+    list<UploadProcess> requestUpload(1: list<UploadRequest> requests);
+
+    // Log
+    list<LogMessage> latestLogs();
 }

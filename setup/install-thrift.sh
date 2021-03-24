@@ -9,21 +9,21 @@ set -v
 
 VERSION="0.12.0"
 
-sudo apt-get update
-sudo apt-get install -y \
-    libboost-dev \
-    libboost-test-dev \
-    libboost-program-options-dev \
-    libboost-filesystem-dev \
-    libboost-thread-dev \
-    libevent-dev \
-    automake \
-    libtool \
-    flex \
-    bison \
-    pkg-config \
-    g++ \
-    libssl-dev
+# sudo apt-get update
+# sudo apt-get install -y \
+#     libboost-dev \
+#     libboost-test-dev \
+#     libboost-program-options-dev \
+#     libboost-filesystem-dev \
+#     libboost-thread-dev \
+#     libevent-dev \
+#     automake \
+#     libtool \
+#     flex \
+#     bison \
+#     pkg-config \
+#     g++ \
+#     libssl-dev
 
 if [ ! -e "thrift-${VERSION}.tar.gz" ]; then
     wget "http://mirrors.tuna.tsinghua.edu.cn/apache/thrift/${VERSION}/thrift-${VERSION}.tar.gz"
@@ -52,3 +52,6 @@ make -j 3
 sudo make install
 
 sudo cp /usr/local/lib/libthrift-${VERSION}.so /usr/lib/libthrift-${VERSION}.so
+
+cd ..
+rm -rf thrift*

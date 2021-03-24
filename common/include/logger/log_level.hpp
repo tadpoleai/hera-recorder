@@ -63,6 +63,22 @@ public:
         }
     }
 
+    std::string to_config_string() const
+    {
+        switch (value_) {
+        case ValueType::Debug:
+            return "debug";
+        case ValueType::Info:
+            return "info";
+        case ValueType::Warn:
+            return "warn";
+        case ValueType::Error:
+            return "error";
+        default:
+            return "unknown";
+        }
+    }
+
     std::string to_color_prefix() const
     {
         switch (value_) {

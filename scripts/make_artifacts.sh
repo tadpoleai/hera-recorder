@@ -31,6 +31,7 @@ while ((arch_index < 1)); do
     mkdir -p artifacts/lib/$arch/
     mkdir -p artifacts/plugin/$arch/base
     mkdir -p artifacts/plugin/$arch/driver
+    mkdir -p artifacts/plugin/$arch/upload
 
     # Binaries
     if (($arch_index == 0)); then
@@ -64,12 +65,17 @@ while ((arch_index < 1)); do
     cp -r \
         build_$arch/device/driver/libhera-device-plugin-*-driver.so \
         artifacts/plugin/$arch/driver
+    cp -r \
+        build_$arch/storage/upload/libhera-storage-upload-*.so \
+        artifacts/plugin/$arch/upload
 
     ((arch_index++))
 done
 
 # Script
-cp -r daemon/script/* artifacts/script/daemon
+cp -r daemon/script/hera-daemon.service artifacts/script/daemon
+cp -r daemon/script/udiskie.service artifacts/script/daemon
+cp -r daemon/config/daemon.conf artifacts/script/daemon
 
 # Shared
 cp -r convert/config artifacts/share

@@ -28,20 +28,44 @@ div
       input-align="right"
     )
 
-  van-action-sheet(
+  van-popup(
     v-model="isShowSelectDeviceType"
-    description="选择添加的传感器"
-    :actions="deviceTypesVantActions"
-    @select="onSelectDeviceType($event.name)"
-    close-on-click-action
-    cancel-text="取消"
+    round
+    position="bottom"
   )
+    van-cell-group(title="选择添加的传感器类型")
+      van-collapse(
+        v-model="selectedDeviceCategory"
+        accordion
+      )
+        van-collapse-item(
+          v-for="category in categoriedDeviceTypes"
+          :title="category.label"
+          :name="category.value"
+        )
+          van-collapse(
+            v-model="selectedDeviceType"
+            accordion
+          )
+            van-collapse-item(
+              v-for="device in category.children"
+              :title="device.label"
+              :name="device.value"
+            )
+              p(
+                v-for="line in String(device.comment).split('\\n')"
+              ) {{line}}
+              van-button(
+                type="primary" block
+                @click="onSelectDeviceType(device.value)"
+              ) 添加
+
   van-cell-group
     template(slot="title")
       div(style="display: flex; justify-content: space-between;")
         span 传感器列表
         span
-          van-icon.title-right-icon.enabled-icon(
+          van-icon.title-middle-icon.enabled-icon(
             v-if="!isDeviceListEmpty"
             name="edit"
             @click="onClickListEdit"
@@ -79,7 +103,7 @@ div
               size="24px"
             )
             van-icon.title-right-icon(
-              name="delete"
+              name="delete-o"
               color="red"
               @click="deleteDeviceByIndex(deviceIndex)"
               size="24px"
@@ -125,7 +149,7 @@ div
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import { State, Getter, Action, Mutation, namespace } from 'vuex-class';
+import { namespace } from 'vuex-class';
 import { Dialog } from 'vant';
 
 import CheckedField from '@/components/CheckedField.vue';
@@ -147,6 +171,7 @@ export default class ProfileEdit extends Vue {
   // Getters
   @MetaModule.Getter deviceTypes;
   @MetaModule.Getter deviceParameterRuleMapMap;
+  @MetaModule.Getter categoriedDeviceTypes;
 
   @AcquisitionSettingModule.Action finishEditingProfileAndSave;
 
@@ -161,11 +186,11 @@ export default class ProfileEdit extends Vue {
   @ProfileEditModule.Action setDeviceForwardByIndex;
   @ProfileEditModule.Action setDeviceParameterByIndex;
 
+  @ProfileEditModule.Getter profileValid;
+
   async beforeDestroy() {
     if (this.profileEdited) {
-      console.log('awt');
       await this.finishEditingProfileAndSave();
-      console.log('aftwat');
     }
   }
 
@@ -200,7 +225,10 @@ export default class ProfileEdit extends Vue {
 
   onSelectDeviceType(deviceType: string) {
     this.isDeviceListEditMode = false;
-    this.addDeviceByType(deviceType);
+    this.addDeviceByType(this.selectedDeviceType);
+    this.selectedDeviceCategory = '';
+    this.selectedDeviceType = '';
+    this.isShowSelectDeviceType = false;
     this.activeDeviceIndex = this.profile.devices.length - 1;
   }
 
@@ -208,7 +236,29 @@ export default class ProfileEdit extends Vue {
 
   isShowSelectDeviceType = false;
 
+  selectedDeviceCategory = '';
+
+  selectedDeviceType = '';
+
   activeDeviceIndex: number | string = '';
+
+  async onClickNavBack() {
+    if (!this.profileValid.valid) {
+      try {
+        await Dialog.confirm({
+          title: '提示',
+          message: '配置有如下错误:\n' + this.profileValid.reason + '\n确定要后退吗?',
+          theme: 'round-button'
+        });
+
+        return true;
+      } catch {
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
 }
 </script>
 
@@ -216,6 +266,10 @@ export default class ProfileEdit extends Vue {
 .title-right-icon
   margin-left 4px
   margin-right 4px
+
+.title-middle-icon
+  margin-right 22px
+  margin-left 2px
 
 .enabled-icon
   color #1989fa !important
