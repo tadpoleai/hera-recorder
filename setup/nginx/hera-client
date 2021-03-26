@@ -1,0 +1,25 @@
+server {
+    listen 80;
+    root /var/www/hera-client/;
+    index index.html;
+    server_name tron.newayz.com;
+    #return 301 https://$host$request_uri;
+
+    # Web Client
+    location / {
+        try_files $uri $uri/ =404;
+    }
+    # Thrift Api for Daemon
+    location /hera {
+        proxy_pass http://127.0.0.1:9090/;
+        client_max_body_size 128m;
+        client_body_buffer_size 2048k;
+        proxy_connect_timeout 30;
+        proxy_read_timeout 30;
+        proxy_send_timeout 30;
+        proxy_buffer_size 512k;
+        proxy_buffers 32 256k;
+        proxy_busy_buffers_size 2048k;
+        proxy_temp_file_write_size 2048k;
+    }
+}
