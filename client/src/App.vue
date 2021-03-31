@@ -128,7 +128,7 @@ export default class ProfileEdit extends Vue {
     });
   }
 
-  get tagName(): {msg: string, type: string, show: boolean} {
+  get tagName(): { msg: string; type: string; show: boolean } {
     if (this.isConnectionErrored) {
       return { msg: '错误', type: 'danger', show: true };
     } else if (!this.fetchedData.started) {
