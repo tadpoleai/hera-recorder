@@ -57,8 +57,6 @@ export default class ProfileEdit extends Vue {
   // Actions
   @MainModule.Action refreshAll;
 
-  @MainModule.Action refreshStatus;
-
   @LogModule.Action syncLog;
 
   @MainModule.State isConnectionErrored;
@@ -80,9 +78,7 @@ export default class ProfileEdit extends Vue {
 
   active = false;
 
-  intervalPeriod = 1500;
-
-  periodCount = 0;
+  intervalPeriod = 2500;
 
   intervalHandler!: NodeJS.Timeout;
 
@@ -95,10 +91,6 @@ export default class ProfileEdit extends Vue {
     if (this.active) {
       if (!this.isConnectionErrored) {
         await this.syncLog();
-        if (++this.periodCount == 6) {
-          await this.refreshStatus();
-          this.periodCount = 0;
-        }
       }
     }
   }

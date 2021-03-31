@@ -48,6 +48,8 @@
               van-tag(plain)
                 | {{frequencyFormat(deviceData.frequency)}}
               van-tag(plain)
+                | {{deviceData.sequence}}
+              van-tag(plain)
                 | {{dataSizeFormatShort(deviceData.dataSize)}}
 
           //- dispData

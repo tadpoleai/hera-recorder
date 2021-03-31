@@ -24,6 +24,7 @@ void Service::append_data_status(DataStatus& result)
             data.type = device->get_vendor_type();
             data.name = device->get_name();
             data.dataSize = device->get_volume();
+            data.sequence = device->get_sequence();
 
             data.health = device->get_health();
             data.statusMessage = device->get_status_message();

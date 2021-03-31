@@ -47,9 +47,7 @@ export function dataSizeFormat(datasize: number): string {
 }
 
 export function frequencyFormat(frequency: number): string {
-  if (frequency <= 1) {
-    return frequency.toFixed(2) + 'Hz';
-  } else if (frequency <= 10) {
+  if (frequency <= 10) {
     return frequency.toFixed(1) + 'Hz';
   } else {
     return frequency.toFixed(0) + 'Hz';
