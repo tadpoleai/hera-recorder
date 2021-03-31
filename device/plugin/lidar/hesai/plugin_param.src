@@ -1,0 +1,48 @@
+@ 激光雷达/禾赛激光雷达
+@ 同步信号由同步板卡给出
+
+# IP 地址
+# 传感器的 IPv4 地址
+immutable string IpAddress = ""; regex ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
+
+# 端口号
+# 传感器监听端口
+# 必须每个传感器有单独的端口, 并且没有被其他程序占用
+immutable integer ListenPort = 2372; range 0, 65535, 1
+
+# 激光转速
+# 该项控制激光转动的速度, 离散值
+# Options:
+# - S300: 300rpm
+# - S600: 600rpm
+# - S1200: 1200rpm
+mutable enum Speed = S600; options S300, S600, S1200
+
+# 激光回波模式
+# Options:
+# - Last: 最晚回波模式 
+# --- Sensor provides only the last (temporally) detected return;
+# - Strongest: 最强回波模式 
+# --- Sensor provides only the strongest detected return;
+# - Dual: 双回波模式
+# --- Sensor provides both the strongest and last returns,
+# --- If the last is also the strongest, the sensor provides the second-strongest return;
+# --- If only one return is detected, the two values will be identical;
+immutable enum ReturnType = Strongest; options Last, Strongest, Dual
+
+# 同步方式
+# 根据连接到激光雷达同步信号的类型选择
+# Options:
+# - Full: 完全同步
+# --- 激光雷达的同步信号有效, 且时间基准与工控机时间对齐,
+# --- 在该选项下, 激光雷达数据包报告的时分秒将被采用为传感器时间, 日期则使用工控机的日期,
+# --- 另外, 当数据包的报告的时分秒与工控机时间相差过大(差异大于30秒时), 数据包将被丢弃;
+# - Local: 本地同步
+# --- 激光雷达的同步信号有效, 但时间基准未和主控制器时间对齐,
+# --- 在该选项下, 激光雷达数据包报告的时分秒将被采用为传感器时间, 日期被设置为0,
+# --- 工控机的时间和激光雷达数据包报告的时间没有关系;
+# - Disabled: 未同步
+# --- 激光雷达的同步信号未连接
+# --- 在该选项下, 激光雷达数据包报告的时分秒将不被采用,
+# --- 而是采用数据包到达工控机时的接受时间作为传感器时间;
+immutable enum SyncType = Full; options Full, Local, Disabled

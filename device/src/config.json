@@ -1,0 +1,70 @@
+{
+	"storage": "s32v.hera", 
+	"record": 1, 
+	"ipcs": [
+	  {
+		"key": 0, 
+		"size": 1048576, 
+		"length": 4
+	  }, 
+	  {
+		"key": 1, 
+		"size": 512, 
+		"length": 16
+	  }
+	], 
+	"devices": [
+	  {
+		"type": "camera/s32vsal", 
+		"name": "camera", 
+		"forward": 0, 
+		"parameters": [
+		  {
+			"type": "FrameRate", 
+			"value": "10"
+		  }, 
+		  {
+			"type": "Compress", 
+			"value": "1"
+		  }, 
+		  {
+			"type": "CompressQuality", 
+			"value": "90"
+		  }
+		]
+	  }, 
+	  {
+		"type": "gnss/s32vsal", 
+		"name": "ublox", 
+		"forward": 1, 
+		"parameters": [
+		  {
+			"type": "SubVendorType", 
+			"value": "UBLOX"
+		  }
+		]
+	  }, 
+	  {
+		"type": "gnss/s32vsal", 
+		"name": "rtk", 
+		"forward": 1, 
+		"parameters": [
+		  {
+			"type": "SubVendorType", 
+			"value": "RTK"
+		  }
+		]
+	  }, 
+	  {
+		"type": "odometry/s32vgeely", 
+		"name": "can", 
+		"forward": 1, 
+		"parameters": [
+		  {
+			"type": "DataPort", 
+			"value": "0"
+		  }
+		]
+	  }
+	]
+  }

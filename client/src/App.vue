@@ -1,95 +1,157 @@
-<template>
-  <v-app>
-    <v-navigation-drawer v-if="showDrawer" permanent app>
-      <v-list-item>
-        <v-list-item-avatar>
-          <v-img src="@/assets/logo.svg"></v-img>
-        </v-list-item-avatar>
+<template lang="pug">
+div(ref="app")
+  van-nav-bar(
+    :left-arrow="$router.history.current.path != '/'"
+    @click-left="onClickNavBack()"
+  )
+    template(slot="title")
+      van-tag(
+        v-show="tagName.show"
+        :type="tagName.type"
+      ) {{ tagName.msg }}
+      span {{'HERA ' + $router.history.current.name}}
+    template(slot="right")
+      van-icon(
+        name="notes-o"
+        size="24px"
+        @click="onClickLog()"
+      )
+      van-icon(
+        name="info-o"
+        size="24px"
+        @click="onClickInfo()"
+      )
 
-        <v-list-item-title>{{$t('wayz')}}</v-list-item-title>
-      </v-list-item>
+  router-view(
+    ref="view"
+  )
 
-      <v-list>
-        <v-list-item v-for="route in routeList" :key="route.name" :to="route.path">
-          <v-list-item-icon>
-            <v-icon>{{ route.icon }}</v-icon>
-          </v-list-item-icon>
+  Fab(v-if="useFab && !isErrorIgnored")
 
-          <v-list-item-content>
-            <v-list-item-title>{{ $t(route.name) }}</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-      </v-list>
-    </v-navigation-drawer>
+  ConnectionError
 
-    <v-app-bar :color="appBarColor" app>
-      <v-toolbar-title class="white--text">{{$t('title')}}</v-toolbar-title>
-      <v-spacer />
-      <span v-show="showAppBarMsg" class="white--text">{{$t('noconnection')}}</span>
-      <v-spacer />
-      <v-menu>
-        <template v-slot:activator="{ on }">
-          <v-btn icon v-on="on">
-            <v-icon>mdi-translate</v-icon>
-          </v-btn>
-        </template>
-        <v-list>
-          <v-list-item @click="setLocale('en')">English</v-list-item>
-          <v-list-item @click="setLocale('zh')">中文</v-list-item>
-        </v-list>
-      </v-menu>
-    </v-app-bar>
-
-    <v-content app>
-      <v-container fluid>
-        <v-layout justify-center>
-          <keep-alive>
-            <router-view />
-          </keep-alive>
-        </v-layout>
-      </v-container>
-    </v-content>
-
-    <v-bottom-navigation v-if="showBottomNav" dark shift app>
-      <v-btn v-for="route in routeList" :key="route.name" :to="route.path">
-        <span>{{$t(route.name)}}</span>
-        <v-icon>{{ route.icon }}</v-icon>
-      </v-btn>
-    </v-bottom-navigation>
-  </v-app>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import router from '@/router/router';
-import { daemonStatus } from '@/core/daemonApi';
+import { namespace } from 'vuex-class';
+import { Hera } from '@/api';
+import { Toast, Dialog } from 'vant';
+import { GitVersion } from '../git_info';
 
-@Component
-export default class App extends Vue {
-  name = 'app';
+import ConnectionError from '@/views/App/ConnectionError.vue';
+import Fab from '@/views/App/Fab.vue';
 
-  routeList = router.routeList;
+const MainModule = namespace('Main');
+const MetaModule = namespace('Meta');
+const PreferenceModule = namespace('Preference');
+const AcquisitionControlModule = namespace('AcquisitionControl');
+const LogModule = namespace('Log');
 
-  daemonStatus = daemonStatus;
+@Component({
+  components: { ConnectionError, Fab }
+})
+export default class ProfileEdit extends Vue {
+  @PreferenceModule.State useFab;
 
-  get showDrawer(): boolean {
-    return !this.$vuetify.breakpoint.mdAndDown;
+  // Actions
+  @MainModule.Action refreshAll;
+
+  @LogModule.Action syncLog;
+
+  @MainModule.State isConnectionErrored;
+
+  @MainModule.State isErrorIgnored;
+
+  @MainModule.Mutation clearErrorIgnored;
+
+  @AcquisitionControlModule.State fetchedData;
+
+  @MetaModule.State daemonVersion;
+
+  mounted() {
+    this.active = true;
+    (this.$router as any).history.current!.path !== '/' && this.$router.replace({ path: '/' });
+    this.refreshAll();
+    this.intervalHandler = setInterval(this.timeoutFunction, this.intervalPeriod);
   }
 
-  get showBottomNav(): boolean {
-    return this.$vuetify.breakpoint.mdAndDown;
+  active = false;
+
+  intervalPeriod = 2500;
+
+  intervalHandler!: NodeJS.Timeout;
+
+  destroyed() {
+    this.active = false;
+    clearInterval(this.intervalHandler);
   }
 
-  get appBarColor(): string {
-    return this.daemonStatus.connected ? 'primary' : 'error';
+  async timeoutFunction() {
+    if (this.active) {
+      if (!this.isConnectionErrored) {
+        await this.syncLog();
+      }
+    }
   }
 
-  get showAppBarMsg(): boolean {
-    return !this.daemonStatus.connected;
+  async onClickNavBack() {
+    if ((this.$refs['view'] as any).onClickNavBack) {
+      const ret = await (this.$refs['view'] as any).onClickNavBack();
+      if (!ret) {
+        return;
+      }
+    }
+    this.clearErrorIgnored();
+    if ((this.$router! as any).history!.current.path != '/') {
+      this.$router.back();
+    }
   }
 
-  setLocale(l: string): void {
-    this.$i18n.locale = l;
+  onClickLog() {
+    if ((this.$router! as any).history!.current.path != '/log') {
+      this.$router.push('/log');
+    }
+  }
+
+  onClickInfo() {
+    Dialog({
+      title: 'HERA采集软件',
+      message:
+        '客户端版本\n' +
+        GitVersion +
+        '\n服务端版本\n' +
+        this.daemonVersion +
+        '\n版权信息\nCopyright 2018 Wayz.ai. All Rights Reserved.',
+      messageAlign: 'left',
+      theme: 'round-button'
+    });
+  }
+
+  get tagName(): {msg: string, type: string, show: boolean} {
+    if (this.isConnectionErrored) {
+      return { msg: '错误', type: 'danger', show: true };
+    } else if (!this.fetchedData.started) {
+      return { msg: '', type: '', show: false };
+    } else if (this.fetchedData.recording) {
+      return { msg: '保存中', type: 'warning', show: true };
+    } else {
+      return { msg: '未保存', type: 'primary', show: true };
+    }
   }
 }
 </script>
+
+<style lang="stylus">
+html
+  height: 100%
+  background-color: #f7f8fa
+
+#app
+  font-family: Avenir, Helvetica, Arial, sans-serif
+  -webkit-font-smoothing: antialiased
+  -moz-osx-font-smoothing: grayscale
+  text-align: center
+  color: #2c3e50
+  margin-top: 60px
+</style>

@@ -1,0 +1,81 @@
+import Vue from 'vue';
+import '@vant/touch-emulator';
+import 'vant/lib/icon/local.css';
+
+import {
+  ActionSheet,
+  Button,
+  Cascader,
+  Cell,
+  CellGroup,
+  Col,
+  Collapse,
+  CollapseItem,
+  Dialog,
+  Divider,
+  DropdownItem,
+  DropdownMenu,
+  Empty,
+  Field,
+  Grid,
+  GridItem,
+  Icon,
+  Image,
+  NavBar,
+  NoticeBar,
+  Overlay,
+  Panel,
+  Picker,
+  Popup,
+  Progress,
+  Radio,
+  RadioGroup,
+  Rate,
+  Row,
+  Skeleton,
+  Slider,
+  Stepper,
+  Sticky,
+  SwipeCell,
+  Switch,
+  Tag,
+  Toast
+} from 'vant';
+
+Vue.use(ActionSheet);
+Vue.use(Button);
+Vue.use(Cascader);
+Vue.use(Cell);
+Vue.use(CellGroup);
+Vue.use(Col);
+Vue.use(Collapse);
+Vue.use(CollapseItem);
+Vue.use(Dialog);
+Vue.use(Divider);
+Vue.use(DropdownItem);
+Vue.use(DropdownMenu);
+Vue.use(Empty);
+Vue.use(Field);
+Vue.use(Grid);
+Vue.use(GridItem);
+Vue.use(Icon);
+Vue.use(Image);
+Vue.use(NavBar);
+Vue.use(NoticeBar);
+Vue.use(Overlay);
+Vue.use(Panel);
+Vue.use(Picker);
+Vue.use(Popup);
+Vue.use(Progress);
+Vue.use(Radio);
+Vue.use(RadioGroup);
+Vue.use(Rate);
+Vue.use(Row);
+Vue.use(Skeleton);
+Vue.use(Slider);
+Vue.use(Stepper);
+Vue.use(Sticky);
+Vue.use(SwipeCell);
+Vue.use(Switch);
+Vue.use(Tag);
+Vue.use(Toast);

@@ -1,0 +1,7 @@
+# Require C++14
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "-Werror -Wall -Wextra -Wno-unused-parameter -fPIC")
+set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3")

@@ -3,6 +3,8 @@
 *.slo
 *.lo
 *.o
+*.so
+*.so.*
 *.obj
 *.gch
 *.pch
@@ -59,7 +61,7 @@ _deps
 
 # Folder
 vendor/
-build/
+build*/
 dist/
 runtime/
 tmp/
@@ -71,6 +73,14 @@ gen-js/
 gen-ts/
 gen-cpp/
 
+# Parameter Generated
+*.param.hpp
+plugin_param.hpp
+
+# Git Info
+git_info.ts
+git_info.cpp
+
 # MacOS
 .DS_Store
 
@@ -80,5 +90,14 @@ gen-cpp/
 # ! deploy script
 !deploy/*.sh
 
+# docker folder
+docker/
+setup/
+
 # Doxygen
-doxygen/
+doxygen/html/
+
+# Artifacts
+artifacts/
+artifacts*
+*.tar.gz

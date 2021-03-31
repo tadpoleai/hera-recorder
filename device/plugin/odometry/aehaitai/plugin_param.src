@@ -1,0 +1,8 @@
+@ 里程计/海泰机电绝对值编码器
+
+# 串口设备路径
+# 获取 GNSS 报文的串口设备在系统中的路径
+immutable string Kernel = "/dev/tty"; regex ^\/(\w+\/?)+$
+
+# 串口设备波特率
+immutable integer Baud = 115200; range 120, 2560000, 1

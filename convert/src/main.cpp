@@ -3,24 +3,57 @@
 #include <sstream>
 #include <unistd.h>
 
-#include "common/logger/logger.hpp"
-#include "common/utils/remapper.hpp"
+#include "common/include/logger/logger.hpp"
+#include "common/include/utils/remapper.hpp"
+#include "common/include/version.hpp"
 #include "converter.hpp"
+#include "device/include/version.hpp"
+#include "storage/include/version.hpp"
 
 using namespace wayz::hera;
 using namespace wayz::hera::convert;
 
+Converter* g_converter_ptr = nullptr;
+
 void print_help(char** argv)
 {
-    std::cout << "usage:\t" << argv[0] << " -i <source_data> [-o <output_bag_file>] [-r <remap_file>] [-sld] [-hv]"
-              << std::endl;
-    std::cout << "\t-i\tSource Data File\n"
-              << "\t-o\tOutput Bag File, default is sample as source with .bag extension\n"
-              << "\t-r\tTopic and FrameID remap json file\n"
-              << "\t-s\tFlag to only show header information\n"
-              << "\t-l\tFlag to output log file\n"
-              << "\t-d\tFlag to debug output\n"
+    std::cerr << "usage:\t" << argv[0] << " -i <source_data> [-o <output_bag_file>] [-r <remap_file>]\n"
+              << "\t[-s <start_time_sec> ] [-t <time_duration_sec>]\n"
+              << "\t[-p <device_id|device_category|device_name>:<ParamType>=<ParamValue> [-p ...]]\n"
+              << "\t[-ldq] [-hv]" << std::endl;
+
+    std::cerr << "\t-i\tSource data file\n"
+              << "\t\t\tHera formatted file\n"
+
+              << "\t-o\tOutput Bag File\n"
+              << "\t\t\tOutputfile name of ROS Bag, default is the same with source data file, replacing extension "
+                 "with '.bag'\n "
+
+              << "\t-r\tRemap json file\n"
+              << "\t\t\tSpecific remap of 'Topic' and 'FrameID' in ROS Message, default = none\n"
+
+              << "\t-s\tStart time\n"
+              << "\t\t\tFloat number[sec], default = 0.0, to specific a timepoint, the data before which would be "
+                 "skipped\n"
+
+              << "\t-t\tDuration\n"
+              << "\t\t\tFloat number[sec], default = 0.0(disabled), only convert data within a certain duration\n"
+
+              << "\t-p\tParameters\n"
+              << "\t\t\tOverride parameters of devices in covnertion, default = none\n"
+              << "\t\t\t\t'-p 0:Gamma:2.2' overrides device id = 0, parameter type = 'Gamma', to new value "
+                 "'2.2'\n"
+              << "\t\t\t\t'-p camera/flir:Gamma:2.2' overrides device category 'camera/flir', parameter type = "
+                 "'Gamma', to new value '2.2'\n"
+
+              << "\t-l\tFlag to output a log file\n"
+
+              << "\t-d\tFlag set log level to debug\n"
+
+              << "\t-q\tFlat to suppress progress\n"
+
               << "\t-h\tPrint this help and exit\n"
+
               << "\t-v\tPrint version and exit\n"
               << std::endl;
 }
@@ -28,22 +61,42 @@ void print_help(char** argv)
 void print_version(char** argv)
 {
     std::cout << argv[0] << std::endl;
-    std::cout << "Built " << log::get_commit_head() << std::endl;
+    std::cout << "libhera-common: " << common::get_version() << std::endl;
+    std::cout << "libhera-device: " << device::get_version() << std::endl;
+    std::cout << "libhera-storage: " << storage::get_version() << std::endl;
     std::cout << "Copyright 2018 Wayz.ai. All Rights Reserved." << std::endl;
+}
+
+void sig_int_handler_func(int s)
+{
+    log::info << "Convert: Sigint Received, Stopping" << log::endl;
+    if (g_converter_ptr) {
+        g_converter_ptr->stop();
+    }
+    exit(0);
 }
 
 int main(int argc, char** argv)
 {
+    struct sigaction sig_int_handler;
+    sig_int_handler.sa_handler = sig_int_handler_func;
+    sigemptyset(&sig_int_handler.sa_mask);
+    sig_int_handler.sa_flags = 0;
+    sigaction(SIGINT, &sig_int_handler, NULL);
+
     std::string bag_file;
     std::string src_file;
     std::string remap_file;
+    std::vector<std::tuple<std::string, std::string, std::string>> parameter_tuple_list;
     bool islog = false;
-    bool isonlyshow = false;
     bool isverbose = false;
+    bool isquiet = false;
+    int32_t start_time = 0;
+    int32_t duration = 0;
 
     // opterr = 0;
     while (true) {
-        switch (getopt(argc, argv, "i:o:r:sldhv")) {
+        switch (getopt(argc, argv, "i:o:r:s:t:p:ldqhv")) {
         case 'i':
             src_file = optarg;
             continue;
@@ -54,13 +107,42 @@ int main(int argc, char** argv)
             remap_file = optarg;
             continue;
         case 's':
-            isonlyshow = true;
+            try {
+                start_time = std::stoi(optarg);
+                continue;
+            } catch (...) {
+                print_version(argv);
+                exit(0);
+            }
+        case 't':
+            try {
+                duration = std::stoi(optarg);
+                continue;
+            } catch (...) {
+                print_version(argv);
+                exit(0);
+            }
+        case 'p': {
+            std::stringstream optarg_ss(optarg);
+            std::string token_list[3];
+            for (auto&& token : token_list) {
+                if (!getline(optarg_ss, token, ':')) {
+                    std::cerr << "Can not tokenize -p " << optarg << std::endl;
+                    print_help(argv);
+                    exit(1);
+                }
+            }
+            parameter_tuple_list.emplace_back(std::make_tuple(token_list[0], token_list[1], token_list[2]));
+        }
             continue;
         case 'l':
             islog = true;
             continue;
         case 'd':
             isverbose = true;
+            continue;
+        case 'q':
+            isquiet = true;
             continue;
         case -1:
             break;
@@ -88,12 +170,18 @@ int main(int argc, char** argv)
         if (lastdot == std::string::npos)
             bag_file = src_file;
         bag_file = src_file.substr(0, lastdot);
+        if (start_time > 0) {
+            bag_file += "_s" + std::to_string(start_time);
+        }
+        if (duration > 0) {
+            bag_file += "_t" + std::to_string(duration);
+        }
         bag_file += ".bag";
     }
 
     common::RemapperPtr remapper = nullptr;
     if (remap_file.size() != 0) {
-        auto remapper = common::Remapper::create(remap_file);
+        remapper = common::Remapper::create(remap_file);
     } else {
         remapper = common::Remapper::empty();
     }
@@ -104,6 +192,8 @@ int main(int argc, char** argv)
         log::onlyprint();
     }
 
+    log::clear_line();
+
     if (isverbose) {
         log::set_level(log::LogLevel::Debug);
     } else {
@@ -111,7 +201,13 @@ int main(int argc, char** argv)
     }
 
     log::debug << "Conversion Start" << log::endl;
-    auto handler = std::make_unique<Converter>(src_file, bag_file, std::move(remapper), isonlyshow);
+    auto handler = std::make_unique<Converter>(src_file,
+                                               bag_file,
+                                               std::move(remapper),
+                                               parameter_tuple_list,
+                                               start_time,
+                                               duration);
+    g_converter_ptr = handler.get();
 
     if (!handler->running()) {
         exit(1);
@@ -123,23 +219,34 @@ int main(int argc, char** argv)
     while (handler->running()) {
         usleep(200000);
 
+        if (isquiet) {
+            continue;
+        }
+
         time::Duration progress = handler->progress();
         auto t_now = time::Timestamp::now();
-        double speed = progress / double(t_now - t_start);
+
+        double speed = (progress - start_time * time::OneSecond) / double(t_now - t_start);
         auto rest = total_duration - progress;
         time::Duration eta = rest / speed;
 
         std::cout << "\r";
         std::cout << "- progress:  ";
         auto progress_str = progress.to_str_second();
-        std::string whitespace(total_duration_str.size() - progress_str.size() + 6, ' ');
+        std::string whitespace(total_duration_str.size() - progress_str.size() + 4, ' ');
         std::cout << whitespace << progress_str << " / " << total_duration_str;
-        std::cout << "        ";
+        std::cout << "  ";
 
-        std::cout << " speed = " << std::setw(8) << std::setfill(' ') << std::setprecision(4) << speed << "x        ";
+        if (speed > 0) {
+            std::cout << " speed = " << std::setw(8) << std::setfill(' ') << std::setprecision(4) << speed << "x  ";
+        } else {
+            std::cout << " speed = "
+                      << "      ---"
+                      << "  ";
+        }
 
         auto eta_str = eta.to_str_second();
-        std::cout << " eta = " << std::string(10 - eta_str.size(), ' ') << eta_str;
+        std::cout << " eta = " << std::string(9 - eta_str.size(), ' ') << eta_str;
         std::cout.flush();
     }
     std::cout << "\n";

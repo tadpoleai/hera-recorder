@@ -10,8 +10,9 @@
 
 #include "converter.hpp"
 
-#include "common/logger/logger.hpp"
-#include "device/include.hpp"
+#include "common/include/logger/logger.hpp"
+#include "common/include/utils/folder_content.hpp"
+#include "device/include/include.hpp"
 
 namespace wayz {
 namespace hera {
@@ -22,29 +23,39 @@ namespace convert {
 Converter::Converter(const std::string& src_filename,
                      const std::string& bagfile,
                      common::RemapperPtr&& remapper,
-                     const bool only_show) :
+                     const std::vector<std::tuple<std::string, std::string, std::string>>& parameter_tuple_list,
+                     const int32_t start_time,
+                     const int32_t duration) :
+    bagfile_(bagfile),
     running_(false),
     read_thread_(nullptr),
     bag_thread_(nullptr),
     remapper_(std::move(remapper)),
+    param_start_time_sec_(start_time),
+    param_duration_sec_(duration),
     progress_(0),
     total_duration_(0),
-    storage_(storage::StorageManager::open(src_filename, true)),
+    storage_(storage::StorageManager::open(src_filename, true, false, false)),
     publish_sem_(new sem_t),
     receive_sem_(new sem_t),
-    message(std::move(ROSMessage::create<ROSMessageType::BrokenData>()))
+    message(ROSMessage::create<ROSMessageType::BrokenData>())
 {
     sem_init(publish_sem_, 0, 1);
     sem_init(receive_sem_, 0, 0);
 
     if (storage_->header != nullptr) {
-        if (!only_show) {
-            log::info << "Converter: Printing info\n" << *storage_->header << log::endl;
-        } else {
-            std::cout << *storage_->header << std::endl;
-            return;
-        }
+        log::info << "Converter: Printing info\n" << *storage_->header << log::endl;
+
         total_duration_ = storage_->header->timestamp_end - storage_->header->timestamp_start;
+
+        if (param_start_time_sec_ > 0) {
+            log::info << "Converter: Start Time = " << time::Duration(param_start_time_sec_ * time::OneSecond)
+                      << log::endl;
+        }
+        if ((param_duration_sec_ > 0) && (param_duration_sec_ * time::OneSecond < total_duration_)) {
+            log::info << "Converter: Duration = " << time::Duration(param_duration_sec_ * time::OneSecond) << log::endl;
+            total_duration_ = (param_start_time_sec_ + param_duration_sec_) * time::OneSecond;
+        }
 
         for (auto& device_name : storage_->header->device_names) {
             std::array<std::string, 3> tokens;
@@ -105,32 +116,69 @@ Converter::~Converter()
 void Converter::read_thread_function()
 {
     decltype(storage_->read()) data = nullptr;
-    while ((data = storage_->read())) {
-        auto sensor_data = device::DeviceFactory::convert(data);
+
+    int64_t from_time = 0;
+    if (param_start_time_sec_ > 0) {
+        from_time = param_start_time_sec_ * time::OneSecond;
+    }
+
+    int64_t until_time = 0x7FFF'FFFF'FFFF'FFFFLL;
+    if (param_duration_sec_ > 0) {
+        until_time = from_time + param_duration_sec_ * time::OneSecond;
+    }
+
+    while (running_ && (data = storage_->read())) {
+        progress_ = data->get_timestamp_receive_ns() - storage_->header->timestamp_start;
+        if (progress_ < from_time) {
+            continue;
+        }
+
+        if (progress_ > until_time) {
+            break;
+        }
+
+        auto sensor_data = device::Factory::convert(data, {});
         if (sensor_data->sensor_data_type != device::SensorDataType::Broken) {
             try {
                 const auto& topic_prefix = topic_prefixes_[sensor_data->sensor_id];
                 const auto& frame_id = frame_ids_[sensor_data->sensor_id];
                 auto ros_messages = ROSMessage::convert(sensor_data, topic_prefix, frame_id, remapper_.get());
-                progress_ = data->get_timestamp_receive_ns() - storage_->header->timestamp_start;
                 for (auto&& ros_message : ros_messages) {
                     publish(std::move(ros_message));
                 }
-
             } catch (std::exception& e) {
                 log::warn << "Converter: Error occured when reading, that " << e.what() << log::endl;
             }
         }
     }
-    publish(std::move(ROSMessage::create<ROSMessageType::EndOfFile>()));
+    publish(ROSMessage::create<ROSMessageType::EndOfFile>());
 }
 
 void Converter::bag_thread_function()
 {
-    while (true) {
-        auto message = std::move(receive());
+    while (running_) {
+        auto message = receive();
         if (message->type != ROSMessageType::EndOfFile) {
-            bag_ << std::move(message);
+            try {
+                bag_ << std::move(message);
+            } catch (std::exception& e) {
+                log::error << "Converter: Error occured when reading, that " << e.what() << log::endl;
+                log::warn << "May be there is no space left on destination file system, checking it" << log::endl;
+
+                auto fs = file::get_filesystem_status(bagfile_);
+                if (fs.free_space == 0) {
+                    log::warn << "No space left on destination file system, free space = 0, total space = "
+                              << fs.total_space << log::endl;
+                } else {
+                    log::warn << "Other error occured, free space = " << fs.free_space
+                              << ", total space = " << fs.total_space << log::endl;
+                }
+
+                log::warn << "Converter: Press Ctrl+C to terminate" << log::endl;
+
+                running_ = false;
+                break;
+            }
         } else {
             running_ = false;
             break;

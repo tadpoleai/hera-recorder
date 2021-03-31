@@ -1,33 +1,18 @@
-mkdir -p build
-cd build
+echo "Building"
 
-cmake .. -Dwith-all=1 -Dwith-driver-all=1
-if [ $? -ne 0 ]; then
-    echo "cmake error"
+cd $(dirname "$0")
+
+rm -rf artifacts
+# rm -rf build_amd64
+# rm -rf build_arm
+# rm -rf build_client
+
+bash scripts/build_amd64.sh $1
+# bash scripts/build_arm_host.sh $1
+bash scripts/build_client.sh $1
+
+bash scripts/make_artifacts.sh
+
+if [ -n "$1" ]; then
+    tar -czvf hera-release-$1.tar.gz artifacts --transform s/artifacts/hera-release-$1/
 fi
-
-make -j
-if [ $? -ne 0 ]; then
-    echo "build error"
-fi
-
-make client
-if [ $? -ne 0 ]; then
-    echo "build client error"
-fi
-
-echo "Packaging artifacts"
-tar -czvf \
-    install.tar.gz \
-    daemon/hera-daemon \
-    convert/hera-convert \
-    replay/hera-replay \
-    slam/hera-slam \
-    ../daemon/script \
-    ../client/dist \
-    ../README.md \
-    ../INSTALLATION.md \
-    ../client/USAGE.md \
-    ../convert/USAGE.md \
-    ../deploy/*.md \
-    ../jenkins_deploy.sh

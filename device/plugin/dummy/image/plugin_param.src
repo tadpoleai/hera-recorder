@@ -1,0 +1,26 @@
+@ 模拟/模拟图像设备
+
+# 随机行为
+# DisableRand: 关闭随机功能
+# Reduced: 按概率随机将数据的值变小
+# Drop: 按概率随机丢弃一些数据
+immutable enum RandBehaviour = Drop; options DisableRand, Multiply, Drop
+
+# 随机概率
+# 该选项决定随机行为发生的概率
+immutable real Probability = 0.1; range 0.0, 0.9, 0.1
+
+# 数据间隔时间[us]
+mutable integer PeriodUs = 1000000; range 1000, 10000000, 1000
+
+# Integer Value
+mutable integer IntValue = 100; range 1, 1000, 1
+
+# String Value
+immutable string Message = "Eomma"; regex (\d.){3}\d
+
+# Boolean Value
+immutable boolean Augment = true;
+
+# 传感器的 IPv4 地址
+immutable string IpAddress = ""; regex ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
