@@ -4,13 +4,6 @@ div
     template(slot="title")
       div(style="display: flex; justify-content: space-between;")
         span 基本信息
-        span
-          van-icon.title-right-icon(
-            name="sign"
-            @click="onClickSaveProfile"
-            size="24px"
-            v-bind:class="{ 'enabled-icon': profileEdited }"
-          )
     CheckedField(
       label="配置名"
       :value="profile.name"
@@ -188,9 +181,37 @@ export default class ProfileEdit extends Vue {
 
   @ProfileEditModule.Getter profileValid;
 
-  async beforeDestroy() {
-    if (this.profileEdited) {
-      await this.finishEditingProfileAndSave();
+  async onClickNavBack() {
+    if (!this.profileValid.valid) {
+      try {
+        await Dialog.confirm({
+          title: '配置错误',
+          message: '配置有如下错误:\n' + this.profileValid.reason + '\n, 退出将不保存配置\n, 确定要退出编辑吗?',
+          theme: 'round-button'
+        });
+
+        return true;
+      } catch {
+        return false;
+      }
+    } else {
+      if (this.profileEdited) {
+        try {
+          await Dialog.confirm({
+            title: '保存配置',
+            message: '配置已被修改，是否要保存配置',
+            theme: 'round-button'
+          });
+
+          await this.finishEditingProfileAndSave();
+
+          return true;
+        } catch {
+          return false;
+        }
+      } else {
+        return true;
+      }
     }
   }
 
@@ -204,11 +225,6 @@ export default class ProfileEdit extends Vue {
 
   get isDeviceListEmpty() {
     return this.profile.devices.length === 0;
-  }
-
-  async onClickSaveProfile() {
-    await this.finishEditingProfileAndSave();
-    this.$router.back();
   }
 
   onClickListEdit() {
@@ -241,24 +257,6 @@ export default class ProfileEdit extends Vue {
   selectedDeviceType = '';
 
   activeDeviceIndex: number | string = '';
-
-  async onClickNavBack() {
-    if (!this.profileValid.valid) {
-      try {
-        await Dialog.confirm({
-          title: '提示',
-          message: '配置有如下错误:\n' + this.profileValid.reason + '\n确定要后退吗?',
-          theme: 'round-button'
-        });
-
-        return true;
-      } catch {
-        return false;
-      }
-    } else {
-      return true;
-    }
-  }
 }
 </script>
 
