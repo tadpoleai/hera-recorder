@@ -157,10 +157,10 @@ data::DeviceDataPtr DevicePlugin::fetch()
         if (!getline(nmea, token, ',')) {
             throw std::runtime_error("Can not tokenize 1st token");
         }
-        // Only accept NMEA::GPGGA
+        // Only accept NMEA::GPGGA / GNGGA
         /// @see https://www.gpsinformation.org/dale/nmea.htm#GGA
-        if (token != "$GPGGA") {
-            throw std::runtime_error("got non-gpgga sentence '" + token + "'");
+        if (token != "$GPGGA" && token != "$GNGGA") {
+            throw std::runtime_error("got non-gga sentence '" + token + "'");
         }
 
         // Get original time of NMEA (hhmmss)
@@ -297,10 +297,10 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         if (!getline(nmea, token, ',')) {
             throw std::runtime_error("Can not tokenize token 1");
         }
-        // Only accept NMEA::GPGGA
+        // Only accept NMEA::GPGGA / GNGGA
         /// @see https://www.gpsinformation.org/dale/nmea.htm#GGA
-        if (token != "$GPGGA") {
-            throw std::runtime_error("got non-gpgga sentence '" + token + "'");
+        if (token != "$GPGGA" && token != "$GNGGA") {
+            throw std::runtime_error("got non-gga sentence '" + token + "'");
         }
 
         // UTC time status of position (hhmmss) (Token 2)
