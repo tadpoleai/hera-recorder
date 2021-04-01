@@ -207,7 +207,7 @@ export default class ProfileEdit extends Vue {
 
           return true;
         } catch {
-          return false;
+          return true;
         }
       } else {
         return true;
