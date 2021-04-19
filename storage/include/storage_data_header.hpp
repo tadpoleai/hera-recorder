@@ -35,6 +35,13 @@ class StorageDataHeader;
 ///
 using StorageDataHeaderPtr = std::shared_ptr<StorageDataHeader>;
 
+#pragma pack(push, 1)
+struct StorageHeaderTimestampIndex {
+    uint64_t ts;
+    int64_t offset;
+};
+#pragma pack(pop)
+
 ///
 /// @brief StorageDataHeader in file
 ///
@@ -78,6 +85,11 @@ public:
     /// @brief Magic Header of Storage Version V4
     ///
     static const std::array<char, 16> MagicV4;
+
+    ///
+    /// @brief Indices Magic
+    ///
+    static const std::array<char, 32> MagicIndices;
 
     ///
     /// @brief Max Header Length in V4
@@ -145,6 +157,11 @@ public:
     /// @brief Logs
     ///
     std::vector<log::impl::LogString> logs;
+
+    ///
+    /// @brief Indices for Timestamp->offset;
+    ///
+    std::vector<StorageHeaderTimestampIndex> indices;
 };
 
 }  // namespace storage

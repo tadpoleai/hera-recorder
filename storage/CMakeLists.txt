@@ -16,7 +16,8 @@ include_directories(include .. ${CMAKE_BINARY_DIR})
 
 # Build storage (core)
 add_library(${PROJECT_NAME} SHARED ${BASE_SRC})
-target_link_libraries(${PROJECT_NAME} hera-common Threads::Threads)
+target_link_libraries(${PROJECT_NAME} hera-common Threads::Threads
+                      ${CMAKE_DL_LIBS})
 if(GIT_INFO_ENABLED)
   target_link_libraries(${PROJECT_NAME} hera-git-info)
 endif()
@@ -30,8 +31,7 @@ foreach(PLUGIN_SRC ${PLUGIN_SRC_LIST})
                        ${PLUGIN_SRC})
   string(REGEX REPLACE "plugin_entry\\.cpp" "" PLUGIN_DIR ${PLUGIN_SRC})
   set(PLUGIN_NAME ${PLUGIN_CATEGORY_NAME}-${PLUGIN_VENDOR_NAME})
-  set(PLUGIN_LIB_NAME
-      ${PROJECT_NAME}-${PLUGIN_NAME}-${ARCHITECTURE})
+  set(PLUGIN_LIB_NAME ${PROJECT_NAME}-${PLUGIN_NAME}-${ARCHITECTURE})
 
   # Message
   message(

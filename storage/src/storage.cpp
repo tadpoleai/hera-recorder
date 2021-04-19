@@ -62,9 +62,6 @@ StorageManager::StorageManager(const std::string& filename,
         if (read_strict) {
             log::warn << "StorageManager: Opening '" << filename << "' in timestamp strict aligned mode" << log::endl;
             log::warn << "StorageManager: This cosumes more CPU and memory" << log::endl;
-
-            thread_running_ = true;
-            thread_ = new std::thread(&StorageManager::prefetch_thread_function, this);
         }
     } else {
         header = StorageDataHeaderPtr(new StorageDataHeader(4));
@@ -83,10 +80,6 @@ void StorageManager::close()
         log::debug << "StorageManager: Joined Thread " << log::endl;
         delete thread_;
         thread_ = nullptr;
-        if (header != nullptr) {
-            log::debug << "StorageManager: Updating Header" << log::endl;
-            header->timestamp_end = time::Timestamp::now();
-        }
     }
 
     log::flush();
@@ -127,7 +120,7 @@ bool StorageManager::add_device(const std::string& full_name, const size_t histo
 void StorageManager::finish_add_device()
 {
     if (!read_mode_ && !add_device_finished_) {
-        log::info << "Storage: Finished add devices" << log::endl;
+        log::debug << "Storage: Finished add devices" << log::endl;
         add_device_finished_ = true;
     }
 }
@@ -149,6 +142,7 @@ bool StorageManager::add_data(const uint32_t device_id, device::data::DeviceData
         return false;
     }
 
+    header->timestamp_end = data->get_timestamp_receive_ns();
     return data_array_[device_id]->push(data, !if_write_data);
 }
 
@@ -182,6 +176,7 @@ uint64_t StorageManager::get_volume(const uint32_t device_id) const
 void StorageManager::write_thread_function()
 {
     thread_local bool fulfilled = false;
+    thread_local uint64_t indexed_time = 0;
 
     while (thread_running_ || fulfilled) {
         fulfilled = false;
@@ -193,7 +188,14 @@ void StorageManager::write_thread_function()
                     out_file_.open(filename_, std::ios::binary);
                     header->timestamp_start = data->get_timestamp_receive_ns();
                     header->write_to(out_file_);
+                    indexed_time = data->get_timestamp_receive_ns();
+                    header->indices.push_back({.ts = indexed_time, .offset = out_file_.tellp()});
                     out_file_opened_ = true;
+                }
+                static constexpr uint64_t IndexInterval = 1 * time::OneSecond;
+                if (data->get_timestamp_receive_ns() > indexed_time + IndexInterval) {
+                    indexed_time = data->get_timestamp_receive_ns();
+                    header->indices.push_back({.ts = indexed_time, .offset = out_file_.tellp()});
                 }
                 auto length = data->write_to(out_file_);
                 if (header != nullptr) {
@@ -206,6 +208,56 @@ void StorageManager::write_thread_function()
             usleep(TimeSleepUs);
         }
     }
+}
+
+bool StorageManager::seek(time::Timestamp ts)
+{
+    if (!read_mode_) {
+        log::error << "Storage: Can not use seek() in write mode" << log::endl;
+        return false;
+    }
+
+    if (thread_) {
+        log::warn << "Storage: Note, seek() should be used before read()!" << log::endl;
+        log::warn << "Killing prefetch thread" << log::endl;
+        thread_running_ = false;
+        thread_->join();
+        delete thread_;
+        thread_ = nullptr;
+    }
+
+    uint64_t current_ts = 0;
+    int64_t best_offset = header->ReservedLength;
+
+    auto current_data = device::data::DeviceData::read_from(in_file_);
+    if (current_data) {
+        current_ts = current_data->get_timestamp_receive_ns();
+        best_offset = in_file_.tellg();
+    }
+
+    if (header->indices.empty()) {
+        log::warn << "Storage: Indices not generated, can not use quick seek" << log::endl;
+    }
+
+    for (auto& index : header->indices) {
+        if (index.ts > current_ts && index.ts < ts) {
+            current_ts = index.ts;
+            best_offset = index.offset;
+        }
+    }
+
+    in_file_.seekg(best_offset, std::ios::beg);
+    while (current_data = device::data::DeviceData::read_from(in_file_)) {
+        if (current_data->get_timestamp_receive_ns() >= ts) {
+            break;
+        }
+    }
+
+    if (read_strict_ && !thread_) {
+        thread_running_ = true;
+        thread_ = new std::thread(&StorageManager::prefetch_thread_function, this);
+    }
+    return true;
 }
 
 }  // namespace storage
