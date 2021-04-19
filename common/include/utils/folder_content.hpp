@@ -22,6 +22,7 @@ public:
     {
         return size;
     }
+    operator std::string() const;
 };
 
 struct FileAttribute {
