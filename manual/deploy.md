@@ -98,7 +98,7 @@ sudo cp * /var/www/hera-client
 
 ## 调整参数
 
-打开编辑 `/var/hera/daemon.json`
+打开编辑 `/etc/hera.conf`
 
 ### 设置 Hera 网络中的主机名
 
@@ -106,9 +106,9 @@ sudo cp * /var/www/hera-client
 
 ### 设置上传服务器
 
-编辑 `"remoteServers"` 段, 按实际增加服务器记录
+编辑 `"upload/servers"` 段, 按实际增加服务器记录
 
-增加后, 用 Root 账户测试连接
+若必要，增加后用 Root 账户测试连接
 
 ### 裁剪传感器设备驱动
 

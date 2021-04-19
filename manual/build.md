@@ -64,13 +64,13 @@ cd build
 # unset LD_LIBRARY_PATH
 # . /opt/s32v/environment-setup-aarch64-fsl-linux
 
-# 若需要构建所有模块 使用Dwith-all=1
-cmake .. -Dwith-all=1
+# 若需要构建所有模块 使用DWITH_ALL=1
+cmake .. -DWITH_ALL=1
 
 # 若不需构建所有模块
-# 可使用以下编译开关 with-daemon, with-convert, with-replay, with-slam
+# 可使用以下编译开关 WITH_DAEMON, WITH_CONVERT, WITH_REPLAY, WITH_SLAM
 # 分别可以开关对应模块的编译
-# 如 cmake .. -Dwith-replay=1 -Dwith-convert=1, 可构建hera-replay, hera-convert
+# 如 cmake .. -DWITH_REPLAY=1 -DWITH_CONVERT=1, 可构建hera-replay, hera-convert
 # common, device, storage 为依赖库, 总是会被构建
 
 # 在一般的机器上构建
