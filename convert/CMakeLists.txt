@@ -6,6 +6,7 @@ project(${PROJECT_NAME})
 include("../cmake/include/cpp_common.cmake")
 include("../cmake/include/ros.cmake")
 include("../cmake/include/pcl_common.cmake")
+include("../cmake/include/turbojpeg.cmake")
 
 # Find ROS Bag and Eigen3
 set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/cmake;${ROS_ROOT_DIR}")
@@ -13,8 +14,14 @@ find_package(Threads REQUIRED)
 find_package(rosbag REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-include_directories(.. src include ${rosbag_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS}
-                    ${EIGEN3_INCLUDE_DIR})
+include_directories(
+  ..
+  src
+  include
+  ${rosbag_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
+  ${JPEG_TURBO_INCLUDE_DIR})
 
 # ROS Message Library
 set(ROS_MESSAGE_LIB ${PROJECT_NAME}-ros-message)
@@ -23,7 +30,7 @@ add_library(
   ${ROS_MESSAGE_LIB} SHARED "src/ros_message.cpp"
                             "src/direct_bag/direct_bag.cpp" ${ROS_MESSAGE_SRC})
 target_link_libraries(${ROS_MESSAGE_LIB} ${rosbag_LIBRARIES} hera-common
-                      hera-device)
+                      hera-device ${JPEG_TURBO_LIBS})
 
 # Main executable
 add_executable(${PROJECT_NAME} "src/converter.cpp" "src/main.cpp")
