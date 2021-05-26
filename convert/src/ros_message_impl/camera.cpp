@@ -8,6 +8,7 @@
 ///
 
 #include "ros_message_impl.hpp"
+#include "turbojpeg.h"
 
 namespace wayz {
 namespace hera {
@@ -20,35 +21,105 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::Compresse
         const std::string& frame_id,
         const common::Remapper* remapper)
 {
-    auto data_impl = reinterpret_cast<device::data::CompressedImage*>(sensor_data.get());
-    auto message = ROSMessage::create<ROSMessageType::CompressedImage>();
-    auto ros_message = reinterpret_cast<sensor_msgs::CompressedImage*>(message->ptr);
-    std::vector<ROSMessagePtr> ret;
+    auto topic_name = remapper->remap(topic_prefix + "image/compressed");
+    if (topic_name.size() > 10 && topic_name.substr(topic_name.size() - 10) == "compressed") {
+        auto data_impl = reinterpret_cast<device::data::CompressedImage*>(sensor_data.get());
+        auto message = ROSMessage::create<ROSMessageType::CompressedImage>();
+        auto ros_message = reinterpret_cast<sensor_msgs::CompressedImage*>(message->ptr);
 
-    message->topic_name = remapper->remap(topic_prefix + "image/compressed");
-    message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
-    ros_message->header.seq = sensor_data->sequence;
-    ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
-    ros_message->header.frame_id = frame_id;
+        message->topic_name = topic_name;
+        message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+        ros_message->header.seq = sensor_data->sequence;
+        ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+        ros_message->header.frame_id = frame_id;
 
-    switch (data_impl->compress_format) {
-    case device::data::CompressedImage::CompressFormat::JPEG:
-        ros_message->format = "jpeg";
-        break;
-    case device::data::CompressedImage::CompressFormat::PNG:
-        ros_message->format = "png";
-        break;
-    default:
-        log::error << "Converter: Invalid Compress Format:" << static_cast<int>(data_impl->compress_format)
-                   << log::endl;
+        switch (data_impl->compress_format) {
+        case device::data::CompressedImage::CompressFormat::JPEG:
+            ros_message->format = "jpeg";
+            break;
+        case device::data::CompressedImage::CompressFormat::PNG:
+            ros_message->format = "png";
+            break;
+        default:
+            log::error << "Converter: Invalid Compress Format:" << static_cast<int>(data_impl->compress_format)
+                       << log::endl;
+            return {};
+        }
+
+        ros_message->data.resize(data_impl->image_data_size);
+        memcpy(ros_message->data.data(), data_impl->image_data, data_impl->image_data_size);
+
+        std::vector<ROSMessagePtr> ret;
+        ret.emplace_back(std::move(message));
+        return ret;
+    } else {
+        auto data_impl = reinterpret_cast<device::data::CompressedImage*>(sensor_data.get());
+        auto message = ROSMessage::create<ROSMessageType::Image>();
+        auto ros_message = reinterpret_cast<sensor_msgs::Image*>(message->ptr);
+
+        message->topic_name = topic_name;
+        message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+        ros_message->header.seq = sensor_data->sequence;
+        ros_message->header.stamp = to_ros_time(sensor_data->timestamp_intrinsic_ns);
+        ros_message->header.frame_id = frame_id;
+
+        // Check if format is jpeg
+        switch (data_impl->compress_format) {
+        case device::data::CompressedImage::CompressFormat::JPEG:
+            break;
+        case device::data::CompressedImage::CompressFormat::PNG:
+            // PNG is not supported yet
+            return {};
+            break;
+        default:
+            log::error << "Converter: Invalid Compress Format:" << static_cast<int>(data_impl->compress_format)
+                       << log::endl;
+            return {};
+        }
+
+        auto tj_instance = tjInitDecompress();
+        if (!tj_instance) {
+            return {};
+        }
+        uint8_t* src_jpeg_buff = data_impl->image_data;
+        size_t src_jpeg_size = data_impl->image_data_size;
+
+        int width, height;
+        int subsamp, colorspace;
+        if (tjDecompressHeader3(tj_instance, src_jpeg_buff, src_jpeg_size, &width, &height, &subsamp, &colorspace) <
+            0) {
+            log::warn << "Converter: Can not decompress jpeg" << log::endl;
+            tjDestroy(tj_instance);
+            return {};
+        }
+
+        constexpr auto pixel_format = TJPF_BGR;
+        ros_message->height = height;
+        ros_message->width = width;
+        ros_message->step = width * tjPixelSize[pixel_format];
+        ros_message->is_bigendian = 0;
+        ros_message->encoding = "bgr8";
+        ros_message->data.resize(width * height * tjPixelSize[pixel_format]);
+
+        if (tjDecompress2(tj_instance,
+                          src_jpeg_buff,
+                          src_jpeg_size,
+                          ros_message->data.data(),
+                          width,
+                          0,
+                          height,
+                          pixel_format,
+                          0) != 0) {
+            log::warn << "Converter: Can not decompress jpeg" << log::endl;
+            tjDestroy(tj_instance);
+            return {};
+        }
+
+        std::vector<ROSMessagePtr> ret;
+        ret.emplace_back(std::move(message));
+        tjDestroy(tj_instance);
         return ret;
     }
-
-    ros_message->data.resize(data_impl->image_data_size);
-    memcpy(ros_message->data.data(), data_impl->image_data, data_impl->image_data_size);
-
-    ret.emplace_back(std::move(message));
-    return ret;
 }
 
 template<>
