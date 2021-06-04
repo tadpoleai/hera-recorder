@@ -57,30 +57,33 @@ Hera 主版本 4 默认使用的储存格式
 
 #### V4 记录头(StorageHeader)
 
-| 记录字段           |            代码字段 |              类型 |    起始偏移 |            长度 | 结束偏移    | 备注                                       |
-| :----------------- | ------------------: | ----------------: | ----------: | --------------: | :---------- | ------------------------------------------ |
-| 版本魔数           |         **MagicV4** |            string |           0 |              16 | 16          | **固定的 `HERA_STORAGE_V4`**, 包含结尾`\0` |
-| 采集开始时间       |     timestamp_start |          uint64_t |          16 |               8 | 24          | 同 V3                                      |
-| 采集结束时间       |       timestamp_end |          uint64_t |          24 |               8 | 32          | 同 V3                                      |
-| 传感器数量         |          device_num |          uint32_t |          32 |               4 | 36          | 同 V3                                      |
-| 各传感器数据的数量 | device_message_nums |  vector<uint32_t> |          36 | 4 \* device_num | \$END1      | 同 V3                                      |
-| 各传感器数据的容量 |   device_data_sizes |  vector<uint64_t> |      \$END1 | 8 \* device_num | \$END2      | 同 V3                                      |
-| 各传感器的名字     |        device_names |    vector<string> |      \$END2 |            同上 | \$END_V3    | 同 V3                                      |
-| 补充信息           |          extra_info |            string |    \$END_V3 |            不定 | \$END_EXTRA | \E                                         |
-| 日志               |                logs | vector<LogString> | \$END_EXTRA |            不定 | \$END_LOGS  | \F                                         |
-| 填充               |                   - |              void |  \$END_LOGS |               - | 4\*2^20     | **\G**                                     |
+| 记录字段           |            代码字段 |                   类型 |                       起始偏移 |            长度 | 结束偏移    | 备注                                       |
+| :----------------- | ------------------: | ---------------------: | -----------------------------: | --------------: | :---------- | ------------------------------------------ |
+| 版本魔数           |         **MagicV4** |                 string |                              0 |              16 | 16          | **固定的 `HERA_STORAGE_V4`**, 包含结尾`\0` |
+| 采集开始时间       |     timestamp_start |               uint64_t |                             16 |               8 | 24          | 同 V3                                      |
+| 采集结束时间       |       timestamp_end |               uint64_t |                             24 |               8 | 32          | 同 V3                                      |
+| 传感器数量         |          device_num |               uint32_t |                             32 |               4 | 36          | 同 V3                                      |
+| 各传感器数据的数量 | device_message_nums |       vector<uint32_t> |                             36 | 4 \* device_num | \$END1      | 同 V3                                      |
+| 各传感器数据的容量 |   device_data_sizes |       vector<uint64_t> |                         \$END1 | 8 \* device_num | \$END2      | 同 V3                                      |
+| 各传感器的名字     |        device_names |         vector<string> |                         \$END2 |            同上 | \$END_V3    | 同 V3                                      |
+| 补充信息           |          extra_info |                 string |                       \$END_V3 |            不定 | \$END_EXTRA | \E                                         |
+| 日志               |                logs |      vector<LogString> |                    \$END_EXTRA |            不定 | \$END_LOGS  | \F                                         |
+| 填充               |                   - |                   void |                     \$END_LOGS |               - | 4\*2^20     | **\G**                                     |
+| 索引               |             indices | vector<TimestampIndex> | 4MiB - 40 - 16\*indices.size() |       4MiB - 40 | 4MB-40      | **\H**                                     |
+| 索引数量           |      indices.size() |                 size_t |                      4MiB - 40 |               8 | 4MiB - 32   | **\H**                                     |
+| 索引魔数           |        MagicIndices |                 string |                      4MiB - 32 |              32 | 4MiB        | **\H**                                     |
 
 \E: 将 json 对象序列化成 string 后储存, 可记录任意信息. 通常可记录传感器参数安装位置, 操作人员, 任务 ID, 备注等信息  
 写入方式为先写入 uint32_t 的 string.size(), 再按顺序写入字符串
 
 \F: 将 vector 中的 LogString 连续写入, 关于 LogString 的内存格式在此不详细描述  
-若 LogString 写入后总长度超过 4MBytes, 则抛弃后续的数据
+若 LogString 写入后总长度超过 4MiBytes, 则抛弃后续的数据
 
-\G: 从\$END_LOGS, 开始到 4MBytes 为止, 使用全 0 填充, 使得记录头总长度始终为 4MBytes, 后续记录数据序列总是从固定的 4MBytes 开始
+\G: 从\$END_LOGS, 开始到 4MiBytes 为止, 使用全 0 填充, 使得记录头总长度始终为 4MBytes, 后续记录数据序列总是从固定的 4MBytes 开始
+
+\H: 从 4.6.3 版本开始，新的记录文件会在原有填充 0 自底向上安排索引，索引传感器时间和数据在记录文件中的偏移，可方便对文件进行快速跳转(seek)
 
 ## 使用 Hera 库读写记录文件
-
-
 
 ## 其他平台读写记录文件
 
@@ -98,6 +101,8 @@ Hera 主版本 4 默认使用的储存格式
    有些平台的写入为阻塞操作, 可使用写队列缓存数据
 
    关于 DeviceData 的格式, 参考 [Hera 代码说明](source.md)
+
+1. 按一定的时间间隔建立索引
 
 1. 采集结束时, 等待写队列情况, 文件已经全部写入(flush)
 

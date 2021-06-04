@@ -115,6 +115,29 @@ public:
     device::data::DeviceDataPtr read();
 
     ///
+    /// @brief Seek data header to specific timestamp
+    ///
+    /// @param ts timestamp to seek to
+    /// @return true / false, successfully seek or not
+    ///
+    /// @note This function should be used before read() in strict mode
+    /// @note This function may cosume a lot of time
+    bool seek(time::Timestamp ts);
+
+    ///
+    /// @brief Tellg (read mode)
+    ///
+    /// @return int64_t tellg() of input storage file
+    int64_t tellg()
+    {
+        if (read_mode_) {
+            return in_file_.tellg();
+        } else {
+            return 0;
+        }
+    }
+
+    ///
     /// @brief Get history data (write mode)
     ///
     /// @param device_id device id of device
@@ -122,9 +145,9 @@ public:
     /// @return empty vector if device id out of range
     std::vector<device::data::DeviceDataPtr> history(const uint32_t device_id) const;
 
-    /// 
+    ///
     /// @brief Clear history data (write mode)
-    /// 
+    ///
     /// @param device_id device id of device
     void clear_history(const uint32_t device_id);
 

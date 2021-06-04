@@ -28,6 +28,10 @@ constexpr std::array<char, 16> StorageDataHeader::MagicV3 = {"HERA_STORAGE_V3"};
 
 constexpr std::array<char, 16> StorageDataHeader::MagicV4 = {"HERA_STORAGE_V4"};
 
+constexpr std::array<char, 32> StorageDataHeader::MagicIndices = {  //
+        0,   0,   0,   0,   0,  0,   0,  0,  0,  0, 0,  0, 0,   0, 0, 0,
+        'I', 'N', 'D', 'X', 23, -19, 20, 13, -4, 4, -4, 1, -10, 4, 9, 22};
+
 StorageDataHeader::StorageDataHeader(const int32_t version, const bool is_extra, const bool is_logs) :
     Version(version),
     IsExtra(is_extra || is_logs),
@@ -115,13 +119,6 @@ StorageDataHeaderPtr StorageDataHeader::read_from(std::ifstream& ifs, const bool
         }
 
         // V4
-
-        // Read Extra Info
-        if (!is_extra && !is_logs) {
-            ifs.seekg(ReservedLength, std::ios::beg);
-            return header;
-        }
-
         uint32_t extra_info_size = 0;
         ifs.read((char*)&extra_info_size, sizeof(extra_info_size));
         if (ifs.gcount() != sizeof(extra_info_size)) {
@@ -133,18 +130,16 @@ StorageDataHeaderPtr StorageDataHeader::read_from(std::ifstream& ifs, const bool
 
         std::string extra_info_str;
         extra_info_str.resize(extra_info_size);
-        ifs.read((char*)(extra_info_str.data()), extra_info_size);
-        header->extra_info = nlohmann::json::parse(extra_info_str);
-
-        // Read Log Info
-        if (!is_logs) {
-            ifs.seekg(ReservedLength, std::ios::beg);
-            return header;
+        if (is_extra && extra_info_size > 0) {
+            ifs.read((char*)(extra_info_str.data()), extra_info_size);
+            header->extra_info = nlohmann::json::parse(extra_info_str);
+        } else {
+            ifs.seekg(extra_info_size, std::ios::cur);
         }
 
-        while (true) {
+        // Read Log Info
+        while (is_logs) {
             log::impl::LogString log_string;
-
             ifs.read((char*)(&log_string.level), sizeof(log_string.level));
             if (ifs.gcount() != sizeof(log_string.level)) {
                 throw std::runtime_error("Can not read log");
@@ -176,7 +171,36 @@ StorageDataHeaderPtr StorageDataHeader::read_from(std::ifstream& ifs, const bool
             header->logs.emplace_back(std::move(log_string));
         }
 
-        ifs.seekg(ReservedLength, std::ios::beg);
+        // Read Indices
+        // Read Magic and length
+        uint64_t number_of_indices = 0;
+        std::remove_const_t<decltype(MagicIndices)> magicIndices;
+
+        ifs.seekg(ReservedLength - sizeof(MagicIndices) - sizeof(uint64_t), std::ios::beg);
+        ifs.read((char*)&number_of_indices, sizeof(number_of_indices));
+        if (ifs.gcount() != sizeof(number_of_indices)) {
+            throw std::runtime_error("Size of file is less than expected");
+        }
+        ifs.read(magicIndices.data(), magicIndices.size());
+        if (ifs.gcount() != sizeof(magicIndices)) {
+            throw std::runtime_error("Size of file is less than expected");
+        }
+        if (magicIndices == MagicIndices && number_of_indices > 0 &&
+            number_of_indices < ReservedLength / sizeof(StorageHeaderTimestampIndex)) {
+
+            log::debug << "Reading Indices" << log::endl;
+            ifs.seekg(ReservedLength - sizeof(MagicIndices) - sizeof(uint64_t) -
+                              number_of_indices * sizeof(StorageHeaderTimestampIndex),
+                      std::ios::beg);
+            header->indices.resize(number_of_indices);
+            ifs.read((char*)header->indices.data(), number_of_indices * sizeof(StorageHeaderTimestampIndex));
+            if ((int64_t)ifs.gcount() != (int64_t)(number_of_indices * sizeof(StorageHeaderTimestampIndex))) {
+                throw std::runtime_error("Size of file is less than expected");
+            }
+        }
+
+        ifs.seekg(ReservedLength);
+
         return header;
     } catch (std::exception& e) {
         log::error << "Storage: Error read from storage. " << e.what() << log::endl;
@@ -229,57 +253,64 @@ size_t StorageDataHeader::write_to(std::ofstream& ofs) const
             return length_written;
         }
 
-        if (!IsExtra) {
-            ofs.seekp(ReservedLength, std::ios::beg);
-            return length_written;
-        }
-
         // Write V4
 
         // Write Extra Info
-        std::string extra_info_str = extra_info.dump(-1, 0, false, nlohmann::json::error_handler_t::ignore);
-        uint32_t extra_info_size = extra_info_str.size();
-        if (extra_info_str.size() + length_written > ReservedLength) {
-            log::error << "Storage: Too long extra info when calling write_to" << log::endl;
-            extra_info_size = ReservedLength;
-            ofs.write((char*)&extra_info_size, sizeof(extra_info_size));
-            ofs.seekp(ReservedLength, std::ios::beg);
-            return length_written;
-        }
-
-        ofs.write((char*)&extra_info_size, sizeof(extra_info_size));
-        ofs.write((char*)extra_info_str.data(), extra_info_size);
-        length_written += extra_info_size + sizeof(extra_info_size);
-
-        if (!IsLogs) {
-            ofs.seekp(ReservedLength, std::ios::beg);
-            return length_written;
-        }
-
-        // Write Log Info
-        for (const auto& log_string : logs) {
-            uint32_t log_string_size = log_string.str.size();
-
-            if (log_string_size + length_written + 64 > ReservedLength) {
-                uint64_t Zero = 0;
-                ofs.write((char*)(&Zero), sizeof(Zero));
-                break;
+        if (IsExtra) {
+            std::string extra_info_str = extra_info.dump(-1, 0, false, nlohmann::json::error_handler_t::ignore);
+            uint32_t extra_info_size = extra_info_str.size();
+            if (extra_info_str.size() + length_written > ReservedLength) {
+                log::error << "Storage: Too long extra info when calling write_to" << log::endl;
+                extra_info_size = ReservedLength;
+                ofs.write((char*)&extra_info_size, sizeof(extra_info_size));
+                ofs.seekp(ReservedLength, std::ios::beg);
+                return length_written;
             }
-
-            ofs.write((char*)(&log_string.level), sizeof(log_string.level));
-            length_written += sizeof(log_string.level);
-
-            uint64_t ts = log_string.ts;
-            ofs.write((char*)(&ts), sizeof(ts));
-            length_written += sizeof(ts);
-
-            ofs.write((char*)(&log_string_size), sizeof(log_string_size));
-            ofs.write((char*)(log_string.str.data()), log_string_size);
-            length_written += log_string_size + sizeof(log_string_size);
+            ofs.write((char*)&extra_info_size, sizeof(extra_info_size));
+            ofs.write((char*)extra_info_str.data(), extra_info_size);
+            length_written += extra_info_size + sizeof(extra_info_size);
+        } else {
+            uint32_t extra_info_size = 0;
+            ofs.write((char*)&extra_info_size, sizeof(extra_info_size));
+            length_written += sizeof(extra_info_size);
         }
+
+        // Calculate Indices size;
+        const uint64_t number_of_indices = indices.size();
+        size_t indices_reserve_offset = ReservedLength - sizeof(MagicIndices) - sizeof(uint64_t) -
+                                        sizeof(StorageHeaderTimestampIndex) * number_of_indices;
+        if (IsLogs) {
+            // Write Log Info
+            for (const auto& log_string : logs) {
+                uint32_t log_string_size = log_string.str.size();
+
+                if (log_string_size + length_written + 64 > indices_reserve_offset) {
+                    uint64_t Zero = 0;
+                    ofs.write((char*)(&Zero), sizeof(Zero));
+                    break;
+                }
+
+                ofs.write((char*)(&log_string.level), sizeof(log_string.level));
+                length_written += sizeof(log_string.level);
+
+                uint64_t ts = log_string.ts;
+                ofs.write((char*)(&ts), sizeof(ts));
+                length_written += sizeof(ts);
+
+                ofs.write((char*)(&log_string_size), sizeof(log_string_size));
+                ofs.write((char*)(log_string.str.data()), log_string_size);
+                length_written += log_string_size + sizeof(log_string_size);
+            }
+        }
+
+        // Write Indices
+        ofs.seekp(indices_reserve_offset, std::ios::beg);
+        ofs.write((char*)(indices.data()), sizeof(StorageHeaderTimestampIndex) * number_of_indices);
+        ofs.write((char*)(&number_of_indices), sizeof(number_of_indices));
+        ofs.write((char*)MagicIndices.data(), MagicIndices.size());  // Magic;
 
         ofs.seekp(ReservedLength, std::ios::beg);
-        return length_written;
+        return ReservedLength;
     } catch (std::exception& e) {
         log::error << "Storage: Error write to storage since " << e.what() << log::endl;
         return 0;
@@ -338,6 +369,12 @@ std::ostream& operator<<(std::ostream& os, const StorageDataHeader& rhs)
             os << "  " << log.level.to_color_prefix() << log::impl::Logger::format(log) << log.level.to_color_suffix()
                << "\n";
         }
+    }
+
+    if (!rhs.indices.empty()) {
+        os << "\n- With " << rhs.indices.size() << " indices\n";
+    } else {
+        os << "\n- No indices available\n";
     }
 
     return os;

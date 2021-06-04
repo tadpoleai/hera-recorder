@@ -29,22 +29,21 @@ namespace storage {
 ///
 class Tool {
 public:
-    ///
-    /// @brief Construct a new Tool object
-    ///
-    /// @param filename filename of input storage data
-    /// @param print_extra flag to print extra info
-    /// @param print_logs flag to print logs
-    /// @param rebuild flag to rebuild broken header
-    /// @param reindex flag to reindex out-of-ordered timestamp
-    /// @param outfilename filename of output storage data (after reindexing)
-    ///
-    Tool(const std::string& filename,
-         const bool print_extra,
-         const bool print_logs,
-         const bool rebuild,
-         const bool reindex,
-         const std::string& outfilename);
+    struct Config {
+        std::string filename;     ///< filename of input storage data
+        std::string outfilename;  ///< filename of output storage data (after trim)
+        bool rebuild{false};      ///< flag to rebuild broken header
+        bool trim{false};         ///< flag to trim data
+        bool print_extra{false};
+        bool print_logs{false};
+        bool isverbose{false};
+        bool isquiet{false};
+        double start_time{0};
+        double duration{0};
+    };
+
+public:
+    Tool(const Config& config);
 
     ///
     /// @brief Destroy the Tool object
@@ -81,9 +80,14 @@ public:
 
 private:
     ///
-    /// @brief thread function for read messsage from storage
+    /// @brief thread function for read messsage from storage (for rebuilding)
     ///
     void read_thread_function();
+
+    ///
+    /// @brief thread function for read messsage from storage (for trimming)
+    ///
+    void trim_thread_function();
 
 private:
     std::thread* read_thread_;            ///< thread handler of reading
@@ -92,10 +96,7 @@ private:
     int64_t total_size_;                  ///< total size of data reading now
     storage::StorageManagerPtr storage_;  ///< storage manager
 
-    const bool rebuild_;
-    const bool reindex_;
-    const std::string filename_;
-    const std::string outfilename_;
+    Config config_;
 };
 
 }  // namespace storage

@@ -21,13 +21,20 @@
 #include <sys/mount.h>
 #include <sys/param.h>
 #endif
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
+#include <sys/types.h>
 
 namespace wayz {
 namespace hera {
 namespace file {
+
+FileSize::operator std::string() const
+{
+    std::stringstream os;
+    os << *this;
+    return os.str();
+}
 
 std::ostream& operator<<(std::ostream& os, const FileSize& size)
 {

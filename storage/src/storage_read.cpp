@@ -25,6 +25,11 @@ device::data::DeviceDataPtr StorageManager::read()
 
     if (!read_strict_) {
         return device::data::DeviceData::read_from(in_file_);
+    } else {
+        if (!thread_) {
+            thread_running_ = true;
+            thread_ = new std::thread(&StorageManager::prefetch_thread_function, this);
+        }
     }
 
     // Read strict
