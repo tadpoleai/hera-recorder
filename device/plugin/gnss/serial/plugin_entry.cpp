@@ -131,6 +131,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     auto navsatfix_sensor_data = static_cast<data::NavSatFix*>(sensor_data.get());
 
     // Initialize an invalid data template
+    navsatfix_sensor_data->timestamp_intrinsic_ns = raw_data->get_timestamp_receive_ns();
     navsatfix_sensor_data->status.status = data::NavSatFix::StatusType::NO_Fix;
     navsatfix_sensor_data->status.service = data::NavSatFix::ServiceType::GPS;
     navsatfix_sensor_data->position_covariance_type = data::NavSatFix::PositionCovarianceType::Unknown;
@@ -277,10 +278,16 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         }
         switch (token[0]) {
         case '4':
-            fixed = data::NavSatFix::StatusType::FIX;
+            fixed = data::NavSatFix::StatusType::GBAS_FIX;
+            break;
+        case '5':
+            fixed = data::NavSatFix::StatusType::SBAS_Fix;
+            break;
+        case '0':
+            fixed = data::NavSatFix::StatusType::NO_Fix;
             break;
         default:
-            fixed = data::NavSatFix::StatusType::NO_Fix;
+            fixed = data::NavSatFix::StatusType::FIX;
             break;
         }
 
@@ -363,7 +370,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
                    << " navsatfix_sensor_data->altitude " << navsatfix_sensor_data->altitude << log::endl;
     } catch (std::exception& err) {
         log::warn << "Serial: convert(), " << err.what() << log::endl;
-        return data::SensorData::broken_data();
+        return sensor_data;
     }
 
     return sensor_data;
