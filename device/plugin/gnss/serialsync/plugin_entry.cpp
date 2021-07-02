@@ -418,10 +418,16 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         }
         switch (token[0]) {
         case '4':
-            fixed = data::NavSatFix::StatusType::FIX;
+            fixed = data::NavSatFix::StatusType::GBAS_FIX;
+            break;
+        case '5':
+            fixed = data::NavSatFix::StatusType::SBAS_Fix;
+            break;
+        case '0':
+            fixed = data::NavSatFix::StatusType::NO_Fix;
             break;
         default:
-            fixed = data::NavSatFix::StatusType::NO_Fix;
+            fixed = data::NavSatFix::StatusType::FIX;
             break;
         }
 
