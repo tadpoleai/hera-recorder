@@ -1,103 +1,72 @@
 <template lang="pug">
 .upload
-  van-cell-group(title="数据文件名")
+  van-cell-group(title='数据文件名')
     van-cell
-      template(v-for="file in filesToUpload")
-        div(style="display: inline-block; margin: 4px")
-          van-tag(plain round type="primary") {{ file }}
-  
-  template
-    van-cell-group(title="服务器")
-      van-radio-group(v-model="selectedServer")
-        van-cell(
-          v-for="serverName in uploadServers"
-          icon="cluster-o"
-          :title="serverName"
-          clickable
-          @click="onClickServer(serverName)"
-        )
-          van-radio(
-            slot="right-icon"
-            :name="serverName"
-          )
-  template
-    van-cell-group(title="可移动储存")
-      van-cell(
-        v-for="disk in localDisks"
-        icon="points"
-        :title="disk.name"
-        clickable
-        @click="onClickLocalDisk(disk.name)"
-      )
-        template(slot="title")
-          van-row
-            van-col(span="5")
-              span {{ disk.name }}
-            van-col.right(span="19")
-              span {{ dataSizeFormat(disk.diskUsageStatus.diskTotalSpace - disk.diskUsageStatus.diskUsedSpace) }} 空余
-              span  / {{ dataSizeFormat(disk.diskUsageStatus.diskTotalSpace) }} 合计
-          van-row(v-if="selectedLocalDiskPath.length && selectedLocalDiskPath[0] == disk.name")
-            van-tag(plain type="primary" size="medium")
-              | {{ selectedLocalDiskPathPlain }}
-  van-cell()
-    van-row(style="margin: 1em 0 0 0")
-      van-col.center(span="12")
-        van-button(
-          type="danger"
-          size="small"
-          @click="$router.back()"
-        ) 取消
-      van-col.center(span="12")
-        van-button(
-          type="primary"
-          size="small"
-          @click="onClickConfirmUpload"
-        ) 上传
+      template(v-for='file in filesToUpload')
+        div(style='display: inline-block; margin: 4px')
+          van-tag(plain, round, type='primary') {{ file }}
 
+  template
+    van-cell-group(title='服务器')
+      van-radio-group(v-model='selectedServer')
+        van-cell(
+          v-for='serverName in uploadServers',
+          icon='cluster-o',
+          :title='serverName',
+          clickable,
+          @click='onClickServer(serverName)'
+        )
+          van-radio(slot='right-icon', :name='serverName')
+  template
+    van-cell-group(title='可移动储存')
+      van-cell(
+        v-for='disk in localDisks',
+        icon='points',
+        :title='disk.name',
+        clickable,
+        @click='onClickLocalDisk(disk.name)'
+      )
+        template(slot='title')
+          van-row
+            van-col(span='5')
+              span {{ disk.name }}
+            van-col.right(span='19')
+              span {{ dataSizeFormat(disk.diskUsageStatus.diskTotalSpace - disk.diskUsageStatus.diskUsedSpace) }} 空余
+              span / {{ dataSizeFormat(disk.diskUsageStatus.diskTotalSpace) }} 合计
+          van-row(v-if='selectedLocalDiskPath.length && selectedLocalDiskPath[0] == disk.name')
+            van-tag(plain, type='primary', size='medium')
+              | {{ selectedLocalDiskPathPlain }}
+  van-cell
+    van-row(style='margin: 1em 0 0 0')
+      van-col.center(span='12')
+        van-button(type='danger', size='small', @click='$router.back()') 取消
+      van-col.center(span='12')
+        van-button(type='primary', size='small', @click='onClickConfirmUpload') 上传
 
   // Local Disk Browser
-  van-overlay(
-    :show="showLocalDiskBrowserDialog"
-  )
+  van-overlay(:show='showLocalDiskBrowserDialog')
     .wrapper
-      .block(catch:tap="noop")
-        van-cell-group(
-          title="当前路径"
-        )
+      .block(catch:tap='noop')
+        van-cell-group(title='当前路径')
           van-cell
-            template(v-for="(layerName, index) in selectedLocalDiskPath")
-              div(style="display: inline-block; margin: 4px")
-                van-tag(
-                  plain
-                  size="large"
-                  type="primary"
-                  @click="onClickLayerIndex(index)"
-                ) {{ layerName }}
+            template(v-for='(layerName, index) in selectedLocalDiskPath')
+              div(style='display: inline-block; margin: 4px')
+                van-tag(plain, size='large', type='primary', @click='onClickLayerIndex(index)') {{ layerName }}
 
-        van-cell-group(
-          title="子文件夹"
-        )
+        van-cell-group(title='子文件夹')
         .sub-directories
-          van-cell-group(
-            v-show="!isFolderLoading"
-            style="width: 100%"
-          )
+          van-cell-group(v-show='!isFolderLoading', style='width: 100%')
             van-cell(
-              v-for="folder in selectedLocalDiskPathFolderContent"
-              @click="onClickSubDirectory(folder)"
-              style="width: 100%"
+              v-for='folder in selectedLocalDiskPathFolderContent',
+              @click='onClickSubDirectory(folder)',
+              style='width: 100%'
             )
               van-tag(plain) {{ folder }}
 
-        van-cell()
-          van-row(style="margin: 1em 0 0 0")
-            van-col.center(span="24")
-              van-button(
-                type="info"
-                size="small"
-                @click="showLocalDiskBrowserDialog = false"
-              ) 确定
-
+        van-cell
+          van-row(style='margin: 1em 0 0 0')
+            van-col.center(span='24')
+              van-button(type='info', size='small', @click='showLocalDiskBrowserDialog = false') 确定
 </template>
 
 <script lang="ts">
@@ -184,27 +153,32 @@ export default class Storage extends Vue {
 </script>
 
 <style lang="stylus">
-.center
-  text-align center
+.center {
+  text-align: center;
+}
 
-.right
-  text-align right
+.right {
+  text-align: right;
+}
 
-.wrapper
-  display flex
-  align-items center
-  justify-content center
-  height 100%
+.wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
 
-.block
-  width 80vw
-  height 80vh
-  background-color #fff
-  display flex
-  flex-direction column
+.block {
+  width: 80vw;
+  height: 80vh;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+}
 
-.sub-directories
-  display flex
-  flex 1
-  overflow-y scroll
+.sub-directories {
+  display: flex;
+  flex: 1;
+  overflow-y: scroll;
+}
 </style>

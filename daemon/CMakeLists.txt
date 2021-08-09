@@ -15,6 +15,11 @@ add_library(
                                    broadcast/broadcaster.cpp)
 target_link_libraries(${PROJECT_NAME}-broadcast hera-common)
 
+# Build network
+add_library(
+  ${PROJECT_NAME}-network STATIC network/network.cpp)
+target_link_libraries(${PROJECT_NAME}-network hera-common)
+
 # Compile hera.thrift
 set(RPC_GEN_CPP "${CMAKE_CURRENT_SOURCE_DIR}/rpc/gen-cpp")
 add_custom_command(
@@ -40,6 +45,7 @@ target_link_libraries(
   hera-storage
   hera-device
   ${PROJECT_NAME}-broadcast
+  ${PROJECT_NAME}-network
   ${THRIFT}
   ${LIBCONFIG})
 

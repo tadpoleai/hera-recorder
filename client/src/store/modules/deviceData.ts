@@ -26,6 +26,8 @@ const state: State = {
   selectDetailDeviceIndex: 0
 };
 
+let staticFetchConst = 0;
+
 const actions: ActionTree<State, RootState> = {
   async fetch({ commit, dispatch }) {
     const client = connect((err: any) => {
@@ -34,6 +36,10 @@ const actions: ActionTree<State, RootState> = {
     const data = await client.getData();
     if (!data.error) {
       commit('setFromFetch', data);
+      staticFetchConst += 1;
+      if (staticFetchConst % 20 == 0) {
+        dispatch('DiskUsage/fetch', null, { root: true });
+      }
     }
   },
 

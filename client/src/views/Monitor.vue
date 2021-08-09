@@ -1,77 +1,54 @@
 <template lang="pug">
-.monitor(
-  v-resize:throttle="onResize"
-)
-  van-cell-group(title="采集信息")
+.monitor(v-resize:throttle='onResize')
+  van-cell-group(title='采集信息')
     van-cell
-      div(style="display: flex; justify-content: space-between;")
+      div(style='display: flex; justify-content: space-between')
         span 采集时间
-        span {{timeFromStart}}
+        span {{ timeFromStart }}
 
-    DiskUsage(
-      :refresh="true"
-    )
+    DiskUsage(:refresh='true')
 
-    van-cell(
-      title="数据刷新频率"
-    )
+    van-cell(title='数据刷新频率')
       van-rate(
-        slot="right-icon"
-        v-model="dataRefreshRate"
-        :size="24"
-        :gutter="6"
-        icon="clock-o"
-        void-icon="circle"
+        slot='right-icon',
+        v-model='dataRefreshRate',
+        :size='24',
+        :gutter='6',
+        icon='clock-o',
+        void-icon='circle'
       )
 
-  van-cell-group(title="传感器数据")
-    van-grid(
-      :column-num="columnNum"
-    )
-      van-grid-item.device-grid-item(
-        v-for="(deviceData, deviceIndex) in fetchedData.deviceDatas"
-      )
+  van-cell-group(title='传感器数据')
+    van-grid(:column-num='columnNum')
+      van-grid-item.device-grid-item(v-for='(deviceData, deviceIndex) in fetchedData.deviceDatas')
         DetailData
-        
-        van-panel.device-panel(
-          @click="setSelectDetailDeviceIndex(deviceIndex)"
-        )
-          van-cell.device-panel-header(
-            slot="header"
-          )
-            div(style="display: flex; justify-content: space-between; margin-bottom: 8px")
-              van-tag(plain type="primary")
-                | {{deviceData.type + '/' + deviceData.name}}
-              van-tag(:type="getHealth(deviceData.health).type")
-                | {{getHealth(deviceData.health).text}}
-            div(style="display: flex; justify-content: space-between;")
+
+        van-panel.device-panel(@click='setSelectDetailDeviceIndex(deviceIndex)')
+          van-cell.device-panel-header(slot='header')
+            div(style='display: flex; justify-content: space-between; margin-bottom: 8px')
+              van-tag(plain, type='primary')
+                | {{ deviceData.type + "/" + deviceData.name }}
+              van-tag(:type='getHealth(deviceData.health).type')
+                | {{ getHealth(deviceData.health).text }}
+            div(style='display: flex; justify-content: space-between')
               van-tag(plain)
-                | {{frequencyFormat(deviceData.frequency)}}
+                | {{ frequencyFormat(deviceData.frequency) }}
               van-tag(plain)
-                | {{deviceData.sequence}}
+                | {{ deviceData.sequence }}
               van-tag(plain)
-                | {{dataSizeFormatShort(deviceData.dataSize)}}
+                | {{ dataSizeFormatShort(deviceData.dataSize) }}
 
           //- dispData
-          template(
-            v-for="singleDisplayData in deviceData.dispData"
-          )
+          template(v-for='singleDisplayData in deviceData.dispData')
             JpegImage.device-data-image(
-              v-if="singleDisplayData.jpegData.length != 0"
-              :jpeg="singleDisplayData.jpegData"
+              v-if='singleDisplayData.jpegData.length != 0',
+              :jpeg='singleDisplayData.jpegData'
             )
-            template(
-              v-if="singleDisplayData.textData.length != 0"
-            )
-              p.pdata(v-for="line in renderStringData(singleDisplayData.textData)") {{line}}
+            template(v-if='singleDisplayData.textData.length != 0')
+              p.pdata(v-for='line in renderStringData(singleDisplayData.textData)') {{ line }}
 
-  van-cell-group(
-    v-if="fetchedData.slamResultValid"
-    title="实时建图"
-  )
-    JpegImage(
-      :jpeg="fetchedData.slamResult"
-    )
+  van-cell-group(v-if='fetchedData.slamResultValid', title='实时建图')
+    JpegImage(:jpeg='fetchedData.slamResult')
 </template>
 
 <script lang="ts">
@@ -172,21 +149,26 @@ export default class Monitor extends Vue {
 </script>
 
 <style lang="stylus">
-.van-grid-item__content
-  padding 0 !important
+.van-grid-item__content {
+  padding: 0 !important;
+}
 
-.device-panel
-  height 100%
-  width 100%
+.device-panel {
+  height: 100%;
+  width: 100%;
+}
 
-.device-panel-header
-  padding-left 8 !important
-  padding-right 8 !important
+.device-panel-header {
+  padding-left: 8 !important;
+  padding-right: 8 !important;
+}
 
-.pdata
-  padding 0
-  margin 0.1rem 1rem
+.pdata {
+  padding: 0;
+  margin: 0.1rem 1rem;
+}
 
-.device-data-image
-  width 100%
+.device-data-image {
+  width: 100%;
+}
 </style>

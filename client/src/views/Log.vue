@@ -1,12 +1,11 @@
 <template lang="pug">
 div
-  van-cell-group(
-    title="当前日志"
-  )
-    virtual-list(style="height: calc(95vh - 96px); overflow-y: auto;"
-      :data-key="'index'"
-      :data-sources="messages"
-      :data-component="ListItem"
+  van-cell-group(title='当前日志')
+    virtual-list(
+      style='height: calc(95vh - 96px); overflow-y: auto',
+      :data-key='"index"',
+      :data-sources='messages',
+      :data-component='ListItem'
     )
 </template>
 

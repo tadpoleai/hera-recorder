@@ -29,6 +29,7 @@ const actions: ActionTree<State, RootState> = {
     });
 
     const data = await client.deleteStorage(names);
+    dispatch('DiskUsage/fetch', null, { root: true });
     commit('setFromFetch', data);
   }
 };

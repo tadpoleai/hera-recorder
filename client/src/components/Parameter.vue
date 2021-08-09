@@ -1,86 +1,57 @@
 <template lang="pug">
-van-cell(
-  :title="rule.label"
-  center
-)
-  template(
-    slot="icon"
-  )
-    van-icon.info-button(
-      name="question-o"
-      size="24px"
-      color="#1989fa"
-      @click="showInformation"
-    )
+van-cell(:title='rule.label', center)
+  template(slot='icon')
+    van-icon.info-button(name='question-o', size='24px', color='#1989fa', @click='showInformation')
 
   //- Boolean
-  template(
-    v-if="rule.type == 'boolean'"
-  )
-    van-switch(
-      slot="right-icon"
-      :value="value"
-      @input="setValueSync"
-      size="24px"
-    )
+  template(v-if='rule.type == "boolean"')
+    van-switch(slot='right-icon', :value='value', @input='setValueSync', size='24px')
   //- Numeric
-  template(
-    v-else-if="rule.type == 'double' || rule.type == 'int'"
-  )
+  template(v-else-if='rule.type == "double" || rule.type == "int"')
     van-stepper.numeric_input(
-      :value="value"
-      @input="setValue"
-      :integer="rule.type == 'int'"
-      :max="rule.range.max"
-      :min="rule.range.min"
-      :step="rule.range.step"
-      theme="round"
-      :input-width="'55%'"
-      button-size="24px"
+      :value='value',
+      @input='setValue',
+      :integer='rule.type == "int"',
+      :max='rule.range.max',
+      :min='rule.range.min',
+      :step='rule.range.step',
+      theme='round',
+      :input-width='"55%"',
+      button-size='24px'
     )
     van-icon.async-confirm-button(
-      v-if="isAsync"
-      v-bind:class="{hidden: !modified}"
-      slot="right-icon"
-      name="upgrade"
-      :color="modified? 'red' : 'gray'"
-      type="primary"
-      size="24px"
-      @click="onClickUpdate"
+      v-if='isAsync',
+      v-bind:class='{ hidden: !modified }',
+      slot='right-icon',
+      name='upgrade',
+      :color='modified ? "red" : "gray"',
+      type='primary',
+      size='24px',
+      @click='onClickUpdate'
     )
 
   //- Enum
-  template(
-    v-else-if="rule.type == 'enum'"
-  )
-    van-dropdown-menu(
-      direction="up"
-    )
-      van-dropdown-item(
-        :value="value"
-        @input="setValueSync"
-        :options="getOptionsVant"
-      )
+  template(v-else-if='rule.type == "enum"')
+    van-dropdown-menu(direction='up')
+      van-dropdown-item(:value='value', @input='setValueSync', :options='getOptionsVant')
   //- String
-  template(
-    v-else-if="rule.type == 'string'"
-  )
+  template(v-else-if='rule.type == "string"')
     CheckedField.string_input(
-      :value="value"
-      @input="setValue"
-      :regex="rule.regex"
-      :placeholder="rule.defaultValue"
-      input-align="right"
-      style="padding: 0 !important;"
+      :value='value',
+      @input='setValue',
+      :regex='rule.regex',
+      :placeholder='rule.defaultValue',
+      input-align='right',
+      style='padding: 0 !important'
     )
     van-icon.async-confirm-button(
-      v-if="isAsync"
-      slot="right-icon"
-      name="upgrade"
-      :color="modified? 'red' : 'gray'"
-      type="primary"
-      size="24px"
-      @click="onClickUpdate"
+      v-if='isAsync',
+      slot='right-icon',
+      name='upgrade',
+      :color='modified ? "red" : "gray"',
+      type='primary',
+      size='24px',
+      @click='onClickUpdate'
     )
 </template>
 
@@ -178,28 +149,35 @@ export default class Parameter extends Vue {
 </script>
 
 <style lang="stylus">
-.info-button
-  margin-right: 2px
+.info-button {
+  margin-right: 2px;
+}
 
-.checked-button
-  margin-left: 12px
-  margin-right: 0px
+.checked-button {
+  margin-left: 12px;
+  margin-right: 0px;
+}
 
-.async-confirm-button
-  margin-left: 12px
-  margin-right: 0px
+.async-confirm-button {
+  margin-left: 12px;
+  margin-right: 0px;
+}
 
-.van-dropdown-menu__title
-  margin-left: auto
-  margin-right: 8px
+.van-dropdown-menu__title {
+  margin-left: auto;
+  margin-right: 8px;
+}
 
-.van-dropdown-menu__bar
-  height: 20px !important
+.van-dropdown-menu__bar {
+  height: 20px !important;
+}
 
-.van-dropdown-item__content
-  padding-bottom: 12px
+.van-dropdown-item__content {
+  padding-bottom: 12px;
+}
 
-.van-dropdown-item__option
-  padding-left: 48px !important
-  padding-right: 32px !important
+.van-dropdown-item__option {
+  padding-left: 48px !important;
+  padding-right: 32px !important;
+}
 </style>

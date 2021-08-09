@@ -1,65 +1,51 @@
 <template lang="pug">
 van-action-sheet(
-  title="传感器数据"
-  :value="isShowDetailDevice"
-  @cancel="onCloseDetailDevice"
-  @click-overlay="onCloseDetailDevice"
+  title='传感器数据',
+  :value='isShowDetailDevice',
+  @cancel='onCloseDetailDevice',
+  @click-overlay='onCloseDetailDevice',
   safe-area-inset-bottom
 )
   van-panel.device-panel
-    van-cell.device-panel-header(
-      slot="header"
-    )
-      div(style="display: flex; justify-content: space-between; margin-bottom: 8px")
+    van-cell.device-panel-header(slot='header')
+      div(style='display: flex; justify-content: space-between; margin-bottom: 8px')
         div
-          van-tag(plain type="primary" style="margin-right: 12px")
-            | {{deviceData.type + '/' + deviceData.name}}
-          van-tag(:type="getHealth(deviceData.health).type")
-            | {{getHealth(deviceData.health).text}}
+          van-tag(plain, type='primary', style='margin-right: 12px')
+            | {{ deviceData.type + "/" + deviceData.name }}
+          van-tag(:type='getHealth(deviceData.health).type')
+            | {{ getHealth(deviceData.health).text }}
         van-icon.title-right-icon.enabled-icon(
-          name="edit"
-          @click="isShowParameterEdit = !isShowParameterEdit"
-          size="24px"
-          v-bind:class="{ 'active-icon': isShowParameterEdit }"
+          name='edit',
+          @click='isShowParameterEdit = !isShowParameterEdit',
+          size='24px',
+          v-bind:class='{ "active-icon": isShowParameterEdit }'
         )
-      div(style="display: flex; justify-content: space-between;")
+      div(style='display: flex; justify-content: space-between')
         van-tag(plain)
-          | {{frequencyFormat(deviceData.frequency)}}
+          | {{ frequencyFormat(deviceData.frequency) }}
         van-tag(plain)
-          | {{deviceData.sequence}}
+          | {{ deviceData.sequence }}
         van-tag(plain)
-          | {{dataSizeFormatShort(deviceData.dataSize)}}
+          | {{ dataSizeFormatShort(deviceData.dataSize) }}
     //- dispData
-    div.device-panel-content
+    .device-panel-content
       //- Edit Parameters
-      template(
-        v-if="isShowParameterEdit && isFetchedDeviceParameterses"
-      )
-        template(
-          v-for="parameterRule in deviceDescriptionMap[deviceData.type].parameters"
-        )
+      template(v-if='isShowParameterEdit && isFetchedDeviceParameterses')
+        template(v-for='parameterRule in deviceDescriptionMap[deviceData.type].parameters')
           Parameter(
-            :key="deviceData.type + '/' + deviceData.name + '/' + parameterRule.name"
-            v-if="parameterRule.mutable"
-            :rule="parameterRule"
-            :valueString="currentParameters[parameterRule.name].toString()"
-            isAsync
-            @asyncInput="adjustDeviceParameter({type: parameterRule.name, value: $event})"
+            :key='deviceData.type + "/" + deviceData.name + "/" + parameterRule.name',
+            v-if='parameterRule.mutable',
+            :rule='parameterRule',
+            :valueString='currentParameters[parameterRule.name].toString()',
+            isAsync,
+            @asyncInput='adjustDeviceParameter({ type: parameterRule.name, value: $event })'
           )
-      
-      //- Show Detail Data
-      template(
-        v-for="singleDisplayData in deviceData.dispData"
-      )
-        JpegImage(
-          v-if="singleDisplayData.jpegData.length != 0"
-          :jpeg="singleDisplayData.jpegData"
-        )
-        template(
-          v-if="singleDisplayData.textData.length != 0"
-        )
-          p.pdata(v-for="line in renderStringData(singleDisplayData.textData)") {{line}}
 
+      //- Show Detail Data
+      template(v-for='singleDisplayData in deviceData.dispData')
+        JpegImage(v-if='singleDisplayData.jpegData.length != 0', :jpeg='singleDisplayData.jpegData')
+        template(v-if='singleDisplayData.textData.length != 0')
+          p.pdata(v-for='line in renderStringData(singleDisplayData.textData)') {{ line }}
 </template>
 
 <script lang="ts">
@@ -126,16 +112,20 @@ export default class DetailData extends Vue {
 </script>
 
 <style lang="stylus">
-.device-panel-header
-  padding-left 8 !important
-  padding-right 8 !important
+.device-panel-header {
+  padding-left: 8 !important;
+  padding-right: 8 !important;
+}
 
-.device-panel-content
-  min-height 320px
+.device-panel-content {
+  min-height: 320px;
+}
 
-.enabled-icon
-  color #1989fa !important
+.enabled-icon {
+  color: #1989fa !important;
+}
 
-.active-icon
-  color red !important
+.active-icon {
+  color: red !important;
+}
 </style>

@@ -1,39 +1,26 @@
 <template lang="pug">
 div
-  van-cell-group(title="采集监控")
-    van-cell(
-      title="采集开关"
-      center
-    )
+  van-cell-group(title='采集监控')
+    van-cell(title='采集开关', center)
       van-switch(
-        slot="right-icon"
-        :value="started"
-        @input="onClickSwitchStart"
-        :disabled="!isFetched"
-        :loading="isSwitchStartLoading"
-        size="24px"
+        slot='right-icon',
+        :value='started',
+        @input='onClickSwitchStart',
+        :disabled='!isFetched',
+        :loading='isSwitchStartLoading',
+        size='24px'
       )
-    van-cell(
-      title="录制数据"
-      center
-    )
+    van-cell(title='录制数据', center)
       van-switch(
-        slot="right-icon"
-        :value="recording"
-        @input="onClickSwitchRecord"
-        :disabled="!started"
-        :loading="isSwitchRecordLoading"
-        size="24px"
+        slot='right-icon',
+        :value='recording',
+        @input='onClickSwitchRecord',
+        :disabled='!started',
+        :loading='isSwitchRecordLoading',
+        size='24px'
       )
 
-  van-dialog(
-    title="操作错误"
-    :value="isShowError"
-    :message="errorReason"
-    @confirm="clearError"
-    theme="round-button"
-  )
-
+  van-dialog(title='操作错误', :value='isShowError', :message='errorReason', @confirm='clearError', theme='round-button')
 </template>
 
 <script lang="ts">

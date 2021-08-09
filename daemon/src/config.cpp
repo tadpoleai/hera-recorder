@@ -121,33 +121,17 @@ Config Config::read_config(const std::string& config_path)
         std::cout << "Config: listen_port = " << ret.listen_port << std::endl;
     }
 
-    if (!config.lookupValue("heartbeat/mode", ret.heartbeat_mode)) {
-        std::cout << "Error: can not parse "
-                  << "[heartbeat/mode]"
-                  << " from " << config_path << std::endl;
-    } else {
-        std::cout << "Config: heartbeat_mode = " << (ret.heartbeat_mode ? "include" : "exclude") << std::endl;
-    }
-
     try {
-        auto& interfaces = config.lookup("heartbeat/interfaces");
+        auto& interfaces = config.lookup("network/exclude_interfaces");
         for (auto& entry : interfaces) {
             std::string entry_str = entry;
             std::cout << "Config: Interface " << entry_str << std::endl;
-            ret.heartbeat_interfaces.emplace_back(std::move(entry_str));
+            ret.network_exclude_interfaces.emplace_back(std::move(entry_str));
         }
     } catch (...) {
         std::cout << "Error: can not parse "
-                  << "[heartbeat/interfaces]"
+                  << "[network/exclude_interfaces]"
                   << " from " << config_path << std::endl;
-    }
-
-    if (!config.lookupValue("heartbeat/period", ret.heartbeat_period)) {
-        std::cout << "Error: can not parse "
-                  << "[heartbeat/period]"
-                  << " from " << config_path << std::endl;
-    } else {
-        std::cout << "Config: heartbeat_period = " << ret.heartbeat_period << std::endl;
     }
 
     if (!config.lookupValue("upload/dynamic", ret.upload_dynamic)) {
@@ -209,13 +193,11 @@ bool Config::write_config(const std::string& config_path)
     listen.add("address", libconfig::Setting::TypeString) = listen_address;
     listen.add("port", libconfig::Setting::TypeInt) = listen_port;
 
-    auto& heartbeat = setting.add("heartbeat", libconfig::Setting::TypeGroup);
-    heartbeat.add("mode", libconfig::Setting::TypeBoolean) = heartbeat_mode;
-    auto& interfaces = heartbeat.add("interfaces", libconfig::Setting::TypeArray);
-    for (auto& i : heartbeat_interfaces) {
-        interfaces.add(libconfig::Setting::TypeString) = i;
+    auto& network = setting.add("network", libconfig::Setting::TypeGroup);
+    auto& exclude_interfaces = network.add("exclude_interfaces", libconfig::Setting::TypeArray);
+    for (auto& i : network_exclude_interfaces) {
+        exclude_interfaces.add(libconfig::Setting::TypeString) = i;
     }
-    heartbeat.add("period", libconfig::Setting::TypeFloat) = heartbeat_period;
 
     auto& upload = setting.add("upload", libconfig::Setting::TypeGroup);
     upload.add("dynamic", libconfig::Setting::TypeBoolean) = upload_dynamic;

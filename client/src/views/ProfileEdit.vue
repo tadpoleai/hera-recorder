@@ -1,143 +1,99 @@
 <template lang="pug">
 div
   van-cell-group
-    template(slot="title")
-      div(style="display: flex; justify-content: space-between;")
+    template(slot='title')
+      div(style='display: flex; justify-content: space-between')
         span 基本信息
     CheckedField(
-      label="配置名"
-      :value="profile.name"
-      @input="setProfileName"
-      regex=".+"
-      placeholder="请输入配置名"
-      input-align="right"
+      label='配置名',
+      :value='profile.name',
+      @input='setProfileName',
+      regex='.+',
+      placeholder='请输入配置名',
+      input-align='right'
     )
     CheckedField(
-      label="创建人"
-      :value="profile.author"
-      @input="setProfileAuthor"
-      regex=".+"
-      placeholder="请输入创建人"
-      input-align="right"
+      label='创建人',
+      :value='profile.author',
+      @input='setProfileAuthor',
+      regex='.+',
+      placeholder='请输入创建人',
+      input-align='right'
     )
 
-  van-popup(
-    v-model="isShowSelectDeviceType"
-    round
-    position="bottom"
-  )
-    van-cell-group(title="选择添加的传感器类型")
-      van-collapse(
-        v-model="selectedDeviceCategory"
-        accordion
-      )
-        van-collapse-item(
-          v-for="category in categoriedDeviceTypes"
-          :title="category.label"
-          :name="category.value"
-        )
-          van-collapse(
-            v-model="selectedDeviceType"
-            accordion
-          )
-            van-collapse-item(
-              v-for="device in category.children"
-              :title="device.label"
-              :name="device.value"
-            )
-              p(
-                v-for="line in String(device.comment).split('\\n')"
-              ) {{line}}
-              van-button(
-                type="primary" block
-                @click="onSelectDeviceType(device.value)"
-              ) 添加
+  van-popup(v-model='isShowSelectDeviceType', round, position='bottom')
+    van-cell-group(title='选择添加的传感器类型')
+      van-collapse(v-model='selectedDeviceCategory', accordion)
+        van-collapse-item(v-for='category in categoriedDeviceTypes', :title='category.label', :name='category.value')
+          van-collapse(v-model='selectedDeviceType', accordion)
+            van-collapse-item(v-for='device in category.children', :title='device.label', :name='device.value')
+              p(v-for='line in String(device.comment).split("\\n")') {{ line }}
+              van-button(type='primary', block, @click='onSelectDeviceType(device.value)') 添加
 
   van-cell-group
-    template(slot="title")
-      div(style="display: flex; justify-content: space-between;")
+    template(slot='title')
+      div(style='display: flex; justify-content: space-between')
         span 传感器列表
         span
           van-icon.title-middle-icon.enabled-icon(
-            v-if="!isDeviceListEmpty"
-            name="edit"
-            @click="onClickListEdit"
-            size="24px"
-            v-bind:class="{ 'active-icon': isDeviceListEditMode }"
+            v-if='!isDeviceListEmpty',
+            name='edit',
+            @click='onClickListEdit',
+            size='24px',
+            v-bind:class='{ "active-icon": isDeviceListEditMode }'
           )
-          van-icon.title-right-icon.enabled-icon(
-            name="add-o"
-            @click="onClickAddDevice"
-            size="24px"
-          )
+          van-icon.title-right-icon.enabled-icon(name='add-o', @click='onClickAddDevice', size='24px')
 
-    template(v-if="isDeviceListEmpty")
-      van-empty(description="传感器列表为空")
+    template(v-if='isDeviceListEmpty')
+      van-empty(description='传感器列表为空')
     template(v-else)
-      template(v-if="isDeviceListEditMode")
-        van-cell(
-          v-for="(device, deviceIndex) in profile.devices"
-          :value="device.type + '/' + device.name"
-          center
-        )
-          template(
-            slot="right-icon"
-          )
+      template(v-if='isDeviceListEditMode')
+        van-cell(v-for='(device, deviceIndex) in profile.devices', :value='device.type + "/" + device.name', center)
+          template(slot='right-icon')
             van-icon.title-right-icon(
-              name="arrow-up"
-              :color="deviceIndex != 0 ? '#1989fa' : '#FFF'"
-              @click="moveDeviceIndex({deviceIndex, direction: -1})"
-              size="24px"
+              name='arrow-up',
+              :color='deviceIndex != 0 ? "#1989fa" : "#FFF"',
+              @click='moveDeviceIndex({ deviceIndex, direction: -1 })',
+              size='24px'
             )
             van-icon.title-right-icon(
-              name="arrow-down"
-              :color="deviceIndex != profile.devices.length - 1 ? '#1989fa' : '#FFF'"
-              @click="moveDeviceIndex({deviceIndex, direction: +1})"
-              size="24px"
+              name='arrow-down',
+              :color='deviceIndex != profile.devices.length - 1 ? "#1989fa" : "#FFF"',
+              @click='moveDeviceIndex({ deviceIndex, direction: +1 })',
+              size='24px'
             )
             van-icon.title-right-icon(
-              name="delete-o"
-              color="red"
-              @click="deleteDeviceByIndex(deviceIndex)"
-              size="24px"
+              name='delete-o',
+              color='red',
+              @click='deleteDeviceByIndex(deviceIndex)',
+              size='24px'
             )
-      van-collapse(
-        v-else
-        v-model="activeDeviceIndex"
-        accordion
-      )
-        van-collapse-item(
-          v-for="(device, deviceIndex) in profile.devices"
-          :title="device.type + '/' + device.name"
-        )
+      van-collapse(v-else, v-model='activeDeviceIndex', accordion)
+        van-collapse-item(v-for='(device, deviceIndex) in profile.devices', :title='device.type + "/" + device.name')
           //- Item Panel
-          van-cell-group(title="基本")
-            van-cell(
-              title="传感器类型"
-              :value="device.type"
-            )
+          van-cell-group(title='基本')
+            van-cell(title='传感器类型', :value='device.type')
             CheckedField(
-              label="传感器名"
-              :value="device.name"
-              @input="setDeviceNameByIndex({deviceIndex, name: $event})"
-              regex="^[a-zA-Z0-9]+$"
-              placeholder="请输入传感器名(英数)"
-              input-align="right"
+              label='传感器名',
+              :value='device.name',
+              @input='setDeviceNameByIndex({ deviceIndex, name: $event })',
+              regex='^[a-zA-Z0-9]+$',
+              placeholder='请输入传感器名(英数)',
+              input-align='right'
             )
-            van-cell(title="转发数据")
+            van-cell(title='转发数据')
               van-switch(
-                slot="right-icon" 
-                :value="device.forward"
-                @input="setDeviceForwardByIndex({deviceIndex, forward: $event})"
-                size="24px"
+                slot='right-icon',
+                :value='device.forward',
+                @input='setDeviceForwardByIndex({ deviceIndex, forward: $event })',
+                size='24px'
               )
-          van-cell-group(title="参数")
+          van-cell-group(title='参数')
             Parameters(
-              :deviceType="device.type"
-              :values="device.parameters"
-              @syncInput="setDeviceParameterByIndex({deviceIndex, parameterType: $event.type, parameterValue: $event.value})"
+              :deviceType='device.type',
+              :values='device.parameters',
+              @syncInput='setDeviceParameterByIndex({ deviceIndex, parameterType: $event.type, parameterValue: $event.value })'
             )
-
 </template>
 
 <script lang="ts">
@@ -261,17 +217,21 @@ export default class ProfileEdit extends Vue {
 </script>
 
 <style lang="stylus">
-.title-right-icon
-  margin-left 4px
-  margin-right 4px
+.title-right-icon {
+  margin-left: 4px;
+  margin-right: 4px;
+}
 
-.title-middle-icon
-  margin-right 22px
-  margin-left 2px
+.title-middle-icon {
+  margin-right: 22px;
+  margin-left: 2px;
+}
 
-.enabled-icon
-  color #1989fa !important
+.enabled-icon {
+  color: #1989fa !important;
+}
 
-.active-icon
-  color red !important
+.active-icon {
+  color: red !important;
+}
 </style>

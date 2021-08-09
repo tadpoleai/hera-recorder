@@ -30,6 +30,7 @@ apt-get install -f -y \
   libboost-filesystem-dev \
   libboost-thread-dev \
   libevent-dev \
+  libsmbclient-dev \
   automake \
   libtool \
   flex \

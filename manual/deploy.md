@@ -110,6 +110,10 @@ sudo cp * /var/www/hera-client
 
 若必要，增加后用 Root 账户测试连接
 
+### 设置外置储存器装载目录
+
+安装使用 `udiskie`, 编辑 `"upload/localdisk_mountpoint"` 段, 填入装载路径
+
 ### 裁剪传感器设备驱动
 
 进入 `/usr/local/lib/hera/plugin` 文件夹, 将不需要的传感器驱动文件移动到别处或者删除
@@ -123,3 +127,4 @@ sudo cp * /var/www/hera-client
 ### 配置无线 AP
 
 若需要使用手机连接采集设备, 可参考 [无线 AP 配置指南](deploy_wlan.md)
+

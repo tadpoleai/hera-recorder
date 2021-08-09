@@ -7,6 +7,7 @@ import ViewProfileEdit from '@/views/ProfileEdit.vue';
 import ViewMonitor from '@/views/Monitor.vue';
 import ViewStorage from '@/views/Storage.vue';
 import ViewUpload from '@/views/Upload.vue';
+import ViewNetwork from '@/views/Network.vue';
 import ViewLog from '@/views/Log.vue';
 
 Vue.use(VueRouter);
@@ -41,6 +42,11 @@ const routes = [
     path: '/upload',
     name: '数据上传',
     component: ViewUpload
+  },
+  {
+    path: '/network',
+    name: '网络设置',
+    component: ViewNetwork
   },
   {
     path: '/log',
