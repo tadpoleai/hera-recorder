@@ -8,6 +8,7 @@ import { State as DeviceDataState } from './modules/deviceData';
 import { State as DeviceParameterState } from './modules/deviceParameter';
 import { State as ProfileEditState } from './modules/profileEdit';
 import { State as StorageState } from './modules/storage';
+import { State as NetworkState } from './modules/network';
 import { State as UploadState } from './modules/upload';
 import { State as PreferenceState } from './modules/preference';
 import { State as LogState } from './modules/log';
@@ -21,6 +22,7 @@ export interface RootState {
   DeviceParameter: DeviceParameterState;
   ProfileEdit: ProfileEditState;
   Storage: StorageState;
+  Network: NetworkState;
   Upload: UploadState;
   Preference: PreferenceState;
   Log: LogState;

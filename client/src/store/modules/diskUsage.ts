@@ -30,7 +30,6 @@ const actions: ActionTree<State, RootState> = {
 const mutations: MutationTree<State> = {
   setFromFetch(state, data: Hera.DiskUsageStatus) {
     state.fetchedData = data;
-    console.log(data);
     state.isFetched = true;
   }
 };

@@ -21,18 +21,19 @@ namespace hera {
 namespace storage {
 namespace upload {
 
-std::vector<Transmission::PluginEntry> Transmission::plugin_entries;
-bool Transmission::is_loaded = false;
-std::mutex Transmission::load_mutex;
+std::vector<Transmission::PluginEntry> Transmission::plugin_entries_;
+bool Transmission::is_loaded_ = false;
+std::mutex Transmission::load_mutex_;
+std::mutex Transmission::upload_mutex_;
 
 void Transmission::load_plugins(const std::string& plugins_path)
 {
-    std::unique_lock<std::mutex> _(load_mutex);
+    std::unique_lock<std::mutex> _(load_mutex_);
 
-    if (is_loaded) {
+    if (is_loaded_) {
         return;
     } else {
-        is_loaded = true;
+        is_loaded_ = true;
     }
 
     log::debug << "Transmission: Registering Upload Plugins" << log::endl;
@@ -57,21 +58,21 @@ void Transmission::load_plugins(const std::string& plugins_path)
 
         typedef PluginEntry (*exportsType)();
         auto plugin_entry = (reinterpret_cast<exportsType>(exports))();
-        plugin_entries.emplace_back(plugin_entry);
+        plugin_entries_.emplace_back(plugin_entry);
     }
 
-    for (const auto& plugin_entry : plugin_entries) {
+    for (const auto& plugin_entry : plugin_entries_) {
         log::debug << "Transmission: Registered " << plugin_entry.name << log::endl;
     }
 };
 
 std::unique_ptr<Transmission> Transmission::create(const Config& config)
 {
-    if (!is_loaded) {
+    if (!is_loaded_) {
         load_plugins();
     }
 
-    for (const auto& plugin : plugin_entries) {
+    for (const auto& plugin : plugin_entries_) {
         if (config.protocol == plugin.name) {
             log::debug << "Transmission: New " << plugin.name << " Upload Created" << log::endl;
             return std::unique_ptr<Transmission>(plugin.ctor(config));

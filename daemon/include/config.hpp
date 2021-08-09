@@ -53,9 +53,7 @@ public:
     std::string listen_address{"0.0.0.0"};  ///< Host address to listen for daemon
     int32_t listen_port{10093};             ///< Listen port, usually 10093 for release, and 10094 for debug
 
-    bool heartbeat_mode{false};  ///< Heartbeat use include mode
-    std::vector<std::string> heartbeat_interfaces;
-    double heartbeat_period{5};  ///< Period [seconds]
+    std::vector<std::string> network_exclude_interfaces;
 
     bool upload_dynamic{false};  ///< Dynamically find servers (by listening to server heartbeat)
     std::vector<UploadServer> upload_servers;

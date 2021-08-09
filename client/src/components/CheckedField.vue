@@ -1,14 +1,6 @@
 <template lang="pug">
-van-field(
-  :value="value"
-  @input="input"
-  @blur="change"
-  v-bind="$attrs"
-)
-  CheckedIcon(
-    slot="right-icon"
-    :checked="checked"
-  )
+van-field(:value='value', @input='input', @blur='change', v-bind='$attrs')
+  CheckedIcon(slot='right-icon', :checked='checked')
 </template>
 
 <script lang="ts">
@@ -42,6 +34,7 @@ export default class CheckField extends Vue {
 </script>
 
 <style lang="stylus">
-.checked-icon
-  margin-left: 4px
+.checked-icon {
+  margin-left: 4px;
+}
 </style>

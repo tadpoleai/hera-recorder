@@ -1,16 +1,11 @@
 <template lang="pug">
 van-cell
-  template(slot="title")
-    van-tag(
-      :plain="source.level == 0x10"
-      :type="toTagType(source.level)"
-    ) {{ timestampFormat(source.tsSec, source.tsNsec) }}
+  template(slot='title')
+    van-tag(:plain='source.level == 0x10', :type='toTagType(source.level)') {{ timestampFormat(source.tsSec, source.tsNsec) }}
   template
-    span(v-if="isSingleLine(source.message)") {{ source.message }}
+    span(v-if='isSingleLine(source.message)') {{ source.message }}
     template(v-else)
-      p.p-log(
-        v-for="(p, i) in renderStringData(source.message)"
-      ) {{ p }}
+      p.p-log(v-for='(p, i) in renderStringData(source.message)') {{ p }}
 </template>
 
 <script lang="ts">
@@ -55,6 +50,7 @@ export default class ListItem extends Vue {
 </script>
 
 <style lang="stylus">
-.p-log
-  text-align left
+.p-log {
+  text-align: left;
+}
 </style>

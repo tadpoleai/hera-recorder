@@ -1,35 +1,18 @@
 <template lang="pug">
-div(ref="app")
-  van-nav-bar(
-    :left-arrow="$router.history.current.path != '/'"
-    @click-left="onClickNavBack()"
-  )
-    template(slot="title")
-      van-tag(
-        v-show="tagName.show"
-        :type="tagName.type"
-      ) {{ tagName.msg }}
-      span {{'HERA ' + $router.history.current.name}}
-    template(slot="right")
-      van-icon(
-        name="notes-o"
-        size="24px"
-        @click="onClickLog()"
-      )
-      van-icon(
-        name="info-o"
-        size="24px"
-        @click="onClickInfo()"
-      )
+div(ref='app')
+  van-nav-bar(:left-arrow='$router.history.current.path != "/"', @click-left='onClickNavBack()')
+    template(slot='title')
+      van-tag(v-show='tagName.show', :type='tagName.type') {{ tagName.msg }}
+      span {{ "HERA " + $router.history.current.name }}
+    template(slot='right')
+      van-icon(name='notes-o', size='24px', @click='onClickLog()')
+      van-icon(name='info-o', size='24px', @click='onClickInfo()')
 
-  router-view(
-    ref="view"
-  )
+  router-view(ref='view')
 
-  Fab(v-if="useFab && !isErrorIgnored")
+  Fab(v-if='useFab && !isErrorIgnored')
 
   ConnectionError
-
 </template>
 
 <script lang="ts">
@@ -143,15 +126,17 @@ export default class ProfileEdit extends Vue {
 </script>
 
 <style lang="stylus">
-html
-  height: 100%
-  background-color: #f7f8fa
+html {
+  height: 100%;
+  background-color: #f7f8fa;
+}
 
-#app
-  font-family: Avenir, Helvetica, Arial, sans-serif
-  -webkit-font-smoothing: antialiased
-  -moz-osx-font-smoothing: grayscale
-  text-align: center
-  color: #2c3e50
-  margin-top: 60px
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
 </style>

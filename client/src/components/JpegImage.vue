@@ -1,7 +1,5 @@
 <template lang="pug">
-  img.device-data-image(
-    ref="img"
-  )
+img.device-data-image(ref='img')
 </template>
 
 <script lang="ts">
