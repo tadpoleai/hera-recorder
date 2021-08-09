@@ -72,6 +72,11 @@
         return new DevicePlugin(id, vendor_type, name, forward, ipc_queue, storage); \
     }                                                                                \
                                                                                      \
+    ParametersInterface* static_create_param()                                       \
+    {                                                                                \
+        return new LocalParameters();                                                 \
+    }                                                                                \
+                                                                                     \
     Factory::DeviceHandle exports()                                                  \
     {                                                                                \
         return {.type = DeviceVendorType::type_enum_param,                           \
@@ -79,6 +84,8 @@
                 .version = __DATE__,                                                 \
                 .create = static_create,                                             \
                 .convert = &DevicePlugin::do_convert,                                \
-                .description = LocalParameters::static_description};                 \
+                .create_param = static_create_param,                                 \
+                .description = LocalParameters::static_description,                  \
+                .param_plain_rules = LocalParameters::static_plain_rules};            \
     }                                                                                \
     }

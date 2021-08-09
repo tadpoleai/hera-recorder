@@ -37,6 +37,8 @@ static constexpr double AzimuthGranularity = M_PI / 18000.0;
 /// rel="noopener noreferrer">VLP-16C-User-Manual</a>
 namespace vlp16c {
 
+static constexpr size_t Channles = 16;
+
 ///
 /// @brief Granularity of Velodyne VLP-16C's distance
 ///
@@ -50,9 +52,27 @@ static constexpr double TimePerPoint = 2304;
 static constexpr double TimeHorizontal = 55296;
 
 ///
+/// @brief Get the Time offset
+///
+/// @param channel_index channel index, ranges [0, 32)
+/// @param data_block_index data block index, ranges [0, 12)
+/// @return int64_t time offset in ns
+/// @see @ref VLP-16C-Manual figure: 9-7, Single Return Mode Timing Offsets (in μs), page: 64
+static constexpr double GetTimeOffset(size_t channel_index, size_t data_block_index) noexcept
+{
+    if (channel_index < 16) {
+        return (2 * data_block_index * TimeHorizontal + channel_index * TimePerPoint) / (double)time::OneSecond;
+    } else {
+        return (2 * data_block_index * TimeHorizontal + channel_index * TimePerPoint +
+                (TimeHorizontal - 16 * TimePerPoint)) /
+               (double)time::OneSecond;
+    }
+}
+
+///
 /// @brief Get the Azimuth Change
 ///
-/// @param index channel, ranges [0, 15]
+/// @param index channel, ranges [0, 31]
 /// @return constexpr double, relative azimuth change, ranges [0, 1)
 /// @see @ref VLP-16C-Manual figure: 9-7, Single Return Mode Timing Offsets (in μs), page: 64
 static constexpr double GetRelativeAzimuthChange(size_t index) noexcept
@@ -86,6 +106,18 @@ static constexpr double VerticalAngles[16] = {
         -01.000000000000000 * DegreeToRad,  // 14
         +15.000000000000000 * DegreeToRad,  // 15
 };
+
+static const std::array<int32_t, Channles> GenRings()
+{
+    std::array<int32_t, Channles> temp, ret;
+    std::iota(temp.begin(), temp.end(), 0);
+    std::iota(ret.begin(), ret.end(), 0);
+    std::sort(temp.begin(), temp.end(), [&](int i, int j) { return VerticalAngles[i] < VerticalAngles[j]; });
+    std::sort(ret.begin(), ret.end(), [&](int i, int j) { return temp[i] < temp[j]; });
+    return ret;
+}
+
+static const auto Rings = GenRings();
 
 static constexpr double VerticalAngleIncrement = +02.000000000000000 * DegreeToRad;
 
@@ -121,6 +153,8 @@ static constexpr double VerticalCorrection[16] = {
 /// rel="noopener noreferrer">VLP-32C-User-Manual</a>
 namespace vlp32c {
 
+static constexpr size_t Channles = 32;
+
 ///
 /// @brief Granularity of Velodyne VLP-32C's distance
 ///
@@ -132,6 +166,18 @@ static constexpr double MaxNominalRange = 200;
 
 static constexpr double TimePerPoint = 2304;
 static constexpr double TimeHorizontal = 55296;
+
+///
+/// @brief Get the Time offset
+///
+/// @param channel_index channel index, ranges [0, 32)
+/// @param data_block_index data block index, ranges [0, 12)
+/// @return int64_t time offset in ns
+/// @see @ref VLP-32C-Manual figure: 9-7, Single Return Mode Timing Offsets (in μs), page: 64
+static constexpr double GetTimeOffset(size_t channel_index, size_t data_block_index) noexcept
+{
+    return (data_block_index * TimeHorizontal + (channel_index / 2) * TimePerPoint) / (double)time::OneSecond;
+}
 
 ///
 /// @brief Get the Azimuth Change
@@ -183,6 +229,17 @@ static constexpr double VerticalAngles[32] = {
         -01.333333333333333 * DegreeToRad,  // 31
 };
 
+static const std::array<int32_t, Channles> GenRings()
+{
+    std::array<int32_t, Channles> temp, ret;
+    std::iota(temp.begin(), temp.end(), 0);
+    std::iota(ret.begin(), ret.end(), 0);
+    std::sort(temp.begin(), temp.end(), [&](int i, int j) { return VerticalAngles[i] < VerticalAngles[j]; });
+    std::sort(ret.begin(), ret.end(), [&](int i, int j) { return temp[i] < temp[j]; });
+    return ret;
+}
+static const auto Rings = GenRings();
+
 static constexpr double VerticalAngleIncrement = 00.333333333333333 * DegreeToRad;
 
 ///
@@ -233,6 +290,8 @@ static constexpr double AzimuthOffset[32] = {
 /// rel="noopener noreferrer">HDL-32E-User-Manual</a>
 namespace hdl32e {
 
+static constexpr size_t Channles = 32;
+
 ///
 /// @brief Granularity of Velodyne HDL-32E's distance
 ///
@@ -244,6 +303,20 @@ static constexpr double MaxNominalRange = 100;
 
 static constexpr double TimePerPoint = 1152;
 static constexpr double TimeHorizontal = 46080;
+
+///
+/// @brief Get the Time offset
+///
+/// @param channel_index channel index, ranges [0, 32)
+/// @param data_block_index data block index, ranges [0, 12)
+/// @return int64_t time offset in ns
+/// @see @ref HDL-32E-Manual figure: 9-6, Single Return Mode Timing Offsets (in μs), page: 67
+static constexpr double GetTimeOffset(size_t channel_index, size_t data_block_index) noexcept
+{
+    return (data_block_index * TimeHorizontal + channel_index * TimePerPoint -
+            (TimeHorizontal * 11 + TimePerPoint * 31)) /
+           (double)time::OneSecond;
+}
 
 ///
 /// @brief Get the Azimuth Change
@@ -296,6 +369,17 @@ static constexpr double VerticalAngles[32] = {
         -10.666666666666666 * DegreeToRad,  // 31
         +10.666666666666666 * DegreeToRad,  // 32
 };
+
+static const std::array<int32_t, Channles> GenRings()
+{
+    std::array<int32_t, Channles> temp, ret;
+    std::iota(temp.begin(), temp.end(), 0);
+    std::iota(ret.begin(), ret.end(), 0);
+    std::sort(temp.begin(), temp.end(), [&](int i, int j) { return VerticalAngles[i] < VerticalAngles[j]; });
+    std::sort(ret.begin(), ret.end(), [&](int i, int j) { return temp[i] < temp[j]; });
+    return ret;
+}
+static const auto Rings = GenRings();
 
 static constexpr double VerticalAngleIncrement = 01.333333333333333 * DegreeToRad;
 

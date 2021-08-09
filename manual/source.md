@@ -170,7 +170,8 @@ Hera 的错误码, 实现于 [hera_errno.hpp](../common/include/hera_errno.h)
            device::data::SensorDataPtr& sensor_data,
            const std::string& topic_prefix,
            const std::string& frame_id,
-           const common::Remapper* remapper)
+           const common::Remapper* remapper,
+           const ParametersInterface* parameters)
    ```
 
 1. 编写源码

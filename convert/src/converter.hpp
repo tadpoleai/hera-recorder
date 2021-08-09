@@ -131,6 +131,8 @@ private:
     storage::StorageManagerPtr storage_;       ///< storage manager
     std::vector<std::string> topic_prefixes_;  ///< topic prefixes of sensors, i.e., "/lidar/top/"
     std::vector<std::string> frame_ids_;       ///< (remapped) frame ids of sensors
+    std::vector<std::unique_ptr<device::ParametersInterface>> parameters_;  ///<  list of parameters override map,
+                                                                            ///<  vector(ID), ParameterInterface
 
     ///
     /// @brief Semaphore for publish / conversion

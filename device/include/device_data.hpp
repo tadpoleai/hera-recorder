@@ -31,6 +31,11 @@ class DeviceData;
 ///
 using DeviceDataPtr = std::shared_ptr<DeviceData>;
 
+struct DeviceDataPtrWithIndex {
+    int64_t index{-1};
+    DeviceDataPtr data{nullptr};
+};
+
 ///
 /// @brief Abstract base class device data
 ///
@@ -80,6 +85,14 @@ public:
     /// @return DeviceDataPtr shared pointer to DeviceData
     /// @return DeviceDataPtr nullptr when either data read is invalid or ifs is closed/empty/ended
     static DeviceDataPtr read_from(std::ifstream& ifs);
+
+    ///
+    /// @brief Read a device data from ifstream
+    ///
+    /// @param ifs ifstream to read from
+    /// @return DeviceDataPtrWithIndex shared pointer to DeviceData with index
+    /// @return DeviceDataPtrWithIndex nullptr when either data read is invalid or ifs is closed/empty/ended
+    static DeviceDataPtrWithIndex read_from_and_tell_index(std::ifstream& ifs);
 
     ///
     /// @brief Write a device data to storage

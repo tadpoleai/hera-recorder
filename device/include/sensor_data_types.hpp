@@ -44,7 +44,7 @@ enum class SensorDataType : uint16_t {
     SENSOR_DATA_TYPE_DEFINE(InsInsPosition, 0x0383)           ///< Ins Position -> ROS NavSatFix
     SENSOR_DATA_TYPE_DEFINE(CompressedImage, 0x0401)          ///< ROS CompressedImage
     SENSOR_DATA_TYPE_DEFINE(Image, 0x0402)                    ///< ROS Image, some minor format conversion needed
-    SENSOR_DATA_TYPE_DEFINE(PointsXYZI, 0x0501)               ///< ROS PointCloud2, some PCL function needed
+    SENSOR_DATA_TYPE_DEFINE(Points, 0x0501)                   ///< ROS PointCloud2, some PCL function needed
     SENSOR_DATA_TYPE_DEFINE(LaserScan, 0x0502)                ///< ROS LaserScan
     SENSOR_DATA_TYPE_DEFINE(OdometryFrontWheelSpeed, 0x0601)  ///< For Odometry
     SENSOR_DATA_TYPE_DEFINE(OdometryRearWheelSpeed, 0x0602)   ///< For Odometry

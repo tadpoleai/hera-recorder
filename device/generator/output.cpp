@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <regex>
@@ -13,11 +14,21 @@ namespace hera {
 namespace device {
 namespace parameter {
 
+void replace_all(std::string& data, std::string toSearch, std::string replaceStr)
+{
+    size_t pos = data.find(toSearch);
+    while (pos != std::string::npos) {
+        data.replace(pos, toSearch.size(), replaceStr);
+        pos = data.find(toSearch, pos + replaceStr.size());
+    }
+}
+
 bool output(const std::string& output_filename,
             const std::string& escaped_file_content,
             const DeviceDesc& device_desc,
             const std::string& category_name,
-            const std::string& vendor_name)
+            const std::string& vendor_name,
+            const std::string& sub_name)
 {
     std::ofstream output_file;
     output_file.open(output_filename, std::ios::out);
@@ -41,6 +52,10 @@ namespace device {
 
     output_file << "namespace " << category_name << " {\n";
     output_file << "namespace " << vendor_name << " {\n";
+
+    if (!sub_name.empty()) {
+        output_file << "namespace " << sub_name << " {\n";
+    }
 
     for (auto& param : device_desc.parameters) {
         if (param.category == ParamDef::Enum) {
@@ -73,7 +88,19 @@ private:
         } else {
             return true;
         }
-    } 
+    }
+
+public:
+    bool exist_type(const std::string& type) const override {
+)R";
+
+    for (auto& param : device_desc.parameters) {
+        output_file << "        if (type == \"" << param.designator << "\") { return true; }\n";
+    };
+    output_file << "        return false;";
+
+    output_file << R"R(
+    }
 
 public:
     std::string description() const override {
@@ -81,6 +108,12 @@ public:
     }
 
     static std::string static_description;
+
+    std::string plain_rules() const override {
+        return static_plain_rules;
+    }
+
+    static std::string static_plain_rules;
 
 public:
     bool set(const nlohmann::json& json_input) override
@@ -193,66 +226,100 @@ private:
 std::string LocalParameters::static_description = R"RR()R";
 
     nlohmann::json rules = nlohmann::json::array();
+    std::string plain_rules;
     for (auto& param : device_desc.parameters) {
         nlohmann::json param_json = nlohmann::json::object();
+        std::string comment_tabed = param.comment;
+        replace_all(comment_tabed, "\n", "\n   ");
         switch (param.category) {
         case ParamDef::Boolean: {
-            param_json["type"] = "boolean";
-            param_json["label"] = param.label;
-            param_json["name"] = param.designator;
-            param_json["defaultValue"] = param.default_value;
-            param_json["comment"] = param.comment;
-            param_json["mutable"] = param.is_mutable;
-            param_json["requirement"] = param.requirement;
-            rules.push_back(param_json);
+            if (!param.is_convert) {
+                param_json["type"] = "boolean";
+                param_json["label"] = param.label;
+                param_json["name"] = param.designator;
+                param_json["defaultValue"] = param.default_value;
+                param_json["comment"] = param.comment;
+                param_json["mutable"] = param.is_mutable;
+                param_json["requirement"] = param.requirement;
+                rules.push_back(param_json);
+            } else {
+                plain_rules += "\n";
+                plain_rules +=
+                        " - " + param.designator + ": " + "boolean" + "\n   default = " + param.default_value + "\n";
+                plain_rules += "   " + comment_tabed + "\n";
+            }
         } break;
         case ParamDef::Enum: {
-            param_json["type"] = "enum";
-            param_json["label"] = param.label;
-            param_json["name"] = param.designator;
+            if (!param.is_convert) {
+                param_json["type"] = "enum";
+                param_json["label"] = param.label;
+                param_json["name"] = param.designator;
 
-            auto raw_options = param.options;
-            raw_options.erase(std::remove_if(raw_options.begin(), raw_options.end(), isspace), raw_options.end());
-            std::stringstream ss(raw_options);
-            std::string options = "[ ";
-            std::string token;
-            while (getline(ss, token, ',')) {
-                options += '"' + token + "\", ";
+                auto raw_options = param.options;
+                raw_options.erase(std::remove_if(raw_options.begin(), raw_options.end(), isspace), raw_options.end());
+                std::stringstream ss(raw_options);
+                std::string options = "[ ";
+                std::string token;
+                while (getline(ss, token, ',')) {
+                    options += '"' + token + "\", ";
+                }
+                options.erase(options.end() - 2, options.end());
+                options += " ]";
+
+                param_json["options"] = nlohmann::json::parse(options);
+                param_json["defaultValue"] = param.default_value;
+                param_json["comment"] = param.comment;
+                param_json["mutable"] = param.is_mutable;
+                param_json["requirement"] = param.requirement;
+                rules.push_back(param_json);
+            } else {
+                plain_rules += "\n";
+                plain_rules +=
+                        " - " + param.designator + ": " + "enum" + "\n   default = " + param.default_value + "\n";
+                plain_rules += "   options: " + param.options + "\n";
+                plain_rules += "   " + comment_tabed + "\n";
             }
-            options.erase(options.end() - 2, options.end());
-            options += " ]";
-
-            param_json["options"] = nlohmann::json::parse(options);
-            param_json["defaultValue"] = param.default_value;
-            param_json["comment"] = param.comment;
-            param_json["mutable"] = param.is_mutable;
-            param_json["requirement"] = param.requirement;
-            rules.push_back(param_json);
         } break;
         case ParamDef::Numeric: {
-            param_json["type"] = param.type;
-            param_json["label"] = param.label;
-            param_json["name"] = param.designator;
-            param_json["range"] = nlohmann::json::object();
-            param_json["range"]["min"] = param.range_min;
-            param_json["range"]["max"] = param.range_max;
-            param_json["range"]["step"] = param.range_step;
-            param_json["defaultValue"] = param.default_value;
-            param_json["comment"] = param.comment;
-            param_json["mutable"] = param.is_mutable;
-            param_json["requirement"] = param.requirement;
-            rules.push_back(param_json);
+            if (!param.is_convert) {
+                param_json["type"] = param.type;
+                param_json["label"] = param.label;
+                param_json["name"] = param.designator;
+                param_json["range"] = nlohmann::json::object();
+                param_json["range"]["min"] = param.range_min;
+                param_json["range"]["max"] = param.range_max;
+                param_json["range"]["step"] = param.range_step;
+                param_json["defaultValue"] = param.default_value;
+                param_json["comment"] = param.comment;
+                param_json["mutable"] = param.is_mutable;
+                param_json["requirement"] = param.requirement;
+                rules.push_back(param_json);
+            } else {
+                plain_rules += "\n";
+                plain_rules +=
+                        " - " + param.designator + ": " + param.type + "\n   default = " + param.default_value + "\n";
+                plain_rules += "   min: " + param.range_min + " max: " + param.range_max + "\n";
+                plain_rules += "   " + comment_tabed + "\n";
+            }
         } break;
         case ParamDef::String: {
-            param_json["type"] = "string";
-            param_json["label"] = param.label;
-            param_json["name"] = param.designator;
-            param_json["regex"] = param.regex;
-            param_json["defaultValue"] = param.default_value;
-            param_json["comment"] = param.comment;
-            param_json["mutable"] = param.is_mutable;
-            param_json["requirement"] = param.requirement;
-            rules.push_back(param_json);
+            if (!param.is_convert) {
+                param_json["type"] = "string";
+                param_json["label"] = param.label;
+                param_json["name"] = param.designator;
+                param_json["regex"] = param.regex;
+                param_json["defaultValue"] = param.default_value;
+                param_json["comment"] = param.comment;
+                param_json["mutable"] = param.is_mutable;
+                param_json["requirement"] = param.requirement;
+                rules.push_back(param_json);
+            } else {
+                plain_rules += "\n";
+                plain_rules +=
+                        " - " + param.designator + ": " + "string" + "\n   default = " + param.default_value + "\n";
+                plain_rules += "   regex: " + param.regex + "\n";
+                plain_rules += "   " + comment_tabed + "\n";
+            }
         } break;
         default:
             break;
@@ -266,6 +333,12 @@ std::string LocalParameters::static_description = R"RR()R";
 
     output_file << desc.dump() << ")RR\";\n\n";
 
+    output_file << "std::string LocalParameters::static_plain_rules = R\"RR(";
+    output_file << plain_rules << ")RR\";\n\n";
+
+    if (!sub_name.empty()) {
+        output_file << "}  // namespace " << sub_name << "\n";
+    }
     output_file << "}  // namespace " << category_name << "\n";
     output_file << "}  // namespace " << vendor_name << "\n";
 

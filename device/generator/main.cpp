@@ -5,7 +5,7 @@ using namespace wayz::hera::device;
 
 int main(int argc, char** argv)
 {
-    if (argc != 5) {
+    if (argc != 5 && argc != 6) {
         _exit(1);
     }
 
@@ -13,6 +13,10 @@ int main(int argc, char** argv)
     std::string output_filename = argv[2];
     std::string category_name = argv[3];
     std::string vendor_name = argv[4];
+    std::string sub_name{};
+    if (argc == 6) {
+        sub_name = argv[5];
+    }
 
     std::string escaped_file_content;
 
@@ -24,7 +28,7 @@ int main(int argc, char** argv)
 
     std::cout << input_filename << " parsed:" << device_desc.parameters << std::endl;
 
-    if (!parameter::output(output_filename, escaped_file_content, device_desc, category_name, vendor_name)) {
+    if (!parameter::output(output_filename, escaped_file_content, device_desc, category_name, vendor_name, sub_name)) {
         _exit(1);
     }
 }

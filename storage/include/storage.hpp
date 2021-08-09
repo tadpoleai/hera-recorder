@@ -37,11 +37,6 @@ namespace storage {
 class StorageManager;
 
 ///
-/// @brief A shared pointer to device data
-///
-using DeviceDataPtr = std::shared_ptr<device::data::DeviceData>;
-
-///
 /// @brief An unique pointer to StorageManager
 ///
 using StorageManagerPtr = std::unique_ptr<StorageManager>;
@@ -113,6 +108,10 @@ public:
     /// @brief Read device data from storage
     ///
     device::data::DeviceDataPtr read();
+
+    device::data::DeviceDataPtrWithIndex read_data_and_index();
+
+    device::data::DeviceDataPtr read_data_by_index(int64_t);
 
     ///
     /// @brief Seek data header to specific timestamp
@@ -225,7 +224,7 @@ private:
     ///
     /// @brief Data array used in read_strict mode
     ///
-    std::vector<std::queue<std::shared_ptr<device::data::DeviceData>>> data_array_prefetch_;
+    std::vector<std::queue<device::data::DeviceDataPtrWithIndex>> data_array_prefetch_;
     mutable std::mutex mutex_prefetch_;            ///< mutex for operations in read_strict mode
     mutable std::condition_variable cv_prefetch_;  ///< condition_variable for operations in read_strict mode
     bool prefetch_data_ready_;  ///< either, data is ready to read in data_array_prefetch, or prefetch has ended up

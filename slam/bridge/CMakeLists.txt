@@ -3,6 +3,7 @@ project(hera-slam-bridge)
 
 include("../../cmake/include/cpp_common.cmake")
 include("../../cmake/include/turbojpeg.cmake")
+set(CMAKE_CXX_FLAGS "-Wno-array-bounds")
 
 find_package(roscpp REQUIRED)
 include_directories(../.. include ${roscpp_INCLUDE_DIRS}

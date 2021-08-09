@@ -45,7 +45,7 @@ public:
 ///
 /// @brief SensorData for Lidar
 ///
-class PointsXYZI final : public SensorData {
+class Points final : public SensorData {
 public:
     enum class LidarVendor : uint32_t {
         VendorVelodyne = 0x100,
@@ -64,10 +64,17 @@ public:
         First = 0x3       ///< First Return
     };
 
+    enum class PointFormat : uint32_t {
+        XYZI = 0x0,
+        XYZIRT = 0x1,
+    };
+
     struct MetaType {
         LidarVendor vendor;
 
         ReturnType return_type;
+
+        PointFormat point_format;
 
         int32_t rotation_direction;
 
@@ -80,28 +87,32 @@ public:
 
         double nominal_min_range;
         double nominal_max_range;
+
+        double azimuth;
     };
 
     ///
     /// @brief Structure for lidar point in 3D with intensity
     ///
-    struct PointXYZI {
+    struct PointXYZCIDPAT {
         float x;                    ///< Distance on X-axis, in meter
         float y;                    ///< Distance on Y-axis, in meter
         float z;                    ///< Distance on Z-axis, in meter
         int32_t channel;            ///< Channel number, if multi-channel lidar, from 0
+        int32_t ring;               ///< Rings number, from 0, z- + z+
         float intensity;            ///< Intensity aka reflectivity
         float horizontal_distance;  ///< Hypot distance on XY-plane, in meter
         float pitch;                ///< Pitch, in rad
         float azimuth;              ///< Azimuth, in rad
+        float time_offset;          ///< Point's time difference w.r.t timestamp_intrinsic
     };
 
     MetaType meta;
-    uint32_t point_number;  ///< Number of points
-    PointXYZI points[0];    ///< Array of points, variable-lengthed
-                            /// For single-return-type lidar data, data are arranged sequencently
-                            /// For dual-return-type lidar data, first-return data are arranged first, after which
-                            /// second-return data are arranged
+    uint32_t point_number;     ///< Number of points
+    PointXYZCIDPAT points[0];  ///< Array of points, variable-lengthed
+                               /// For single-return-type lidar data, data are arranged sequencently
+                               /// For dual-return-type lidar data, first-return data are arranged first, after
+                               /// which second-return data are arranged
 };
 
 #pragma pack(pop)
