@@ -146,10 +146,10 @@ bool StorageManager::add_data(const uint32_t device_id, device::data::DeviceData
     return data_array_[device_id]->push(data, !if_write_data);
 }
 
-std::vector<DeviceDataPtr> StorageManager::history(const uint32_t device_id) const
+std::vector<device::data::DeviceDataPtr> StorageManager::history(const uint32_t device_id) const
 {
     if (read_mode_ || !add_device_finished_ || device_id >= data_array_.size()) {
-        return std::vector<DeviceDataPtr>();
+        return std::vector<device::data::DeviceDataPtr>();
     }
 
     return data_array_[device_id]->history();
