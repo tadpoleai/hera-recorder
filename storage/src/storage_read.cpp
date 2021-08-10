@@ -10,6 +10,7 @@
 #include <sstream>
 
 #include "common/include/logger/logger.hpp"
+#include "device/include/include.hpp"
 #include "storage.hpp"
 #include "unistd.h"
 
@@ -17,14 +18,29 @@ namespace wayz {
 namespace hera {
 namespace storage {
 
-device::data::DeviceDataPtr StorageManager::read()
+device::data::DeviceDataPtr StorageManager::read_data_by_index(int64_t index)
 {
-    if (!read_mode_ || !header) {
+    if (!read_mode_ || !header || read_strict_) {
         return nullptr;
     }
 
+    in_file_.seekg(index, std::ios::beg);
+    return device::data::DeviceData::read_from(in_file_);
+}
+
+device::data::DeviceDataPtr StorageManager::read()
+{
+    return read_data_and_index().data;
+}
+
+device::data::DeviceDataPtrWithIndex StorageManager::read_data_and_index()
+{
+    if (!read_mode_ || !header) {
+        return {-1, nullptr};
+    }
+
     if (!read_strict_) {
-        return device::data::DeviceData::read_from(in_file_);
+        return device::data::DeviceData::read_from_and_tell_index(in_file_);
     } else {
         if (!thread_) {
             thread_running_ = true;
@@ -33,7 +49,7 @@ device::data::DeviceDataPtr StorageManager::read()
     }
 
     // Read strict
-    device::data::DeviceDataPtr data;
+    device::data::DeviceDataPtrWithIndex data;
     std::unique_lock<std::mutex> lock(mutex_prefetch_);
     cv_prefetch_.wait(lock, [this] { return prefetch_data_ready_; });
     prefetch_data_ready_ = false;
@@ -41,14 +57,14 @@ device::data::DeviceDataPtr StorageManager::read()
     if (prefetch_ended_) {
         lock.unlock();
         cv_prefetch_.notify_one();
-        return nullptr;
+        return {-1, nullptr};
     }
 
     uint64_t earlist_timestamp = UINT64_MAX;
     int32_t earlist_index = -1;
     for (size_t i = 0; i < data_array_prefetch_.size(); ++i) {
         if (!data_array_prefetch_[i].empty()) {
-            auto timestamp = data_array_prefetch_[i].front()->get_timestamp_receive_ns();
+            auto timestamp = data_array_prefetch_[i].front().data->get_timestamp_receive_ns();
             if (timestamp < earlist_timestamp) {
                 earlist_timestamp = timestamp;
                 earlist_index = i;
@@ -94,15 +110,15 @@ void StorageManager::prefetch_thread_function()
         }
 
         if (need_fetch) {
-            auto data = device::data::DeviceData::read_from(in_file_);
-            if (!data) {
+            auto data_with_index = device::data::DeviceData::read_from_and_tell_index(in_file_);
+            if (!data_with_index.data) {
                 prefetch_ended_ = true;
                 thread_running_ = false;
                 log::info << "StorageManager::Prefetch ended, since no new data" << log::endl;
             } else {
-                auto device_id = data->get_device_id();
-                auto timestamp = data->get_timestamp_receive_ns();
-                data_array_prefetch_[device_id].emplace(std::move(data));
+                auto device_id = data_with_index.data->get_device_id();
+                auto timestamp = data_with_index.data->get_timestamp_receive_ns();
+                data_array_prefetch_[device_id].emplace(std::move(data_with_index));
 
                 if (!inited) {
                     inited = true;
