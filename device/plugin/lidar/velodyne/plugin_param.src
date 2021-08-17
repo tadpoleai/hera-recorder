@@ -52,4 +52,4 @@ convert boolean Accumulate = false;
 # Options:
 # - XYZI: (Default) XYZI格式，包含坐标和Intensity
 # - XYZIRT: XYZIRT 格式，包含坐标，Intensity，Ring, Time(offset)
-convert enum PointFormat = XYZIRT; options XYZI, XYZIRT
+convert enum PointFormat = XYZI; options XYZI, XYZIRT

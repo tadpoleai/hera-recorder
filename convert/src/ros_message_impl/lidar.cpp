@@ -162,7 +162,7 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::Points>(d
 
         using Pt = device::data::Points::PointXYZCIDPAT;
         for (; dst_ptr < dst_ptr_end;) {
-            memcpy(dst_ptr, src_ptr, sizeof(Pt));
+            memcpy(dst_ptr, src_ptr, std::min(sizeof(Pt), sizeof(pcl::PointXYZI)));
             dst_ptr += sizeof(pcl::PointXYZI) / sizeof(float);
             src_ptr += sizeof(Pt) / sizeof(float);
         }
@@ -194,7 +194,7 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::Points>(d
 
         using Pt = device::data::Points::PointXYZCIDPAT;
         for (; dst_ptr < dst_ptr_end;) {
-            memcpy(dst_ptr, src_ptr, sizeof(Pt));
+            memcpy(dst_ptr, src_ptr, std::min(sizeof(Pt), sizeof(pcl::PointXYZI)));
             dst_ptr += sizeof(pcl::PointXYZI) / sizeof(float);
             src_ptr += sizeof(Pt) / sizeof(float);
         }
