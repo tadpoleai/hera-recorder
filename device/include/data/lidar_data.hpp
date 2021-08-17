@@ -98,13 +98,13 @@ public:
         float x;                    ///< Distance on X-axis, in meter
         float y;                    ///< Distance on Y-axis, in meter
         float z;                    ///< Distance on Z-axis, in meter
-        int32_t channel;            ///< Channel number, if multi-channel lidar, from 0
         int32_t ring;               ///< Rings number, from 0, z- + z+
         float intensity;            ///< Intensity aka reflectivity
         float horizontal_distance;  ///< Hypot distance on XY-plane, in meter
         float pitch;                ///< Pitch, in rad
         float azimuth;              ///< Azimuth, in rad
         float time_offset;          ///< Point's time difference w.r.t timestamp_intrinsic
+        int32_t channel;            ///< Channel number, if multi-channel lidar, from 0
     };
 
     MetaType meta;
