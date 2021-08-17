@@ -51,6 +51,15 @@ public:
     static std::string plugin_description(const std::string& vendor_type);
 
     ///
+    /// @brief Get plain-text rules(meta info) of specific type's convert parameters
+    ///
+    /// @param vendor_type vendor_type in string
+    /// @return descriptiones of parameter in plain-text
+    /// parameters
+    ///
+    static std::string plugin_param_plain_rules(const std::string& vendor_type);
+
+    ///
     /// @brief Check vendor_type
     ///
     /// @param vendor_type vendor_type in string
@@ -85,6 +94,16 @@ public:
                             storage::StorageManager* const storage);
 
     ///
+    /// @brief Creating particular ParametersInteface of Device
+    ///
+    /// @param vendor_type vendor_type in string
+    /// @see DeviceVendorType
+    ///
+    /// Check vendor_type and create corresponding parameters object
+    ///
+    static std::unique_ptr<ParametersInterface> create_param(const std::string& vendor_type);
+
+    ///
     /// @brief Convert storaged device data to sensor data
     ///
     /// @param data device data to convert
@@ -102,13 +121,17 @@ public:
     using ConvertFunction =
             std::function<data::SensorDataPtr(const data::DeviceDataPtr&, const ParametersInterface* parameters)>;
 
+    using CreateParameter = std::function<ParametersInterface*()>;
+
     struct DeviceHandle {
         DeviceVendorType type;
         std::string type_name;
         std::string version;
         CreateFunction create;
         ConvertFunction convert;
+        CreateParameter create_param;
         std::string description;
+        std::string param_plain_rules;
     };
 
 private:

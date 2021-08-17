@@ -57,7 +57,8 @@ Converter::Converter(const std::string& src_filename,
             total_duration_ = (param_start_time_sec_ + param_duration_sec_) * time::OneSecond;
         }
 
-        for (auto& device_name : storage_->header->device_names) {
+        for (size_t id = 0; id < storage_->header->device_names.size(); ++id) {
+            const auto& device_name = storage_->header->device_names[id];
             std::array<std::string, 3> tokens;
             std::stringstream device_name_ss(std::string(device_name.begin(), device_name.end()));
             log::debug << "Converter: Adding " << device_name << log::endl;
@@ -70,8 +71,35 @@ Converter::Converter(const std::string& src_filename,
                 log::debug << "Converter: " << token << log::endl;
             }
 
+            std::string vendor_type = tokens[0] + "/" + tokens[1];
             topic_prefixes_.emplace_back(std::string("/") + tokens[0] + "/" + tokens[2] + "/");
             frame_ids_.emplace_back(remapper_->remap(tokens[0] + "_" + tokens[2] + "_link"));
+            parameters_.emplace_back(device::Factory::create_param(vendor_type));
+
+            for (auto& parameter_tuple : parameter_tuple_list) {
+                std::string match, param_type, param_value;
+                std::tie(match, param_type, param_value) = parameter_tuple;
+                int32_t match_id = -1;
+                try {
+                    match_id = std::atoi(match.c_str());
+                } catch (std::exception& _) {
+                }
+                if (match == device_name || match == tokens[0] || match == tokens[0] + "/" + tokens[1] ||
+                    match_id == (int32_t)id) {
+
+                    bool is_succeed = parameters_.back()->set(param_type, param_value);
+                    if (is_succeed) {
+                        log::info << "Converter: Set parameter for " << device_name << ", type = '" << param_type
+                                  << "', value = '" << parameters_.back()->dump()[param_type] << "' succeed!"
+                                  << log::endl;
+                    } else {
+                        log::error << "Converter: Set parameter for " << device_name << ", type = '" << param_type
+                                   << "', value = '" << param_value << "' failed! Check your input and re-run"
+                                   << log::endl;
+                        exit(1);
+                    }
+                }
+            }
         }
 
         bag_.open(bagfile, false);
@@ -137,12 +165,14 @@ void Converter::read_thread_function()
             break;
         }
 
-        auto sensor_data = device::Factory::convert(data, {});
+        auto parameter = (const device::ParametersInterface*)(parameters_[data->get_device_id()].get());
+        auto sensor_data = device::Factory::convert(data, parameter);
         if (sensor_data->sensor_data_type != device::SensorDataType::Broken) {
             try {
                 const auto& topic_prefix = topic_prefixes_[sensor_data->sensor_id];
                 const auto& frame_id = frame_ids_[sensor_data->sensor_id];
-                auto ros_messages = ROSMessage::convert(sensor_data, topic_prefix, frame_id, remapper_.get());
+                auto ros_messages =
+                        ROSMessage::convert(sensor_data, topic_prefix, frame_id, remapper_.get());
                 for (auto&& ros_message : ros_messages) {
                     publish(std::move(ros_message));
                 }

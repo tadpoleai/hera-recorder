@@ -52,6 +52,8 @@ void print_help(char** argv)
 
               << "\t-q\tFlat to suppress progress\n"
 
+              << "\t-f\tPrint convert parameter rules and exit\n"
+
               << "\t-h\tPrint this help and exit\n"
 
               << "\t-v\tPrint version and exit\n"
@@ -65,6 +67,21 @@ void print_version(char** argv)
     std::cout << "libhera-device: " << device::get_version() << std::endl;
     std::cout << "libhera-storage: " << storage::get_version() << std::endl;
     std::cout << "Copyright 2018 Wayz.ai. All Rights Reserved." << std::endl;
+}
+
+void print_convert_param_rules(char** argv)
+{
+    log::onlyprint();
+    log::set_level(log::LogLevel::Error);
+    print_version(argv);
+    std::cout << "\nPrinting parameter maps.\n" << std::endl;
+    for (auto& type : device::Factory::plugin_types()) {
+        auto plain_rules = device::Factory::plugin_param_plain_rules(type);
+        if (!plain_rules.empty()) {
+            std::cout << "Vendor: " << type << std::endl;
+            std::cout << "Accept parameters below:" << plain_rules << std::endl;
+        }
+    }
 }
 
 void sig_int_handler_func(int s)
@@ -96,7 +113,7 @@ int main(int argc, char** argv)
 
     // opterr = 0;
     while (true) {
-        switch (getopt(argc, argv, "i:o:r:s:t:p:ldqhv")) {
+        switch (getopt(argc, argv, "i:o:r:s:t:p:ldqfhv")) {
         case 'i':
             src_file = optarg;
             continue;
@@ -146,6 +163,9 @@ int main(int argc, char** argv)
             continue;
         case -1:
             break;
+        case 'f':
+            print_convert_param_rules(argv);
+            exit(0);
         case 'h':
             print_help(argv);
             exit(0);

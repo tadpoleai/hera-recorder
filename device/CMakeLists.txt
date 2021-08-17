@@ -7,6 +7,7 @@ include("../cmake/include/cpp_common.cmake")
 include("../cmake/include/turbojpeg.cmake")
 
 find_package(Threads REQUIRED)
+set(CMAKE_CXX_FLAGS "-Wno-array-bounds")
 
 # Find source files
 file(GLOB_RECURSE BASE_SRC "base/*.cpp")
@@ -90,7 +91,7 @@ foreach(PLUGIN_SRC ${PLUGIN_SRC_LIST})
 
   # Add dynamic library without device driver
   add_library(${PLUGIN_BASE_LIB_NAME} SHARED ${PLUGIN_SRC}
-                                             ${PLUGIN_PARAMETER_GEN})
+                                             ${PLUGIN_PARAMETER_GEN} ${PLUGIN_CONVERT_PARAMETER_GEN})
   target_link_libraries(${PLUGIN_BASE_LIB_NAME} ${PROJECT_NAME})
   set_target_properties(
     ${PLUGIN_BASE_LIB_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY
@@ -106,7 +107,7 @@ foreach(PLUGIN_SRC ${PLUGIN_SRC_LIST})
   # Add dynamic library with device driver
   if(PLUGIN_DRIVER_FOUND)
     add_library(${PLUGIN_DRIVER_LIB_NAME} SHARED ${PLUGIN_SRC}
-                                                 ${PLUGIN_PARAMETER_GEN})
+                                                 ${PLUGIN_PARAMETER_GEN} ${PLUGIN_CONVERT_PARAMETER_GEN})
     target_include_directories(${PLUGIN_DRIVER_LIB_NAME}
                                PRIVATE ${PLUGIN_DRIVER_DEP_INCLUDE})
     target_link_libraries(${PLUGIN_DRIVER_LIB_NAME}

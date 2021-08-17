@@ -40,6 +40,12 @@ static constexpr int64_t HalfHourToUs_ = 1800ULL * SecondToUs_;       ///< Multi
 static constexpr int64_t MaxDelayToleranceUs_ = 30ULL * SecondToUs_;  ///< Max valid transmission delay, in us
 static constexpr size_t EthernetMTU_ = 1500;                          ///< MTU/PacketSize of ethernet interface
 
+static data::SensorDataPtr do_convert_single_packet(const data::DeviceDataPtr& storage_data, PointFormat format);
+
+static std::map<int32_t, double> azimuth_map_;
+static std::map<int32_t, data::SensorDataPtr> sensor_data_map_;
+static std::map<int32_t, std::vector<data::Points::PointXYZCIDPAT>> accumulated_points_map_;
+
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
 
@@ -51,6 +57,10 @@ uint8_t receive_buffer_[EthernetMTU_];  ///< UDP Receive buffer
 HERA_PLUGIN_DEFINE_END
 
 HERA_PLUGIN_EXPORT(LidarVelodyne, "lidar/velodyne")
+
+std::map<int32_t, double> DevicePlugin::azimuth_map_;
+std::map<int32_t, data::SensorDataPtr> DevicePlugin::sensor_data_map_;
+std::map<int32_t, std::vector<data::Points::PointXYZCIDPAT>> DevicePlugin::accumulated_points_map_;
 
 #ifdef WITH_DRIVER
 
@@ -167,6 +177,74 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
+
+
+    PointFormat format = PointFormat::XYZI;
+    bool accumulate = false;
+    if (parameters) {
+        auto velodyne_param = reinterpret_cast<const LocalParameters*>(parameters);
+        format = velodyne_param->get_PointFormat();
+        accumulate = velodyne_param->get_Accumulate();
+    }
+
+    auto sensor_data = do_convert_single_packet(storage_data, format);
+    if (!accumulate) {
+        return sensor_data;
+    }
+
+    if (sensor_data->sensor_data_type != SensorDataType::Points) {
+    }
+
+    auto lidar_data = reinterpret_cast<data::Points*>(sensor_data.get());
+
+    if (!sensor_data_map_[sensor_data->sensor_id]) {
+        sensor_data_map_[sensor_data->sensor_id] = sensor_data;
+        azimuth_map_[sensor_data->sensor_id] = lidar_data->meta.azimuth;
+        accumulated_points_map_[sensor_data->sensor_id].clear();
+        return data::SensorData::broken_data();
+    }
+
+    auto packet_diff_time = (double)(lidar_data->timestamp_intrinsic_ns -
+                                     sensor_data_map_[sensor_data->sensor_id]->timestamp_intrinsic_ns) /
+                            (double)time::OneSecond;
+    for (size_t i = 0; i < lidar_data->point_number; ++i) {
+        auto pt = lidar_data->points[i];
+        if (pt.horizontal_distance != 0) {
+            pt.time_offset += packet_diff_time;
+            accumulated_points_map_[sensor_data->sensor_id].emplace_back(std::move(pt));
+        }
+    }
+
+    if ((lidar_data->meta.rotation_direction < 0 && azimuth_map_[sensor_data->sensor_id] > 0 &&
+         lidar_data->meta.azimuth < 0) ||
+        (lidar_data->meta.rotation_direction > 0 && azimuth_map_[sensor_data->sensor_id] < 0 &&
+         lidar_data->meta.azimuth > 0)) {
+        auto point_number = accumulated_points_map_[sensor_data->sensor_id].size();
+        auto length = sizeof(data::Points::PointXYZCIDPAT) * point_number + sizeof(data::Points);
+        auto acc_sensor_data = data::SensorData::create_direct(SensorDataType::Points,
+                                                               length,
+                                                               sensor_data->sensor_id,
+                                                               sensor_data->sequence);
+        acc_sensor_data->timestamp_intrinsic_ns = sensor_data->timestamp_intrinsic_ns;
+        auto lidar_acc_sensor_data = reinterpret_cast<data::Points*>(acc_sensor_data.get());
+        lidar_acc_sensor_data->meta = lidar_data->meta;
+        lidar_acc_sensor_data->point_number = point_number;
+        memcpy(lidar_acc_sensor_data->points,
+               accumulated_points_map_[sensor_data->sensor_id].data(),
+               point_number * sizeof(data::Points::PointXYZCIDPAT));
+        sensor_data_map_[sensor_data->sensor_id] = nullptr;
+
+        return acc_sensor_data;
+    }
+    azimuth_map_[sensor_data->sensor_id] = lidar_data->meta.azimuth;
+
+    return data::SensorData::broken_data();
+}
+
+/// Check the LidarType and ReturnMode first,
+/// if valid, do convertion by LidarType
+data::SensorDataPtr DevicePlugin::do_convert_single_packet(const data::DeviceDataPtr& storage_data, PointFormat format)
+{
     if (!storage_data->is_type(DeviceDataType::LidarVelodynePacketFullSynced) &&
         !storage_data->is_type(DeviceDataType::LidarVelodynePacketLocalSynced) &&
         !storage_data->is_type(DeviceDataType::LidarVelodynePacketUnSynced)) {
@@ -190,16 +268,16 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     }
 
     double is_dual = false;
-    data::PointsXYZI::ReturnType return_type;
+    data::Points::ReturnType return_type;
     switch (raw_data->data.return_mode) {
     case VelodynePacket::ReturnMode::Strongest:
-        return_type = data::PointsXYZI::ReturnType::Strongest;
+        return_type = data::Points::ReturnType::Strongest;
         break;
     case VelodynePacket::ReturnMode::LastReturn:
-        return_type = data::PointsXYZI::ReturnType::Last;
+        return_type = data::Points::ReturnType::Last;
         break;
     case VelodynePacket::ReturnMode::DualReturn:
-        return_type = data::PointsXYZI::ReturnType::Dual;
+        return_type = data::Points::ReturnType::Dual;
         is_dual = true;
         break;
     default:
@@ -214,6 +292,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
             ((int32_t)(raw_data->data.data_blocks[VelodynePacket::NumDataBlockPerPacket - 1].azimuth) -
              (int32_t)(raw_data->data.data_blocks[0].azimuth)) *
             velodyne::AzimuthGranularity;
+    double azimuth = (int32_t)(raw_data->data.data_blocks[0].azimuth) * velodyne::AzimuthGranularity;
     if (azimuth_diff_overall < 0) {
         azimuth_diff_overall += 2 * M_PI;
     }
@@ -224,17 +303,18 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     }
 
     // Create a temp vector
-    std::vector<data::PointsXYZI::PointXYZI> lidar_points;
+    std::vector<data::Points::PointXYZCIDPAT> lidar_points;
     lidar_points.reserve(VelodynePacket::NumPointsPerPacket);
 
     for (auto data_block_index = 0; data_block_index < VelodynePacket::NumDataBlockPerPacket; ++data_block_index) {
         const auto* data_block = &raw_data->data.data_blocks[data_block_index];
+        const auto data_block_index_real = is_dual ? data_block_index / 2 : data_block_index;
 
         double azimuth_base = velodyne::AzimuthGranularity * (data_block->azimuth);
         for (auto channel_index = 0; channel_index < VelodynePacket::NumChannelPerDataBlock; ++channel_index) {
             const auto* channel = &data_block->channels[channel_index];
 
-            data::PointsXYZI::PointXYZI lidar_point;
+            data::Points::PointXYZCIDPAT lidar_point;
             lidar_point.intensity = channel->reflectivity;
 
             switch (raw_data->data.lidar_type) {
@@ -243,6 +323,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
                         std::remainder(-(azimuth_base +
                                          azimuth_gap * velodyne::vlp16c::GetRelativeAzimuthChange(channel_index)),
                                        2 * M_PI);
+                float time_offset = velodyne::vlp16c::GetTimeOffset(channel_index, data_block_index_real);
                 double distance = channel->distance * velodyne::vlp16c::DistanceGranularity;
 
                 double pitch = velodyne::vlp16c::VerticalAngles[channel_index % 16];
@@ -251,9 +332,11 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
                 lidar_point.y = horizontal_distance * sin(azimuth);
                 lidar_point.z = distance * sin(pitch) + velodyne::vlp16c::VerticalCorrection[channel_index % 16];
                 lidar_point.channel = channel_index % 16;
+                lidar_point.ring = velodyne::vlp16c::Rings[lidar_point.channel];
                 lidar_point.horizontal_distance = horizontal_distance;
                 lidar_point.azimuth = azimuth;
                 lidar_point.pitch = pitch;
+                lidar_point.time_offset = time_offset;
             } break;
 
             case VelodynePacket::LidarType::VLP32C: {
@@ -261,6 +344,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
                         std::remainder(-(azimuth_base + velodyne::vlp32c::AzimuthOffset[channel_index] +
                                          azimuth_gap * velodyne::vlp32c::GetRelativeAzimuthChange(channel_index)),
                                        2 * M_PI);
+                float time_offset = velodyne::vlp32c::GetTimeOffset(channel_index, data_block_index_real);
                 double distance = channel->distance * velodyne::vlp32c::DistanceGranularity;
 
                 double pitch = velodyne::vlp32c::VerticalAngles[channel_index];
@@ -269,9 +353,11 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
                 lidar_point.y = horizontal_distance * sin(azimuth);
                 lidar_point.z = distance * sin(pitch);
                 lidar_point.channel = channel_index;
+                lidar_point.ring = velodyne::vlp32c::Rings[lidar_point.channel];
                 lidar_point.horizontal_distance = horizontal_distance;
                 lidar_point.azimuth = azimuth;
                 lidar_point.pitch = pitch;
+                lidar_point.time_offset = time_offset;
             } break;
 
             case VelodynePacket::LidarType::HDL32E: {
@@ -280,6 +366,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
                                          azimuth_gap * velodyne::hdl32e::GetRelativeAzimuthChange(channel_index)) +
                                                velodyne::hdl32e::AzimuthCorrection,
                                        2 * M_PI);
+                float time_offset = velodyne::hdl32e::GetTimeOffset(channel_index, data_block_index_real);
                 double distance = channel->distance * velodyne::hdl32e::DistanceGranularity;
 
                 double pitch = velodyne::hdl32e::VerticalAngles[channel_index];
@@ -288,9 +375,11 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
                 lidar_point.y = horizontal_distance * sin(azimuth);
                 lidar_point.z = distance * sin(pitch);
                 lidar_point.channel = channel_index;
+                lidar_point.ring = velodyne::hdl32e::Rings[lidar_point.channel];
                 lidar_point.horizontal_distance = horizontal_distance;
                 lidar_point.azimuth = azimuth;
                 lidar_point.pitch = pitch;
+                lidar_point.time_offset = time_offset;
             } break;
 
             default:
@@ -304,25 +393,25 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
 
     // Create a SensorData from DeviceData
     auto point_number = lidar_points.size();
-    auto length = sizeof(data::PointsXYZI::PointXYZI) * point_number + sizeof(data::PointsXYZI);
-    auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::PointsXYZI, length);
-    auto lidar_sensor_data = static_cast<data::PointsXYZI*>(sensor_data.get());
+    auto length = sizeof(data::Points::PointXYZCIDPAT) * point_number + sizeof(data::Points);
+    auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::Points, length);
+    auto lidar_sensor_data = static_cast<data::Points*>(sensor_data.get());
 
     // Memcpy from temp vector
     lidar_sensor_data->point_number = point_number;
 
     if (!is_dual) {
-        memcpy(lidar_sensor_data->points, lidar_points.data(), sizeof(data::PointsXYZI::PointXYZI) * point_number);
+        memcpy(lidar_sensor_data->points, lidar_points.data(), sizeof(data::Points::PointXYZCIDPAT) * point_number);
     } else {
         for (auto data_block_index = 0; data_block_index < VelodynePacket::NumDataBlockPerPacket / 2;
              ++data_block_index) {
             memcpy(&lidar_sensor_data->points[data_block_index * VelodynePacket::NumChannelPerDataBlock],
                    &lidar_points[2 * data_block_index * VelodynePacket::NumChannelPerDataBlock],
-                   sizeof(data::PointsXYZI::PointXYZI) * VelodynePacket::NumChannelPerDataBlock);
+                   sizeof(data::Points::PointXYZCIDPAT) * VelodynePacket::NumChannelPerDataBlock);
             memcpy(&lidar_sensor_data->points[data_block_index * VelodynePacket::NumChannelPerDataBlock +
                                               VelodynePacket::NumPointsPerPacket / 2],
                    &lidar_points[(2 * data_block_index + 1) * VelodynePacket::NumChannelPerDataBlock],
-                   sizeof(data::PointsXYZI::PointXYZI) * VelodynePacket::NumChannelPerDataBlock);
+                   sizeof(data::Points::PointXYZCIDPAT) * VelodynePacket::NumChannelPerDataBlock);
         }
     }
 
@@ -349,9 +438,17 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
 
     // Fill Metadata
     lidar_sensor_data->meta.return_type = return_type;
+    switch (format) {
+    case PointFormat::XYZI:
+        lidar_sensor_data->meta.point_format = data::Points::PointFormat::XYZI;
+        break;
+    case PointFormat::XYZIRT:
+        lidar_sensor_data->meta.point_format = data::Points::PointFormat::XYZIRT;
+        break;
+    }
     switch (raw_data->data.lidar_type) {
     case VelodynePacket::LidarType::VLP16C:
-        lidar_sensor_data->meta.vendor = data::PointsXYZI::LidarVendor::VelodyneVLP16C;
+        lidar_sensor_data->meta.vendor = data::Points::LidarVendor::VelodyneVLP16C;
 
         lidar_sensor_data->meta.rotation_direction = -1;
 
@@ -362,13 +459,14 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         lidar_sensor_data->meta.time_increment_horizontal = velodyne::vlp16c::TimeHorizontal / time::OneSecond;
         lidar_sensor_data->meta.total_time =
                 velodyne::vlp16c::TimeHorizontal / time::OneSecond * 2 * VelodynePacket::NumDataBlockPerPacket;
+        lidar_sensor_data->meta.azimuth = std::remainder(-azimuth, 2 * M_PI);
 
         lidar_sensor_data->meta.nominal_min_range = velodyne::vlp16c::MinNominalRange;
         lidar_sensor_data->meta.nominal_max_range = velodyne::vlp16c::MaxNominalRange;
         break;
 
     case VelodynePacket::LidarType::VLP32C:
-        lidar_sensor_data->meta.vendor = data::PointsXYZI::LidarVendor::VelodyneVLP32C;
+        lidar_sensor_data->meta.vendor = data::Points::LidarVendor::VelodyneVLP32C;
 
         lidar_sensor_data->meta.rotation_direction = -1;
 
@@ -379,13 +477,14 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         lidar_sensor_data->meta.time_increment_horizontal = velodyne::vlp32c::TimeHorizontal / time::OneSecond;
         lidar_sensor_data->meta.total_time =
                 velodyne::vlp32c::TimeHorizontal / time::OneSecond * VelodynePacket::NumDataBlockPerPacket;
+        lidar_sensor_data->meta.azimuth = std::remainder(-azimuth, 2 * M_PI);
 
         lidar_sensor_data->meta.nominal_min_range = velodyne::vlp32c::MinNominalRange;
         lidar_sensor_data->meta.nominal_max_range = velodyne::vlp32c::MaxNominalRange;
         break;
 
     case VelodynePacket::LidarType::HDL32E:
-        lidar_sensor_data->meta.vendor = data::PointsXYZI::LidarVendor::VelodyneHDL32E;
+        lidar_sensor_data->meta.vendor = data::Points::LidarVendor::VelodyneHDL32E;
 
         lidar_sensor_data->meta.rotation_direction = -1;
 
@@ -396,6 +495,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         lidar_sensor_data->meta.time_increment_horizontal = velodyne::hdl32e::TimeHorizontal / time::OneSecond;
         lidar_sensor_data->meta.total_time =
                 velodyne::hdl32e::TimeHorizontal / time::OneSecond * VelodynePacket::NumDataBlockPerPacket;
+        lidar_sensor_data->meta.azimuth = std::remainder(-azimuth - velodyne::hdl32e::AzimuthCorrection, 2 * M_PI);
 
         lidar_sensor_data->meta.nominal_min_range = velodyne::hdl32e::MinNominalRange;
         lidar_sensor_data->meta.nominal_max_range = velodyne::hdl32e::MaxNominalRange;

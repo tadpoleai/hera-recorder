@@ -43,3 +43,13 @@ immutable enum ReturnType = Strongest; options Strongest, Last, Dual
 # --- 在该选项下, 激光雷达数据包报告的时分秒将不被采用,
 # --- 而是采用数据包到达工控机时的接受时间作为传感器时间;
 immutable enum SyncType = Full; options Full, Local, Disabled
+
+# 累计整圈
+# 是否将激光点累计成一整圈
+convert boolean Accumulate = false;
+
+# 输出点云格式
+# Options:
+# - XYZI: (Default) XYZI格式，包含坐标和Intensity
+# - XYZIRT: XYZIRT 格式，包含坐标，Intensity，Ring, Time(offset)
+convert enum PointFormat = XYZIRT; options XYZI, XYZIRT

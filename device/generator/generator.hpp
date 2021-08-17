@@ -24,6 +24,7 @@ public:
     std::string default_value;
     std::string comment;
     bool is_mutable;
+    bool is_convert;
 
     std::string requirement{};
     std::string options{};
@@ -47,7 +48,8 @@ bool output(const std::string& output_filename,
             const std::string& escaped_file_content,
             const DeviceDesc& device_desc,
             const std::string& category_name,
-            const std::string& vendor_name);
+            const std::string& vendor_name,
+            const std::string& sub_name);
 
 }  // namespace parameter
 }  // namespace device

@@ -42,6 +42,20 @@ public:
     /// @return false parameter no set, type error
     virtual bool set(const std::string& type, const std::string& value) = 0;
 
+    template<typename T>
+    T get(const std::string& type) const
+    {
+        return json_values_[type].get<T>();
+    }
+
+    ////
+    /// @brief Check if parameter type exists
+    ///
+    /// @param type type in string
+    /// @return true parameter exists
+    /// @return false parameter does not exist
+    virtual bool exist_type(const std::string& type) const = 0;
+
     ///
     /// @brief Dump parameters into json
     ///
@@ -70,7 +84,7 @@ public:
     [
         label: string,
         comment: string,
-        parameters: 
+        parameters:
             {
                 type : "enum"/"string"/"int"/"double" ,
                 default: ,
@@ -81,6 +95,13 @@ public:
     ]
      */
     virtual std::string description() const = 0;
+
+    ///
+    /// @brief Return plain rules of parameter in json
+    ///
+    /// @return std::string description plain text
+    ///
+    virtual std::string plain_rules() const = 0;
 
 protected:
     ParametersInterface() = default;

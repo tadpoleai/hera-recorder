@@ -63,7 +63,7 @@ private:
     ///
     /// @param data lidar data
     ///
-    void lidar_handler(const device::data::PointsXYZI* const data);
+    void lidar_handler(const device::data::Points* const data);
 
     ///
     /// @brief Handler for imu data from hera
