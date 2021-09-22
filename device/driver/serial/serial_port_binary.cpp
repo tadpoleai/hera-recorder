@@ -33,6 +33,8 @@ SerialPortBinary::SerialPortBinary(const std::string& kernel,
     port_opened_ = port_->open_port(kernel, serial_config);
 
     if (port_opened_) {
+        log::info << "SerialPortBinary: start listening from" << kernel << log::endl;
+
         buffer_.reserve(BufferReverseSize_);
         thread_run_ = true;
         thread_fetch_ = new std::thread(&SerialPortBinary::fetch_thread_function, this);
@@ -118,13 +120,30 @@ void SerialPortBinary::fetch_thread_function()
                 break;
             }
 
+            std::size_t found_end;  // pos of next lead/tail bytes;
+            std::size_t end;        // pose of length indicated;
+
             // Find tail bytes
-            decltype(start) end;
             if (binary_config_.tail_bytes.empty()) {
-                end = buffer_.find(binary_config_.lead_bytes, start + 1);
+                found_end = buffer_.find(binary_config_.lead_bytes, start + 1);
             } else {
-                end = buffer_.find(binary_config_.tail_bytes, start + 1);
+                found_end = buffer_.find(binary_config_.tail_bytes, start + 1);
             }
+
+            // Find by indicated length
+            if (binary_config_.length_offset > 0) {
+                size_t length_pos = start + binary_config_.length_offset;
+                size_t indicated_length = (uint8_t)(buffer_[length_pos]);
+                indicated_length += binary_config_.length_range_substract;
+                size_t indicated_end = start + indicated_length;
+                if (indicated_end > buffer_.size()) {
+                    break;
+                }
+                end = indicated_end;
+            } else {
+                end = found_end;
+            }
+
             if (end == std::string::npos) {
                 break;
             }
@@ -145,6 +164,22 @@ void SerialPortBinary::fetch_thread_function()
             case SerialPortBinaryConfig::ChecksumProtocol::NONE:
                 checksum_verified = true;
                 break;
+            case SerialPortBinaryConfig::ChecksumProtocol::XOR8: {
+                if (msg_end - msg_start < 1) {
+                    break;
+                }
+
+                auto xor8_start = msg_start;
+                if (binary_config_.checksum_range == SerialPortBinaryConfig::ChecksumRange::DATA_ONLY) {
+                    xor8_start += binary_config_.lead_bytes.size();
+                }
+                auto xor8_end = msg_end;
+                auto xor8_length = xor8_end - xor8_start;
+
+                uint8_t calculated_xor8 =
+                        driver::CalculateBlockXOR8(xor8_length, (unsigned char*)c_buffer + xor8_start);
+                checksum_verified = (calculated_xor8 == 0);
+            } break;
             case SerialPortBinaryConfig::ChecksumProtocol::CRC32_ISO_3309: {
                 if (msg_end - msg_start < 4) {
                     break;
@@ -195,7 +230,7 @@ void SerialPortBinary::fetch_thread_function()
                 memcpy(message->data(), (unsigned char*)c_buffer + msg_start, msg_end - msg_start);
                 queue_.emplace(std::move(message));
             } else {
-                // log::warn << "SerialPortBinary: Checksum mismatched data" << log::endl;
+                log::warn << "SerialPortBinary: Checksum mismatched data" << log::endl;
             }
         }
 

@@ -17,6 +17,15 @@ namespace device {
 namespace driver {
 
 ///
+/// @brief Calculates the XOR8 of a block of data all at once
+///
+/// @param wdCount Number of bytes in the data block
+/// @param char* Data block
+/// @return uint8_t Result
+///
+uint8_t CalculateBlockXOR8(uint8_t btCount, unsigned char* ucBuffer);
+
+///
 /// @brief Calculates the CRC-32 of a block of data all at once
 ///
 /// @param ulCount Number of bytes in the data block
