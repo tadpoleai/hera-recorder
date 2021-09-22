@@ -38,6 +38,7 @@ enum class SensorDataType : uint16_t {
     SENSOR_DATA_TYPE_DEFINE(DummyImage,
                             0x0102)  ///< A dummy message, no correspond ROS Message, only to debug image show
     SENSOR_DATA_TYPE_DEFINE(ImuMagneticField, 0x0201)         ///< ROS Imu and MagneticField
+    SENSOR_DATA_TYPE_DEFINE(ImuComposed, 0x0202)              ///< Composed Imu Messages -> ROS Imu and MagneticField
     SENSOR_DATA_TYPE_DEFINE(NavSatFix, 0x0301)                ///< ROS NavSatFix
     SENSOR_DATA_TYPE_DEFINE(InsBestPosition, 0x0381)          ///< Ins Best Position -> ROS NavSatFix
     SENSOR_DATA_TYPE_DEFINE(InsCorrectedImu, 0x0382)          ///< Ins CorrectImu -> ROS Imu

@@ -14,6 +14,16 @@ namespace hera {
 namespace convert {
 
 template<>
+std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::ImuComposed>(
+        device::data::SensorDataPtr& sensor_data,
+        const std::string& topic_prefix,
+        const std::string& frame_id,
+        const common::Remapper* remapper)
+{
+    return {};
+}
+
+template<>
 std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::ImuMagneticField>(
         device::data::SensorDataPtr& sensor_data,
         const std::string& topic_prefix,

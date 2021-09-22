@@ -1,0 +1,67 @@
+@ 惯性测量单元/Xsens MTi-600系列
+@ 串口信号直接连接到上位机并由上位机解析数据包内容
+@ 可选地，同步板卡可使用TriggerIndicater方式同步
+
+# 设备路径
+# 串口的设备路径, 通常以'/dev/tty'开头
+immutable string Kernel = "/dev/tty"; regex ^\/(\w+\/?)+$
+
+# 波特率
+# 串口设备波特率
+immutable integer Baud = 460800; range 120, 2560000, 1
+
+# 设备型号
+# Options:
+# - IMU610: Inertial Data
+# - VRU620: Inertial data, roll/pitch/yaw (unreferenced)
+# - AHRS630: Inertial data, roll/pitch/yaw (referenced)
+# - INS670: Inertial data, roll/pitch/yaw (referenced), velocity, position
+# - INS680: Inertial data, roll/pitch/yaw (referenced), velocity, position
+immutable enum Product = AHRS630; options IMU610, VRU620, AHRS630, INS670, INS680
+
+# 数据速率
+# 数据报告的速率
+# 可选数值 1, 2, 4, 5, 10, 20, 50, 80, 
+# 100, 200, 400, 800(某些设备不支持800)
+immutable integer ODR = 400; range 1, 800, 1
+
+# 是否输出去重力后的加速度
+immutable boolean FreeAcc = false;
+
+# 滤波预设
+# Options:
+# - Responsive: For Indoor appl. and those with experience high dynamics and jerky movements.
+#   When static, automatic gyro bias estimation is performed background
+#   Typ Appl: Handling, Indoor ground vehicles, Head tracker, handheld mapping, robotic arm
+#
+# - Robust: For Most of appl. has a more robust tunning,
+#   When static, automatic gyro bias estimation is performed background
+#   Typ Appl: Ships/Vessels, Automotive, Outdoor ground vehicles, Outdoor mapping with vehicles
+#
+# - General: Like the general filter profile of previous Xsens products.
+#   More senstive to the magnetic field changes.
+#   No automatic gyro bias estimation is performed background.
+#   Can not be combined with the FixedMagRef heading behaviour
+#
+immutable enum FilterProf = Responsive; options Responsive, Robust, General
+
+# 航向参考
+# Options:
+# - NorthRef: (MTi-630), homogeneous magnetic environment that can be used to estimate a stable North referenced heading.
+#
+# - FixedMagRef: (MTi-630), maintains a fixed heading reference frame based on what is defined when the MTi is powered up.
+#
+# - VRU: (MTi-620 and 630), initialized at 0° when the MTi is powered up and the yaw will be computed relative to this initial orientation. 
+#
+# - VRUAHS: (MTi-620 and 630), Active Heading Stabilization on top of the above described VRU behaviour.
+#
+immutable enum HeadingProf = FixedMagRef; options NorthRef, FixedMagRef, VRU, VRUAHS
+
+# 使用同步系统(使用相机触发信号)
+immutable boolean Sync = true;
+
+# 同步帧率
+# 同步触发帧率
+# 需和同步板卡配置的帧率保持一致
+# 输入错误的数值可能会导致同步失败而丢弃数据
+immutable integer Fps = 10; range 1, 10, 1

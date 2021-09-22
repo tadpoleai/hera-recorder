@@ -37,6 +37,7 @@ enum class DeviceVendorType : uint16_t {
     DummyImage = 0x0102,            ///< A dummy category for testing, outputs dummy image
     ImuAceinna = 0x0201,            ///< An 9-axis Imu, vendor is Aceinna, embedded in Wayz Tron Sync Board
     ImuS32VSal = 0x0202,            ///< IMU, driver is provided by S32VSal
+    ImuXsens = 0x0203,              ///< IMU, AHRS, vendor is xsens, connected by serial
     GnssSerialsync = 0x0301,        ///< RTK-GNSS, outputs NavSatFix, vendor is any that outpus NMEA
     GnssSerial = 0x0302,            ///< For Nmea Sentence with it's UTC time already synced to system time
     GnssS32VSal = 0x0303,           ///< GNSS, driver is provided by S32VSal
@@ -66,6 +67,7 @@ enum class DeviceDataType : uint16_t {
     DummyImageData = 0x0102,                  ///< A dummy image device's data
     ImuAceinnaData = 0x0201,                  ///< For Wayz Tron Sync Board's serial output
     ImuS32VSalData = 0x0202,                  ///< IMU Data from S32VSal
+    ImuXsensData = 0x0203,                    ///< IMU Data from Xsens, 'MTData2', with calculated Timestamp
     GnssSerialsyncNmea = 0x0301,              ///< For Nmea Sentence
     GnssSerialNmea = 0x0302,                  ///< For Nmea Sentence with time sync
     GnssS32VSalData = 0x0303,                 ///< GNSS Data from S32VSal
