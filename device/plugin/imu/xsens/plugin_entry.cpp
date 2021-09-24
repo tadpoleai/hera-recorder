@@ -203,6 +203,8 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     auto length = sizeof(data::ImuComposed);
     auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::ImuComposed, length);
     auto imu_sensor_data = static_cast<data::ImuComposed*>(sensor_data.get());
+    imu_sensor_data->timestamp_intrinsic_ns = raw_data->timestamp_intrinsic;
+
     imu_sensor_data->have_temperature = 0;
     imu_sensor_data->have_baro_pressure = 0;
     imu_sensor_data->have_angular_velocity = 0;
