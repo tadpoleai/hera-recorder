@@ -81,7 +81,7 @@ Converter::Converter(const std::string& src_filename,
                 std::tie(match, param_type, param_value) = parameter_tuple;
                 int32_t match_id = -1;
                 try {
-                    match_id = std::atoi(match.c_str());
+                    match_id = std::stoi(match);
                 } catch (std::exception& _) {
                 }
                 if (match == device_name || match == tokens[0] || match == tokens[0] + "/" + tokens[1] ||
@@ -171,8 +171,7 @@ void Converter::read_thread_function()
             try {
                 const auto& topic_prefix = topic_prefixes_[sensor_data->sensor_id];
                 const auto& frame_id = frame_ids_[sensor_data->sensor_id];
-                auto ros_messages =
-                        ROSMessage::convert(sensor_data, topic_prefix, frame_id, remapper_.get());
+                auto ros_messages = ROSMessage::convert(sensor_data, topic_prefix, frame_id, remapper_.get());
                 for (auto&& ros_message : ros_messages) {
                     publish(std::move(ros_message));
                 }
