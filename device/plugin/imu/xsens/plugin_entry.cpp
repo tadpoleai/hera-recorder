@@ -243,10 +243,10 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         case mtdata2::DataIdBigEndian::Quaternion: {
             auto d = reinterpret_cast<mtdata2::Quaternion*>(itr);
             imu_sensor_data->have_orientation = 1;
-            imu_sensor_data->orientation[0] = common::reverse_endian(d->quaternion_xyzw_bigendian[0]);
-            imu_sensor_data->orientation[1] = common::reverse_endian(d->quaternion_xyzw_bigendian[1]);
-            imu_sensor_data->orientation[2] = common::reverse_endian(d->quaternion_xyzw_bigendian[2]);
-            imu_sensor_data->orientation[3] = common::reverse_endian(d->quaternion_xyzw_bigendian[3]);
+            imu_sensor_data->orientation[0] = common::reverse_endian(d->quaternion_wxyz_bigendian[1]); // x
+            imu_sensor_data->orientation[1] = common::reverse_endian(d->quaternion_wxyz_bigendian[2]); // y
+            imu_sensor_data->orientation[2] = common::reverse_endian(d->quaternion_wxyz_bigendian[3]); // z
+            imu_sensor_data->orientation[3] = common::reverse_endian(d->quaternion_wxyz_bigendian[0]); // w
         } break;
 
         case mtdata2::DataIdBigEndian::Acceleration: {
