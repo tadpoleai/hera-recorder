@@ -142,7 +142,7 @@ struct BaroPressure : public MTData2 {
 };
 
 struct Quaternion : public MTData2 {
-    float quaternion_xyzw_bigendian[4];
+    float quaternion_wxyz_bigendian[4];
 };
 
 struct Acceleration : public MTData2 {
