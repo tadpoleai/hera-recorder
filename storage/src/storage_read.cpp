@@ -24,6 +24,7 @@ device::data::DeviceDataPtr StorageManager::read_data_by_index(int64_t index)
         return nullptr;
     }
 
+    in_file_.clear();
     in_file_.seekg(index, std::ios::beg);
     return device::data::DeviceData::read_from(in_file_);
 }
