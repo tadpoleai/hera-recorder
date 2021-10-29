@@ -45,6 +45,7 @@ static data::SensorDataPtr do_convert_single_packet(const data::DeviceDataPtr& s
 static std::map<int32_t, double> azimuth_map_;
 static std::map<int32_t, data::SensorDataPtr> sensor_data_map_;
 static std::map<int32_t, std::vector<data::Points::PointXYZCIDPAT>> accumulated_points_map_;
+static std::map<int32_t, int64_t> timestamp_map_;
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -61,6 +62,7 @@ HERA_PLUGIN_EXPORT(LidarVelodyne, "lidar/velodyne")
 std::map<int32_t, double> DevicePlugin::azimuth_map_;
 std::map<int32_t, data::SensorDataPtr> DevicePlugin::sensor_data_map_;
 std::map<int32_t, std::vector<data::Points::PointXYZCIDPAT>> DevicePlugin::accumulated_points_map_;
+std::map<int32_t, int64_t> DevicePlugin::timestamp_map_;
 
 #ifdef WITH_DRIVER
 
@@ -177,14 +179,16 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-
-
     PointFormat format = PointFormat::XYZI;
     bool accumulate = false;
+    auto section_base = SectionBase::Angle;
+    int64_t section_time = 0.1 * time::OneSecond;
     if (parameters) {
         auto velodyne_param = reinterpret_cast<const LocalParameters*>(parameters);
         format = velodyne_param->get_PointFormat();
         accumulate = velodyne_param->get_Accumulate();
+        section_base = velodyne_param->get_SectionBase();
+        section_time = velodyne_param->get_SectionTime() * time::OneSecond;
     }
 
     auto sensor_data = do_convert_single_packet(storage_data, format);
@@ -193,6 +197,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     }
 
     if (sensor_data->sensor_data_type != SensorDataType::Points) {
+        return sensor_data;
     }
 
     auto lidar_data = reinterpret_cast<data::Points*>(sensor_data.get());
@@ -200,6 +205,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     if (!sensor_data_map_[sensor_data->sensor_id]) {
         sensor_data_map_[sensor_data->sensor_id] = sensor_data;
         azimuth_map_[sensor_data->sensor_id] = lidar_data->meta.azimuth;
+        timestamp_map_[sensor_data->sensor_id] = sensor_data->timestamp_intrinsic_ns;
         accumulated_points_map_[sensor_data->sensor_id].clear();
         return data::SensorData::broken_data();
     }
@@ -215,10 +221,18 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         }
     }
 
-    if ((lidar_data->meta.rotation_direction < 0 && azimuth_map_[sensor_data->sensor_id] > 0 &&
-         lidar_data->meta.azimuth < 0) ||
-        (lidar_data->meta.rotation_direction > 0 && azimuth_map_[sensor_data->sensor_id] < 0 &&
-         lidar_data->meta.azimuth > 0)) {
+    bool section_trigger = true;
+    if (section_base == SectionBase::Angle) {
+        section_trigger = (lidar_data->meta.rotation_direction < 0 && azimuth_map_[sensor_data->sensor_id] > 0 &&
+                           lidar_data->meta.azimuth < 0) ||
+                          (lidar_data->meta.rotation_direction > 0 && azimuth_map_[sensor_data->sensor_id] < 0 &&
+                           lidar_data->meta.azimuth > 0);
+    } else if (section_base == SectionBase::Time) {
+        section_trigger = sensor_data->timestamp_intrinsic_ns / section_time >
+                          timestamp_map_[sensor_data->sensor_id] / section_time;
+    }
+
+    if (section_trigger) {
         auto point_number = accumulated_points_map_[sensor_data->sensor_id].size();
         auto length = sizeof(data::Points::PointXYZCIDPAT) * point_number + sizeof(data::Points);
         auto acc_sensor_data = data::SensorData::create_direct(SensorDataType::Points,
@@ -237,6 +251,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         return acc_sensor_data;
     }
     azimuth_map_[sensor_data->sensor_id] = lidar_data->meta.azimuth;
+    timestamp_map_[sensor_data->sensor_id] = sensor_data->timestamp_intrinsic_ns;
 
     return data::SensorData::broken_data();
 }

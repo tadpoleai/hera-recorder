@@ -73,7 +73,8 @@ DeviceDataPtr DeviceData::read_from(std::ifstream& ifs)
             return nullptr;
         }
         return data;
-    } catch (...) {
+    } catch (std::exception& e) {
+        log::warn << "read_from " << e.what() << log::endl;
         return nullptr;
     }
 }
