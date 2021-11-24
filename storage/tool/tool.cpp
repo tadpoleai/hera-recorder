@@ -21,12 +21,7 @@ namespace hera {
 namespace storage {
 
 Tool::Tool(const Config& config) :
-    read_thread_(nullptr),
-    running_(false),
-    progess_size_(0),
-    total_size_(0),
-    storage_(nullptr),
-    config_(config)
+    read_thread_(nullptr), running_(false), progess_size_(0), total_size_(0), storage_(nullptr), config_(config)
 {
     auto filesize = file::get_file_size(config_.filename);
     if (filesize > 0) {
@@ -171,10 +166,12 @@ void Tool::trim_thread_function()
             static constexpr uint64_t IndexInterval = 1 * time::OneSecond;
             if (data->get_timestamp_receive_ns() > indexed_time + IndexInterval) {
                 indexed_time = data->get_timestamp_receive_ns();
-                new_header.indices.push_back({.ts = indexed_time, .offset = (int64_t)storage_->tellg()});
+                new_header.indices.push_back({.ts = indexed_time, .offset = (int64_t)outfs.tellp()});
             }
 
             data->write_to(outfs);
+        } else if (data->get_timestamp_receive_ns() > end_time + 10 * time::OneSecond) {
+            break;
         }
     }
 
