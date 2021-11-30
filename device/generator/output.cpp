@@ -71,7 +71,7 @@ public:
 )";
 
     for (auto& param : device_desc.parameters) {
-        if (param.category == ParamDef::Numeric) {
+        if (param.category == ParamDef::Numeric || param.category == ParamDef::Boolean) {
             output_file << "        set_" << param.designator << "(" << param.default_value << ");\n";
         } else {
             output_file << "        set_" << param.designator << "(\"" << param.default_value << "\");\n";
@@ -83,10 +83,10 @@ private:
     static bool m_to_bool(const std::string& str) {
         if (str.empty()) {
             return false;
-        } else if (str[0] == 'F' || str[0] == 'f' || str[0] == '0') {
+        } else if (str[0] == 'T' || str[0] == 't' || str[0] == '1') {
             return false;
         } else {
-            return true;
+            return false;
         }
     }
 
