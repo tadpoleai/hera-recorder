@@ -84,7 +84,7 @@ private:
         if (str.empty()) {
             return false;
         } else if (str[0] == 'T' || str[0] == 't' || str[0] == '1') {
-            return false;
+            return true;
         } else {
             return false;
         }
@@ -121,8 +121,7 @@ public:
         bool good = true;
 )R";
     for (auto& param : device_desc.parameters) {
-        output_file << "        good &= set_" << param.designator << "(json_input[\"" << param.designator
-                    << "\"].get<std::string>());\n";
+        output_file << "        try { set_" << param.designator << "(json_input.at(\"" << param.designator << "\").get<std::string>()); } catch (std::exception& e) { good = false; }\n";
     }
     output_file << R"(
         return good;
