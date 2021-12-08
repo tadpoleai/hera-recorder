@@ -78,8 +78,15 @@ void FlirTimestampCalculator::set_fps(const int32_t fps)
     Fps_ = fps;
     PeriodUs_ = 1'000'000LL / fps;
     PeriodNs_ = 1'000'000'000LL / fps;
-    MaxMatchedIntervalUs_ = PeriodUs_ + ShiftationUs_ + ShiftationToleranceUs_;
-    MinMatchedIntervalUs_ = PeriodUs_ + ShiftationUs_ - ShiftationToleranceUs_;
+    if (Fps_ > 10) {
+        UsingShiftationUs_ = ShiftationUsAlternative_;
+        UsingShiftationToleranceUs_ = ShiftationToleranceUsAlternative_;
+    } else {
+        UsingShiftationUs_ = ShiftationUs_;
+        UsingShiftationToleranceUs_ = ShiftationToleranceUs_;
+    }
+    MaxMatchedIntervalUs_ = PeriodUs_ + UsingShiftationUs_ + UsingShiftationToleranceUs_;
+    MinMatchedIntervalUs_ = PeriodUs_ + UsingShiftationUs_ - UsingShiftationToleranceUs_;
 }
 
 bool FlirTimestampCalculator::get_intrinsic_time(int64_t& out_ns,
@@ -117,7 +124,7 @@ bool FlirTimestampCalculator::get_intrinsic_time(int64_t& out_ns,
 
     out_ns = last_sync_time_multipler_ * SyncCycleNs_ + frame_count_ * PeriodUs_ * 1000LL;
     if (frame_count_ == 1) {
-        out_ns += ShiftationUs_ * 1000LL;
+        out_ns += UsingShiftationUs_ * 1000LL;
     }
     out_ns += embedded_shutter.get_ns() / 2;
 

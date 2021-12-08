@@ -28,13 +28,12 @@ namespace data {
 #define SENSOR_DATA_TYPE_TEMPLATE_EXPAND
 
 #undef SENSOR_DATA_TYPE_DEFINE
-#define SENSOR_DATA_TYPE_DEFINE(name, value)                                                           \
-    template<>                                                                                         \
-    SingleDisplayData __attribute__((weak))                                                            \
-            SingleDisplayData::parse<SensorDataType::name>(std::vector<SensorDataPtr> && sensor_datas, \
-                                                           const bool is_detail)                       \
-    {                                                                                                  \
-        return SingleDisplayData({.text_data = "parser<" #name "> not implemented"});                  \
+#define SENSOR_DATA_TYPE_DEFINE(name, value)                                                                         \
+    template<>                                                                                                       \
+    SingleDisplayData __attribute__((weak))                                                                          \
+    SingleDisplayData::parse<SensorDataType::name>(std::vector<SensorDataPtr> && sensor_datas, const bool is_detail) \
+    {                                                                                                                \
+        return SingleDisplayData({.text_data = "parser<" #name "> not implemented"});                                \
     }
 
 // Expanded here

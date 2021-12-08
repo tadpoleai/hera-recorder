@@ -25,14 +25,39 @@ SingleDisplayData SingleDisplayData::parse<SensorDataType::NavSatFix>(std::vecto
 
     auto data_impl = reinterpret_cast<data::NavSatFix*>(sensor_datas[0].get());
 
-    result.text_data += "LAT : " + std::to_string(data_impl->latitude) + "\n";
-    result.text_data += "LON : " + std::to_string(data_impl->longitude) + "\n";
-    result.text_data += "ALT : " + std::to_string(data_impl->altitude) + "\n";
-
     if (data_impl->status.status == NavSatFix::StatusType::NO_Fix) {
-        result.text_data += "STAT: NO FIX";
+        result.text_data += "LAT: --------\n";
+        result.text_data += "LON: --------\n";
+        result.text_data += "ALT: --------\n";
+        result.text_data += "SAT: --------\n";
     } else {
-        result.text_data += "STAT: FIXED";
+        result.text_data += "LAT: " + std::to_string(data_impl->latitude) + "\n";
+        result.text_data += "LON: " + std::to_string(data_impl->longitude) + "\n";
+        result.text_data += "ALT: " + std::to_string(data_impl->altitude) + "\n";
+        result.text_data += "SAT: " + std::to_string(data_impl->num_satellites) + "\n";
+    }
+
+    switch (data_impl->status.status)
+    {
+    case NavSatFix::StatusType::NO_Fix:
+        result.text_data += "No Solution";
+        break;
+    
+    case NavSatFix::StatusType::FIX:
+        result.text_data += "Single Point";
+        break;
+
+    case NavSatFix::StatusType::SBAS_Fix:
+        result.text_data += "Floating RTK";
+        break;
+
+    case NavSatFix::StatusType::GBAS_FIX:
+        result.text_data += "Fixed RTK";
+        break;
+    
+    default:
+        result.text_data += "Unknown Status";
+        break;
     }
 
     return result;

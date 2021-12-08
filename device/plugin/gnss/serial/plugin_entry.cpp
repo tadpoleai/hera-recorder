@@ -139,9 +139,10 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     for (auto i = 1; i < 9; ++i) {
         navsatfix_sensor_data->position_covariance[i] = 0;
     }
-    navsatfix_sensor_data->latitude = NAN;
-    navsatfix_sensor_data->longitude = NAN;
-    navsatfix_sensor_data->altitude = NAN;
+    navsatfix_sensor_data->latitude = 0;
+    navsatfix_sensor_data->longitude = 0;
+    navsatfix_sensor_data->altitude = 0;
+    navsatfix_sensor_data->num_satellites = 0;
 
     // Parse NMEA Sentence
     try {
@@ -149,6 +150,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         double longitude = NAN;
         double altitude = NAN;
         auto fixed = data::NavSatFix::StatusType::NO_Fix;
+        int32_t num_satellites = 0;
 
         // Tokenize nmea sentence
         std::string token;
@@ -157,7 +159,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         std::stringstream nmea(nmea_sentence_str);
 
         // Sentence Identifier (Token 1)
-        if (!getline(nmea, token, ',')) {
+        if (!getline(nmea, token, ',') || token.size() < 6) {
             throw std::runtime_error("Can not tokenize token 1");
         }
         // Only accept NMEA::GPGGA / GNGGA
@@ -167,11 +169,11 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         }
 
         // UTC time status of position (hhmmss) (Token 2)
-        if (!getline(nmea, token, ',')) {
+        if (!getline(nmea, token, ',') || token.size() < 6) {
             throw std::runtime_error("Can not tokenize token 2");
         }
         // Valid time info (No signal from satellites)
-        if (token.size() != 0) {
+        if (token.size() >= 6) {
             // Tokenize GPTS
             auto hours = std::stoull(token.substr(0, 2));
             auto minutes = std::stoull(token.substr(2, 2));
@@ -220,6 +222,9 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         if (!getline(nmea, token, ',')) {
             throw std::runtime_error("Can not tokenize token 3");
         }
+        if (token.size() < 4) {
+            throw std::runtime_error("Invalid latitude number '" + token + "'");
+        }
 
         auto lat_degree = std::stoull(token.substr(0, 2));
         auto lat_minute = std::stod(token.substr(2));
@@ -246,6 +251,9 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         // Longitude (Token 5)
         if (!getline(nmea, token, ',')) {
             throw std::runtime_error("Can not tokenize token 5");
+        }
+        if (token.size() < 5) {
+            throw std::runtime_error("Invalid longitude number '" + token + "'");
         }
         auto lon_degree = std::stoull(token.substr(0, 3));
         auto lon_minute = std::stod(token.substr(3));
@@ -295,6 +303,10 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         if (!getline(nmea, token, ',')) {
             throw std::runtime_error("Can not tokenize token 8");
         }
+        if (token.size() < 1) {
+            throw std::runtime_error("Invalid num satellites '" + token + "'");
+        }
+        num_satellites = std::stol(token);
 
         // Horizontal dilution of precision (Token 9)
         if (!getline(nmea, token, ',')) {
@@ -302,7 +314,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         }
 
         // Antenna altitude above/below mean sea level (Token 10)
-        if (!getline(nmea, token, ',')) {
+        if (!getline(nmea, token, ',') || token.size() < 1) {
             throw std::runtime_error("Can not tokenize token 10");
         }
         altitude = std::stod(token);
@@ -316,7 +328,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         }
 
         // Undulation - the relationship between the geoid and the WGS84 ellipsoid (Token 12)
-        if (!getline(nmea, token, ',')) {
+        if (!getline(nmea, token, ',') || token.size() < 1) {
             throw std::runtime_error("Can not tokenize token 12");
         }
         altitude += std::stod(token);
@@ -365,11 +377,12 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         navsatfix_sensor_data->longitude = longitude;
         navsatfix_sensor_data->altitude = altitude;
         navsatfix_sensor_data->status.status = fixed;
+        navsatfix_sensor_data->num_satellites = num_satellites;
         log::debug << "navsatfix_sensor_data->latitude: " << navsatfix_sensor_data->latitude
                    << " navsatfix_sensor_data->longitude: " << navsatfix_sensor_data->longitude
                    << " navsatfix_sensor_data->altitude " << navsatfix_sensor_data->altitude << log::endl;
     } catch (std::exception& err) {
-        log::warn << "Serial: convert(), " << err.what() << log::endl;
+        // log::warn << "Serial: convert(), " << err.what() << log::endl;
         return sensor_data;
     }
 

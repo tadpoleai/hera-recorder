@@ -116,6 +116,8 @@ public:
     /// along the diagonal. If only Dilution of Precision is available,
     // estimate an approximate covariance from that.
     PositionCovarianceType position_covariance_type;
+
+    int32_t num_satellites;  ///< Number of satellites in use
 };
 
 #pragma pack(pop)
