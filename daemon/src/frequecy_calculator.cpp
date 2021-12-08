@@ -21,7 +21,9 @@ FrequecyCalculator::FrequecyCalculator(std::vector<device::DevicePtr>* devices) 
     devices_ptr_(devices),
     running_(true),
     thread_(new std::thread(&FrequecyCalculator::thread_function, this))
-{}
+{
+    log::info << "FrequecyCalculator initialized with device size = " << devices->size() << log::endl;
+}
 
 FrequecyCalculator::~FrequecyCalculator()
 {
