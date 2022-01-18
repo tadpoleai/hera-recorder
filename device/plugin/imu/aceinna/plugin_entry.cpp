@@ -11,8 +11,8 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "data/imu_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
@@ -28,7 +28,9 @@ namespace aceinna {
 ///
 /// @brief Aceinna 9-axis Imu, Derived from Device
 ///
-HERA_PLUGIN_DEFINE_START(1)
+HERA_PLUGIN_DEFINE_START("imu/aceinna", 0x0201, 1)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -63,8 +65,6 @@ static constexpr double AccelGranularity_ = Gravity_ / 4000.0;
 static constexpr double MagneticGranularity_ = 1.0 / 16000.0;
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(ImuAceinna, "imu/aceinna")
 
 #ifdef WITH_DRIVER
 
@@ -119,11 +119,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
     // Total length of device data
     auto length = sizeof(AceinnaData);
-    auto data = data::DeviceData::create(length,
-                                         id_,
-                                         DeviceVendorType::ImuAceinna,
-                                         DeviceDataType::ImuAceinnaData,
-                                         sequence_++);
+    auto data = AceinnaData::create(length, id_, sequence_++);
     auto derived_data = static_cast<AceinnaData*>(data.get());
 
     // Use Memcpy to directly fill buf
@@ -143,7 +139,7 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (!storage_data->is_type(DeviceDataType::ImuAceinnaData)) {
+    if (!storage_data->is_type(AceinnaData::TypeVal)) {
         return data::SensorData::broken_data();
     }
 

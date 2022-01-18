@@ -14,8 +14,8 @@
 
 #include <common/include/logger/logger.hpp>
 
+#include "data/camera_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
@@ -37,7 +37,9 @@ namespace flir {
 ///
 /// @brief Flir (former PointGrey) Camera, Derived from Device
 ///
-HERA_PLUGIN_DEFINE_START(1)
+HERA_PLUGIN_DEFINE_START("camera/flir", 0x0401, 1)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -63,7 +65,7 @@ HeraErrno save_cc_parameter(const driver::ColorCorrectionParameter& ccm);
 HeraErrno load_cc_parameter(driver::ColorCorrectionParameter& cc_param);
 
 static constexpr int32_t GrabTimeoutMs_ = 300;  ///< Timeout for grabbing an image data
-static constexpr int32_t NumBuffers_ = 30;       ///< Size of image buffer in FLIR's SDK
+static constexpr int32_t NumBuffers_ = 30;      ///< Size of image buffer in FLIR's SDK
 
 static constexpr double ExposureGranularity = 1;  ///< @todo
 static constexpr double ShutterTimeGranularity23S6CMode7 = 0.027506;
@@ -81,8 +83,6 @@ std::unique_ptr<driver::ColorCorrecterBGR16> correcter_{nullptr};  ///< Color Co
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(CameraFlir, "camera/flir");
 
 #ifdef WITH_DRIVER
 
@@ -390,11 +390,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
         auto raw_image_size = raw_image.GetDataSize();
         // Total length of device data
         auto length = sizeof(FlirRawImage) + raw_image_size;
-        auto data = data::DeviceData::create(length,
-                                             id_,
-                                             DeviceVendorType::CameraFlir,
-                                             DeviceDataType::CameraFlirRawImage,
-                                             sequence_++);
+        auto data = FlirRawImage::create(length, id_, sequence_++);
         auto derived_data = static_cast<FlirRawImage*>(data.get());
 
         // Copy data
@@ -498,11 +494,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
         // Total length of device data
         auto length = sizeof(FlirCompressedImage) + jpeg_image_size;
-        auto data = data::DeviceData::create(length,
-                                             id_,
-                                             DeviceVendorType::CameraFlir,
-                                             DeviceDataType::CameraFlirCompressedImage,
-                                             sequence_++);
+        auto data = FlirCompressedImage::create(length, id_, sequence_++);
         auto derived_data = static_cast<FlirCompressedImage*>(data.get());
 
         // Copy data
@@ -541,11 +533,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
         // Total length of device data
         auto length = sizeof(FlirCompressedImage) + jpeg_image_size;
-        auto data = data::DeviceData::create(length,
-                                             id_,
-                                             DeviceVendorType::CameraFlir,
-                                             DeviceDataType::CameraFlirCompressedImage,
-                                             sequence_++);
+        auto data = FlirCompressedImage::create(length, id_, sequence_++);
         auto derived_data = static_cast<FlirCompressedImage*>(data.get());
 
         // Copy data
@@ -591,11 +579,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
         // Total length of device data
         auto length = sizeof(FlirCompressedImage) + jpeg_image_size;
-        auto data = data::DeviceData::create(length,
-                                             id_,
-                                             DeviceVendorType::CameraFlir,
-                                             DeviceDataType::CameraFlirCompressedImage,
-                                             sequence_++);
+        auto data = FlirCompressedImage::create(length, id_, sequence_++);
         auto derived_data = static_cast<FlirCompressedImage*>(data.get());
 
         // Copy data
@@ -632,7 +616,9 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
     } else if (type == "MinGain" || type == "MaxGain") {
         return set_range_auto_gain();
     } else if (type == "WBBlue" || type == "WBRed") {
-        return set_white_balance(local_parameters_.get_AutoWB(), local_parameters_.get_WBBlue(), local_parameters_.get_WBRed());
+        return set_white_balance(local_parameters_.get_AutoWB(),
+                                 local_parameters_.get_WBBlue(),
+                                 local_parameters_.get_WBRed());
     } else if (type == "Brightness") {
         return set_property(FlyCapture2::BRIGHTNESS, false, local_parameters_.get_Brightness());
     } else if (type == "Gamma") {
@@ -694,8 +680,7 @@ HeraErrno DevicePlugin::set_white_balance(bool auto_set, int blue, int red)
         return HeraErrno::ImmutableParameter;
     }
 
-    log::debug << "Flir: Get white_balance, min = " << property_info.min << ", max "
-               << property_info.max << log::endl;
+    log::debug << "Flir: Get white_balance, min = " << property_info.min << ", max " << property_info.max << log::endl;
 
     FlyCapture2::Property property;
     property.type = FlyCapture2::WHITE_BALANCE;
@@ -897,7 +882,7 @@ HeraErrno DevicePlugin::handle_flir_error(const FlyCapture2::Error& error, const
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (storage_data->is_type(DeviceDataType::CameraFlirCompressedImage)) {
+    if (storage_data->is_type(FlirCompressedImage::TypeVal)) {
         // Raw DeviceData of Derived Type
         auto raw_data = static_cast<FlirCompressedImage*>(storage_data.get());
 
@@ -913,7 +898,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         camera_sensor_data->image_data_size = image_data_size;
         memcpy(camera_sensor_data->image_data, &(raw_data->image_data), image_data_size);
         return sensor_data;
-    } else if (storage_data->is_type(DeviceDataType::CameraFlirRawImage)) {
+    } else if (storage_data->is_type(FlirRawImage::TypeVal)) {
         // Raw DeviceData of Derived Type
         auto raw_data = static_cast<FlirRawImage*>(storage_data.get());
 

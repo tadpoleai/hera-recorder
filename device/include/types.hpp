@@ -25,7 +25,7 @@ namespace device {
 /// @note every entry correspond to an derived class of Device
 /// @see Device
 ///
-enum class DeviceVendorType : uint16_t;
+using DeviceVendorType = uint16_t;
 
 ///
 /// @brief Forward declaration of DeviceDataType
@@ -34,7 +34,7 @@ enum class DeviceVendorType : uint16_t;
 /// @note every entry correspond to an derived class of DeviceData
 /// @see DeviceData
 ///
-enum class DeviceDataType : uint16_t;
+using DeviceDataType = uint16_t;
 
 ///
 /// @brief Forward declaration of SensorDataType

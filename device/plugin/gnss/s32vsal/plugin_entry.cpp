@@ -11,8 +11,8 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "data/gnss_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
@@ -28,7 +28,9 @@ namespace s32vsal {
 ////
 /// @brief A GNSS-Device, provided by library S32VSal
 ///
-HERA_PLUGIN_DEFINE_START(1)
+HERA_PLUGIN_DEFINE_START("gnss/s32vsal", 0x0303, 1)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -39,8 +41,6 @@ EGNSSSensorType gnss_type_;
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(GnssS32VSal, "gnss/s32vsal")
 
 #ifdef WITH_DRIVER
 
@@ -87,11 +87,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
     }
 
     auto length = sizeof(S32VSalData);
-    auto data = data::DeviceData::create(length,
-                                         id_,
-                                         DeviceVendorType::GnssS32VSal,
-                                         DeviceDataType::GnssS32VSalData,
-                                         sequence_++);
+    auto data = data::DeviceData::create(length, id_, DeviceVendorType::GnssS32VSal, S32VSalData::TypeVal, sequence_++);
     auto derived_data = static_cast<S32VSalData*>(data.get());
 
     derived_data->data.timestamp_intrinsic_ns = time::OneSecond * nav.timeStamp.tv_sec + 1000LL * nav.timeStamp.tv_usec;
@@ -122,7 +118,7 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (!storage_data->is_type(DeviceDataType::GnssS32VSalData)) {
+    if (!storage_data->is_type(S32VSalData::TypeVal)) {
         return data::SensorData::broken_data();
     }
 

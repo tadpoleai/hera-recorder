@@ -34,6 +34,9 @@
   - x86-64: `install-thrift.sh`
   - ARM: `install-thrift-arm.sh`
 
+- 安装 LibConfig (非必须,仅构建 `hera-daemon` 时需要)
+  执行 `sudo apt-get install libconfig++-dev libconfig-dev`
+
 - 安装 Npm (非必须,仅构建 `hera-daemon` 对应的客户端 `client` 时需要)  
   执行 `install-npm.sh`
 

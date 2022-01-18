@@ -27,7 +27,9 @@ namespace rotor {
 ///
 /// @brief Control rotor speed
 ///
-HERA_PLUGIN_DEFINE_START(1)
+HERA_PLUGIN_DEFINE_START("control/rotor", 0xF101, 1)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -39,8 +41,6 @@ driver::SerialTransport* serial_port_{nullptr};  ///< pointer to SerialTransport
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(ControlRotor, "control/rotor")
 
 #ifdef WITH_DRIVER
 

@@ -14,8 +14,8 @@
 #include "common/include/utils/endian.hpp"
 #include "data/imu_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
+#include "xsens_defs.hpp"
 
 #ifdef WITH_DRIVER
 #include "driver/serial/serial_port_binary.hpp"
@@ -31,7 +31,9 @@ namespace xsens {
 ///
 /// @brief Xsens MTi-600 Series
 ///
-HERA_PLUGIN_DEFINE_START(4)
+HERA_PLUGIN_DEFINE_START("imu/xsens", 0x0203, 4)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -44,8 +46,6 @@ common::ThreadQueue<driver::SerialData>* queue_{nullptr};  ///< queue of serial 
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(ImuXsens, "imu/xsens")
 
 #ifdef WITH_DRIVER
 
@@ -155,11 +155,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
     // Total length of device data
     auto length = sizeof(XsensData) - sizeof(MessageHeader) + received_length;
-    auto data = data::DeviceData::create(length,
-                                         id_,
-                                         DeviceVendorType::ImuXsens,
-                                         DeviceDataType::ImuXsensData,
-                                         sequence_++);
+    auto data = XsensData::create(length, id_, sequence_++);
     auto derived_data = static_cast<XsensData*>(data.get());
 
     derived_data->is_synced = is_synced;
@@ -182,7 +178,7 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (!storage_data->is_type(DeviceDataType::ImuXsensData)) {
+    if (!storage_data->is_type(XsensData::TypeVal)) {
         return data::SensorData::broken_data();
     }
 
@@ -243,10 +239,10 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         case mtdata2::DataIdBigEndian::Quaternion: {
             auto d = reinterpret_cast<mtdata2::Quaternion*>(itr);
             imu_sensor_data->have_orientation = 1;
-            imu_sensor_data->orientation[0] = common::reverse_endian(d->quaternion_wxyz_bigendian[1]); // x
-            imu_sensor_data->orientation[1] = common::reverse_endian(d->quaternion_wxyz_bigendian[2]); // y
-            imu_sensor_data->orientation[2] = common::reverse_endian(d->quaternion_wxyz_bigendian[3]); // z
-            imu_sensor_data->orientation[3] = common::reverse_endian(d->quaternion_wxyz_bigendian[0]); // w
+            imu_sensor_data->orientation[0] = common::reverse_endian(d->quaternion_wxyz_bigendian[1]);  // x
+            imu_sensor_data->orientation[1] = common::reverse_endian(d->quaternion_wxyz_bigendian[2]);  // y
+            imu_sensor_data->orientation[2] = common::reverse_endian(d->quaternion_wxyz_bigendian[3]);  // z
+            imu_sensor_data->orientation[3] = common::reverse_endian(d->quaternion_wxyz_bigendian[0]);  // w
         } break;
 
         case mtdata2::DataIdBigEndian::Acceleration: {

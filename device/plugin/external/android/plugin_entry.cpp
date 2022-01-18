@@ -7,14 +7,12 @@
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
 ///
 
-#include "plugin_common.hpp"
-#include "plugin_data.hpp"
-#include "plugin_param.hpp"
-
 #include "data/camera_data.hpp"
 #include "data/gnss_data.hpp"
 #include "data/imu_data.hpp"
 #include "data/lidar_data.hpp"
+#include "plugin_common.hpp"
+#include "plugin_param.hpp"
 
 namespace wayz {
 namespace hera {
@@ -25,16 +23,16 @@ namespace android {
 ///
 /// @brief A dummy device foobar, for sample, Derived from Device
 ///
-HERA_PLUGIN_DEFINE_START(5)
+HERA_PLUGIN_DEFINE_START("external/android", 0xF001, 5)
+
+#include "plugin_data.hpp"
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(ExternalAndroid, "external/android")
 
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameter)
 {
-    if (storage_data->is_type(DeviceDataType::ExternalAndroidCompressedImage)) {
+    if (storage_data->is_type(AndroidCompressedImage::TypeVal)) {
         // Raw DeviceData of Derived Type
         auto raw_data = static_cast<AndroidCompressedImage*>(storage_data.get());
 
@@ -50,7 +48,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         camera_sensor_data->image_data_size = image_data_size;
         memcpy(camera_sensor_data->image_data, &(raw_data->image_data), image_data_size);
         return sensor_data;
-    } else if (storage_data->is_type(DeviceDataType::ExternalAndroidImuMagneticField)) {
+    } else if (storage_data->is_type(AndroidImuMagneticField::TypeVal)) {
         // Raw DeviceData of Derived Type
         auto raw_data = static_cast<AndroidImuMagneticField*>(storage_data.get());
 
@@ -68,7 +66,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         }
 
         return sensor_data;
-    } else if (storage_data->is_type(DeviceDataType::ExternalAndroidLocation)) {
+    } else if (storage_data->is_type(AndroidLocation::TypeVal)) {
         // Raw DeviceData of Derived Type
         auto raw_data = static_cast<AndroidLocation*>(storage_data.get());
 
@@ -92,7 +90,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         nav_sensor_data->position_covariance_type = data::NavSatFix::PositionCovarianceType::DiagonalKnown;
 
         return sensor_data;
-    } else if (storage_data->is_type(DeviceDataType::ExternalAndroidLaserScan)) {
+    } else if (storage_data->is_type(AndroidLaserScan::TypeVal)) {
         // Raw DeviceData of Derived Type
         auto raw_data = static_cast<AndroidLaserScan*>(storage_data.get());
 

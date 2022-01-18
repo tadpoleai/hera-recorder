@@ -3,7 +3,7 @@ string(ASCII 27 Escape)
 
 if(ARCHITECTURE STREQUAL "x86_64")
   find_package(PkgConfig)
-  pkg_search_module(smbclient REQUIRED smbclient)
+  pkg_search_module(smbclient smbclient)
 
   if(${smbclient_FOUND})
     set(PLUGIN_DEP_FOUND 1)

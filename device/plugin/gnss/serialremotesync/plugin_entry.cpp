@@ -11,8 +11,8 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "data/gnss_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
@@ -34,7 +34,9 @@ namespace serialremotesync {
 ///
 /// @see <a href="https://www.gpsinformation.org/dale/nmea.htm" target="_blank"
 /// rel="noopener noreferrer">NMEA data</a>
-HERA_PLUGIN_DEFINE_START(1)
+HERA_PLUGIN_DEFINE_START("gnss/serialremotesync", 0x0304, 1)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -45,8 +47,6 @@ common::ThreadQueue<driver::SerialData>* queue_{nullptr};  ///< queue of nmea da
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(GnssSerialRemotesync, "gnss/serialremotesync")
 
 #ifdef WITH_DRIVER
 HeraErrno DevicePlugin::connect()
@@ -91,11 +91,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
     // Total length of device data
     auto data_length = serial_data_str->size();
     auto total_length = sizeof(data::DeviceData) + data_length;
-    auto data = data::DeviceData::create(total_length,
-                                         id_,
-                                         DeviceVendorType::GnssSerialRemotesync,
-                                         DeviceDataType::GnssSerialRemotesyncNmea,
-                                         sequence_++);
+    auto data = SerialRemotesyncNmea::create(total_length, id_, sequence_++);
     auto derived_data = static_cast<SerialRemotesyncNmea*>(data.get());
 
     // Copy data
@@ -129,7 +125,7 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (!storage_data->is_type(DeviceDataType::GnssSerialRemotesyncNmea)) {
+    if (!storage_data->is_type(SerialRemotesyncNmea::TypeVal)) {
         return data::SensorData::broken_data();
     }
 

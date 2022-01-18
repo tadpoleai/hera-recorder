@@ -14,8 +14,8 @@
 
 #include <common/include/logger/logger.hpp>
 
+#include "data/camera_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
@@ -31,7 +31,9 @@ namespace s32vsal {
 ///
 /// @brief S32VSal (former PointGrey) Camera, Derived from Device
 ///
-HERA_PLUGIN_DEFINE_START(1)
+HERA_PLUGIN_DEFINE_START("camera/s32vsal", 0x0402, 1)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -50,8 +52,6 @@ AppContext app_context_;
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(CameraS32VSal, "camera/s32vsal");
 
 #ifdef WITH_DRIVER
 FrameSyncTime frameSyncTimes;
@@ -142,11 +142,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
     if (local_parameters_.get_SaveFormat() == +SaveFormat::RGB8) {
         // Total length of device data
         auto length = sizeof(S32VSalRawImage) + ImageMonoDataSize_;
-        auto data = data::DeviceData::create(length,
-                                             id_,
-                                             DeviceVendorType::CameraS32VSal,
-                                             DeviceDataType::CameraS32VSalRawImage,
-                                             sequence_++);
+        auto data = S32VSalRawImage::create(length, id_, sequence_++);
         auto derived_data = static_cast<S32VSalRawImage*>(data.get());
 
         // Copy data
@@ -213,11 +209,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
         // Total length of device data
         auto length = sizeof(S32VSalCompressedImage) + jpeg_image_size;
-        auto data = data::DeviceData::create(length,
-                                             id_,
-                                             DeviceVendorType::CameraS32VSal,
-                                             DeviceDataType::CameraS32VSalCompressedImage,
-                                             sequence_++);
+        auto data = S32VSalCompressedImage::create(length, id_, sequence_++);
         auto derived_data = static_cast<S32VSalCompressedImage*>(data.get());
 
         // Copy data
@@ -242,7 +234,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (storage_data->is_type(DeviceDataType::CameraS32VSalRawImage)) {
+    if (storage_data->is_type(S32VSalRawImage::TypeVal)) {
         // Raw DeviceData of Derived Type
         auto raw_data = static_cast<S32VSalRawImage*>(storage_data.get());
 
@@ -259,7 +251,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         camera_sensor_data->image_data_size = image_data_size;
         memcpy(camera_sensor_data->image_data, raw_data->data.image_data, image_data_size);
         return sensor_data;
-    } else if (storage_data->is_type(DeviceDataType::CameraS32VSalCompressedImage)) {
+    } else if (storage_data->is_type(S32VSalCompressedImage::TypeVal)) {
         // Raw DeviceData of Derived Type
         auto raw_data = static_cast<S32VSalCompressedImage*>(storage_data.get());
 
