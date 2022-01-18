@@ -63,6 +63,9 @@ source /etc/network/interfaces.d/*
 net.core.rmem_max=67108864
 net.core.rmem_default=67108864
 ```
+并可用ethtool修改网口缓存 rx buffer深度
+`ethtool -G eth_lan1 rx 2048`
+可写入rc local
 
 ## 配置 USB 串口模块
 

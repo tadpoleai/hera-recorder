@@ -11,8 +11,8 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "data/odometry_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
@@ -30,7 +30,9 @@ namespace aehaitai {
 ///
 /// @brief Absolute Encoder Haitai, Derived from Device
 ///
-HERA_PLUGIN_DEFINE_START(1)
+HERA_PLUGIN_DEFINE_START("odometry/aehaitai", 0x0611, 1)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -46,8 +48,6 @@ common::ThreadQueue<driver::SerialData>* queue_{nullptr};  ///< queue of nmea da
 static constexpr uint32_t AskFrequency = 100;
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(OdometryAEHaitai, "odometry/aehaitai")
 
 #ifdef WITH_DRIVER
 
@@ -105,11 +105,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
     // Total length of device data
     auto frame_data_length = binary_framed_data->size();
     auto length = sizeof(data::DeviceData) + frame_data_length;
-    auto data = data::DeviceData::create(length,
-                                         id_,
-                                         DeviceVendorType::OdometryAEHaitai,
-                                         DeviceDataType::OdometryAEHaitaiData,
-                                         sequence_++);
+    auto data = AEHaitaiData::create(length, id_, sequence_++);
     auto derived_data = static_cast<AEHaitaiData*>(data.get());
 
     memcpy(derived_data->buf, binary_framed_data->data(), frame_data_length);
@@ -144,7 +140,7 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (!storage_data->is_type(DeviceDataType::OdometryAEHaitaiData)) {
+    if (!storage_data->is_type(AEHaitaiData::TypeVal)) {
         return data::SensorData::broken_data();
     }
 
@@ -157,8 +153,8 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     // Judge Type of Message
     auto frame_type = raw_data->data.frame_type;
     switch (frame_type) {
-    case FrameType::ENCODER_ANGLE: {
-        auto encoder_angle = static_cast<EncoderAngle*>((void*)raw_data->data.frame_data);
+    case AEHaitaiData::FrameType::ENCODER_ANGLE: {
+        auto encoder_angle = static_cast<AEHaitaiData::EncoderAngle*>((void*)raw_data->data.frame_data);
 
         // Create a SensorData from DeviceData
         auto length = sizeof(data::Orientation);

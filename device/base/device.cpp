@@ -10,7 +10,6 @@
 
 #include "device.hpp"
 
-#include "device_types_impl.hpp"
 #include "sensor_data_types.hpp"
 
 namespace wayz {

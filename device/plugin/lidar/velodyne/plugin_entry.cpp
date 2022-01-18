@@ -11,8 +11,8 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "data/lidar_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 #include "velodyne_defs.hpp"
 
@@ -31,7 +31,9 @@ namespace velodyne {
 ///
 /// @brief Velodyne Lidar
 ///
-HERA_PLUGIN_DEFINE_START(160)
+HERA_PLUGIN_DEFINE_START("lidar/velodyne", 0x0501, 160)
+
+#include "plugin_data.hpp"
 
 static constexpr int64_t UsToNs_ = 1000ULL;                           ///< Multiplier from ns to us
 static constexpr int64_t SecondToUs_ = 1'000'000ULL;                  ///< Multiplier from second to us
@@ -56,8 +58,6 @@ uint8_t receive_buffer_[EthernetMTU_];  ///< UDP Receive buffer
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(LidarVelodyne, "lidar/velodyne")
 
 std::map<int32_t, double> DevicePlugin::azimuth_map_;
 std::map<int32_t, data::SensorDataPtr> DevicePlugin::sensor_data_map_;
@@ -132,20 +132,19 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
     // Total length of device data
     auto length = sizeof(VelodynePacket);
-    auto data_type = DeviceDataType::LidarVelodynePacketFullSynced;
+    data::DeviceDataPtr data{nullptr};
     switch (local_parameters_.get_SyncType()) {
     case SyncType::Full:
-        data_type = DeviceDataType::LidarVelodynePacketFullSynced;
+        data = VelodynePacketFullSynced::create(length, id_, sequence_++);
         break;
     case SyncType::Local:
-        data_type = DeviceDataType::LidarVelodynePacketLocalSynced;
+        data = VelodynePacketLocalSynced::create(length, id_, sequence_++);
         break;
     case SyncType::Disabled:
-        data_type = DeviceDataType::LidarVelodynePacketUnSynced;
+        data = VelodynePacketUnSynced::create(length, id_, sequence_++);
         break;
     }
 
-    auto data = data::DeviceData::create(length, id_, DeviceVendorType::LidarVelodyne, data_type, sequence_++);
     auto derived_data = static_cast<VelodynePacket*>(data.get());
 
     // Use Memcpy to directly fill buf
@@ -260,9 +259,9 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
 /// if valid, do convertion by LidarType
 data::SensorDataPtr DevicePlugin::do_convert_single_packet(const data::DeviceDataPtr& storage_data, PointFormat format)
 {
-    if (!storage_data->is_type(DeviceDataType::LidarVelodynePacketFullSynced) &&
-        !storage_data->is_type(DeviceDataType::LidarVelodynePacketLocalSynced) &&
-        !storage_data->is_type(DeviceDataType::LidarVelodynePacketUnSynced)) {
+    if (!storage_data->is_type(VelodynePacketFullSynced::TypeVal) &&
+        !storage_data->is_type(VelodynePacketLocalSynced::TypeVal) &&
+        !storage_data->is_type(VelodynePacketUnSynced::TypeVal)) {
         return data::SensorData::broken_data();
     }
 
@@ -431,7 +430,7 @@ data::SensorDataPtr DevicePlugin::do_convert_single_packet(const data::DeviceDat
     }
 
     // Calculate laser firing timestamp of the first laser beam
-    if (storage_data->is_type(DeviceDataType::LidarVelodynePacketFullSynced)) {
+    if (storage_data->is_type(VelodynePacketFullSynced::TypeVal)) {
         int64_t t_recv_us = (raw_data->get_timestamp_receive_ns()) / UsToNs_;
         int64_t t_packet_us = (int64_t)(raw_data->data.timestamp);
         int64_t t_fire_us = HourToUs_ * ((t_recv_us - t_packet_us + HalfHourToUs_) / HourToUs_) + t_packet_us;
@@ -444,7 +443,7 @@ data::SensorDataPtr DevicePlugin::do_convert_single_packet(const data::DeviceDat
             return data::SensorData::broken_data();
         }
         lidar_sensor_data->timestamp_intrinsic_ns = t_fire_us * UsToNs_;
-    } else if (storage_data->is_type(DeviceDataType::LidarVelodynePacketLocalSynced)) {
+    } else if (storage_data->is_type(VelodynePacketLocalSynced::TypeVal)) {
         int64_t t_packet_us = (int64_t)(raw_data->data.timestamp);
         lidar_sensor_data->timestamp_intrinsic_ns = t_packet_us * UsToNs_;
     } else {

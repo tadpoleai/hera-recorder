@@ -2,7 +2,7 @@
 
 ## 术语和类型定义
 
-头文件 [types.hpp](../device/include/types.hpp) 以及实现文件 [device_types_impl.hpp](../device/base/device_types_impl.hpp)
+头文件 [types.hpp](../device/include/types.hpp)
 
 ### 设备类别(Device Category)
 
@@ -14,8 +14,8 @@
 
 在每个传感器设备种类下，根据设备厂商和具体型号细分的传感器设备型号
 
-对于每一个型号, 在 [plugin](../device/plugin/) 具有一个独立的从基类 `device::Device` 继承来的子类的实现(具体实现内容在后续描述)  
- 每一个型号具有独享的原始储存数据(Storage Data), 并且在 `device_types_impl.hpp` 中 `DeviceVendorType` 中有一个**唯一且不可修改**的枚举值
+对于每一个型号, 在 [plugin](../device/plugin/) 具有一个独立的从基类 `device::Device` 继承来的子类的实现(具体实现内容在后续描述),
+每一个型号具有独享的原始储存数据(Storage Data), 并且有一个**唯一且不可修改**的类型(DeviceVendorType), 由宏 `HERA_PLUGIN_DEFINE_START` 定义
 
 ### 原始储存数据(Device Data)
 
@@ -28,15 +28,15 @@
 > |               类型 | 字段名                 |                                       含义 |
 > | -----------------: | :--------------------- | -----------------------------------------: |
 > |         `uint32_t` | `length`               |                       数据的总长度，字节数 |
-> | `DeviceVendorType` | `device_vendor_type`   |                    枚举类型,设备厂商和型号 |
+> | `DeviceVendorType` | `device_vendor_type`   |                             设备厂商和型号 |
 > |         `uint32_t` | `device_id`            |    传感器 ID, 由采集程序赋值,从 0 开始递增 |
-> |   `DeviceDataType` | `message_type`         |                枚举类型,原始储存数据的类型 |
+> |   `DeviceDataType` | `message_type`         |                         原始储存数据的类型 |
 > |         `uint32_t` | `sequence`             | 数据序号, 从 0 开始递增,每个传感器独立计数 |
 > |         `uint64_t` | `timestamp_receive_ns` |          接收到该数据时的时间戳，UTC，纳秒 |
 
 其中, 原始储存数据类型(DeviceDataType)指示该原始数据的具体子类类型,  
- 参考`device_types_impl.hpp` 中的 `DeviceDataType`
-每一个 DeviceDataType 都是**唯一且不可修改**的
+每一个 DeviceDataType 都是**唯一且不可修改**的，
+由宏 `HERA_PLUGIN_DATA_DEFINE_START` 定义
 
 特别地, 记录文件(`.hera`)的格式请参考 [Hera 二进制数据记录文件](recordfile.md)
 
@@ -132,9 +132,9 @@ Hera 的错误码, 实现于 [hera_errno.hpp](../common/include/hera_errno.h)
 
 子类传感器需要在对应的 namespace 中先定义子类传感器使用的原始储存数据, 然后定义一个子类继承基类 `device::Device`, 并实现上一节提到的抽象方法
 
-在 cpp 文件中, 需要使用宏 `HERA_PLUGIN_EXPORT(type_enum_param, type_name_param)`来导出符号  
-`type_enum_param` 为 `DeviceVendorType` 中枚举的名称, `type_name_param` 为字符串形式的名称(如`camera/flir`)
-如 `HERA_PLUGIN_EXPORT(DummyFoobar, "dummy/foobar");`
+在 cpp 文件中, 需要使用宏 `HERA_PLUGIN_DEFINE_START(type_name_param, type_vendor_type_val_param, history_depth_param)`来导出符号  
+`type_vendor_type_val_param` 为 Device Vendor Type, `type_name_param` 为字符串形式的名称(如`camera/flir`)
+如 `HERA_PLUGIN_DEFINE_START("dummy/foobar", 0x0101, 5)`
 
 #### 工厂函数
 
@@ -146,11 +146,8 @@ Hera 的错误码, 实现于 [hera_errno.hpp](../common/include/hera_errno.h)
 
 1. 注册传感器设备类型 ID
 
-   - 查阅 [device_types_impl.hpp](../device/base/device_types_impl.hpp)
-   - 往 `enum class DeviceVendorType` 中新增一个传感器名
-     取名为`<Category><Vendor>`, 并显式规定一个 `uint16_t` 的数字(如 `CameraFlir = 0x0401` )
-   - 根据需要, 往 `enum class DeviceDataType` 中增加相应的原始储存数据类型
-     取名为`<Category><Vendor><DataType>`, 并为每个数据类型显式规定一个 `uint16_t` 位的数字(如 `CameraFlirCompressedImage = 0x0401` )
+   - 参考 CMake 工程时导出的 `Hera device: Listing registered plugins` 列表，确定新传感器标识码(DeviceVendorType)
+   - 参考 `Hera device: Listing registered data types` 列表，增加一个或多个新传感器数据类型标识码(DeviceDataType)
 
 1. 注册传感器数据 ID (可选)
    若该传感器使用了一种全新的传感器数据类型, 则需要新建传感器数据类型
@@ -177,5 +174,5 @@ Hera 的错误码, 实现于 [hera_errno.hpp](../common/include/hera_errno.h)
 1. 编写源码
 
    - 在文件夹 [plugin](../device/plugin/) 对应的 Category 的文件夹下新建一个文件夹, 取名为`<vendor>`(如`device/plugin/camera/flir`)
-   - 将源代码(`<vendor>.cpp` 以及 `<vendor.hpp>`) 放入上述文件夹
-   - 源代码的编写方式可参考 [foobar.hpp](../device/plugin/dummy/foobar.hpp) 及 [foobar.cpp](../device/plugin/dummy/foobar.cpp)
+   - 将源代码(`plugin_entry.cpp` 以及 `plugin_data.hpp>`) 放入上述文件夹
+   - 源代码的编写方式可参考 [plugin_entry.cpp](../device/plugin/dummy/foobar/plugin_entry.hpp) 及 [plugin_data.hpp](../device/plugin/dummy/foobar/plugin_data.hpp)
