@@ -11,14 +11,14 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "data/odometry_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
 #include "driver/can/can_port.hpp"
-#include "odometry/feedback/feedback.hpp"
 #include "odometry/feedback/feedback.cpp"
+#include "odometry/feedback/feedback.hpp"
 #endif
 
 namespace wayz {
@@ -30,7 +30,9 @@ namespace s32vgeely {
 ///
 /// @brief For S32VGeely Series Car, Derived from Device
 ///
-HERA_PLUGIN_DEFINE_START(1)
+HERA_PLUGIN_DEFINE_START("odometry/s32vgeely", 0x0601, 1)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -44,8 +46,6 @@ driver::CANPort* can_port_{nullptr};
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(OdometryS32VGeely, "odometry/s32vgeely")
 
 #ifdef WITH_DRIVER
 
@@ -97,7 +97,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
     auto data = data::DeviceData::create(length,
                                          id_,
                                          DeviceVendorType::OdometryS32VGeely,
-                                         DeviceDataType::OdometryS32VGeelyCANFrame,
+                                         S32VGeelyCANFrame::TypeVal,
                                          sequence_++);
     auto derived_data = static_cast<S32VGeelyData*>(data.get());
 
@@ -146,12 +146,12 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (!storage_data->is_type(DeviceDataType::OdometryS32VGeelyCANFrame)) {
+    if (!storage_data->is_type(S32VGeelyCANFrame::TypeVal)) {
         return data::SensorData::broken_data();
     }
 
     // Raw DeviceData of Derived Type
-    auto raw_data = static_cast<S32VGeelyData*>(storage_data.get());
+    auto raw_data = static_cast<S32VGeelyCANFrame*>(storage_data.get());
 
     constexpr uint32_t CanMessageDLC = 8;
     constexpr uint16_t CanPacketIDOfFrontWheelSpeed = 0x122u;

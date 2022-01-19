@@ -48,6 +48,12 @@ struct SerialPortBinaryConfig {
         LEAD_BYTES_AND_DATA  ///< includes lead bytes and data
     };
     ChecksumRange checksum_range;
+
+    size_t length_offset{0};  ///< offset of data length (8bit) w.r.t. start of lead bytes, 0 for non
+
+    size_t length_range_substract{
+            0};  ///< By default the data length counted from lead_bytes(included) to tail_bytes(not included), for
+                 ///< other appls, set this variable to substract the length
 };
 
 ///
@@ -56,9 +62,10 @@ struct SerialPortBinaryConfig {
 /// This class is for openning serial and receive framed data in binary format. Usually, sensors/devices sending data in
 /// binary format, uses a framed transportation in the following protocol:
 ///
-/// one frame = "<LeadBytes> <Data>... <Checksum> <TailBytes>", in which
+/// one frame = "<LeadBytes> <?> <DataLength(8bit)> <?> <Data>... <Checksum> <TailBytes>", in which
 /// <LeadBytes> is a fixed-length predefined byte sequence, marking the start of frame
 /// <Data> is variable-length data
+/// <DataLength(8bit)> is data length (optional), indicating data length from <LeadBytes> to <TailBytes>
 /// <Checksum> is a fixed-length checksum of data (optional)
 /// <TailBytes> is a fixed-length predefined byte sequence, marking the end of frame (optional)
 ///

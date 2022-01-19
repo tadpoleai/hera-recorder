@@ -115,6 +115,8 @@ UploadPlugin::UploadPlugin(const Config& config)
     }
 
     thread_run_ = std::make_unique<std::thread>([=] {
+        std::unique_lock<std::mutex> lock(upload_mutex_);
+
         constexpr size_t BufSize = 4ULL << 20;  // 8MiB;
         auto buf = std::make_unique<char[]>(BufSize);
         size_t read_size = 0;
@@ -145,7 +147,6 @@ UploadPlugin::UploadPlugin(const Config& config)
             status_.speed_literal = speed_literal.str();
 
             status_.processed_size = processed_size;
-
         } while (read_size != 0 && status_.stage != Stage::Error);
 
         nfs_close(nfs_context_, nfs_file_handler_);
@@ -160,6 +161,8 @@ UploadPlugin::UploadPlugin(const Config& config)
 
         nfs_destroy_context(nfs_context_);
         nfs_context_ = nullptr;
+
+        lock.unlock();
     });
 }
 

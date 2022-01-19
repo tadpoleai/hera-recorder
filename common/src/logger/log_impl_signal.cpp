@@ -63,7 +63,7 @@ void Logger::register_back_trace()
         ::abort();
     });
 
-    static const std::set<int> SignalsToIgnore = {SIGCONT, SIGURG, SIGPOLL, SIGHUP, SIGIO, SIGCHLD, SIGWINCH};
+    static const std::set<int> SignalsToIgnore = {SIGCONT, SIGURG, SIGPOLL, SIGHUP, SIGPIPE, SIGIO, SIGCHLD, SIGWINCH};
     for (auto i = 0; i <= 32; i++) {
         if (SignalsToIgnore.count(i) == 0) {
             ::signal(i, &Logger::singal_handler);

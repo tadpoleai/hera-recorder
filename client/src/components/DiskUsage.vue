@@ -1,16 +1,12 @@
 <template lang="pug">
 van-cell
-  div(style="display: flex; justify-content: space-between;")
+  div(style='display: flex; justify-content: space-between')
     span 已用容量
-    template(v-if="isFetched")
-      span {{diskUsedSpaceText}} / {{diskTotalSpaceText}}
+    template(v-if='isFetched')
+      span {{ diskUsedSpaceText }} / {{ diskTotalSpaceText }}
     template(v-else)
       span 无数据
-  van-progress(
-    :percentage="percentage"
-    :show-pivot="false"
-    stroke-width="8"
-    )
+  van-progress(:percentage='percentage', :show-pivot='false', stroke-width='8')
 </template>
 
 <script lang="ts">

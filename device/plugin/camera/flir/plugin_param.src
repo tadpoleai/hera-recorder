@@ -19,7 +19,7 @@ immutable boolean NeedSync = true;
 # 相机同步触发帧率
 # 需和同步板卡配置的帧率保持一致
 # 输入错误的数值可能会导致同步失败而丢弃拍摄到的数据
-immutable integer Fps = 10; range 1, 10, 1
+immutable integer Fps = 10; range 1, 20, 1
 
 # 自动曝光
 # 是否开启机内自动曝光补偿
@@ -87,6 +87,32 @@ mutable real MinGain = 10; range 0, 30, 1
 requires #AutoGain == 'true'
 mutable real MaxGain = 30; range 0, 30, 1
 
+# 亮度
+# 非RAW模式时，机内ISP的亮度
+requires (#Format != 'RAW8' && #Format != 'RAW12')
+mutable real Brightness = 3.2; range 0, 10, 0.1
+
+# 自动白平衡
+# 非RAW模式时，机内ISP的白平衡
+requires (#Format != 'RAW8' && #Format != 'RAW12' && #Format != 'MONO8' && #Format != 'MONO12')
+mutable boolean AutoWB = false;
+
+# 白平衡[蓝]
+# 非RAW模式时，机内ISP白平衡的蓝数值
+# 值越小，图像越蓝
+requires (#Format != 'RAW8' && #Format != 'RAW12' && #Format != 'MONO8' && #Format != 'MONO12')
+mutable real WBBlue = 700; range 1, 1000, 1
+
+# 白平衡[红]
+# 非RAW模式时，机内ISP白平衡的红数值
+# 值越小，图像越红
+requires (#Format != 'RAW8' && #Format != 'RAW12' && #Format != 'MONO8' && #Format != 'MONO12')
+mutable real WBRed = 700; range 1, 1000, 1
+
+# Gamma 值
+# 决定了相机的光强非线性映射曲线
+mutable real Gamma = 2.2; range 0.1, 10.0, 0.1
+
 # 像素合并
 # 控制相机的像素合并模式
 # 该设置将和Flir相机的 Mode 对应
@@ -127,9 +153,13 @@ immutable integer ROI_Y = 0; range 0, 1198, 2;
 # Options:
 # - MONO8: 单色灰度, 每像素8位
 # - MONO12: 单色灰度, 每像素12位
-# - RAW8: RAW 格式，每像素8位
-# - RAW12: RAW 格式，每像素12位
-immutable enum Format = RAW12; options MONO8, MONO12, RAW8, RAW12
+# - RAW8: RAW 格式, 每像素8位
+# - RAW12: RAW 格式, 每像素12位
+# - YUV411: YUV 格式, 每像素12位
+# - YUV422: YUV 格式, 每像素16位
+# - YUV444: YUV 格式, 每像素24位
+# - RGB8: RGB 格式, 每像素24位
+immutable enum Format = RAW12; options MONO8, MONO12, RAW8, RAW12, YUV411, YUV422, YUV444, RGB8
 
 # 保存原始数据
 # 若打开, 将保存原始数据, 不对图像做压缩(非常消耗储存空间)
@@ -211,11 +241,6 @@ immutable real CCM32 = 0; range -1, 4, 0.01
 requires #SaveRaw == 'false' && (#Format == 'RAW8' || #Format == 'RAW12') && (#Correction == 'ONESHOT' || #Correction == 'STORE')
 immutable real CCM33 = 1; range -1, 4, 0.01
 
-# Gamma 值
-# 决定了相机的光强非线性映射曲线
-requires #SaveRaw == 'false'
-mutable real Gamma = 2.2; range 0.1, 10.0, 0.1
-
 # JPEG 质量
 # 控制 JPEG 图像质量的参数
 # 该值越高则图像质量越好，相应地，图像数据大小也会增大
@@ -231,5 +256,5 @@ mutable integer JpegQuality = 90; range 0, 100, 5
 # - S420: 2x2, 横向和纵向均1/2采样(默认设置)
 # - S411: 4x1, 横向1/4采样(运算性能较差)
 # - SGRAY: 0x0, 无色度信息(仅测试使用)
-requires #SaveRaw == 'false'
+requires #SaveRaw == 'false' && #Format != 'YUV411' && #Format != 'YUV422' && #Format != 'YUV444'
 mutable enum JpegSamp = S420; options S444, S422, S420, SGRAY, S440, S411

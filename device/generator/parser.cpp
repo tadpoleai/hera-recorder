@@ -67,25 +67,25 @@ bool parse(const std::string& input_filename, std::string& escaped_file_content,
     /// Name Default
     ///
     static const std::regex boolean_pattern{
-            R"R(^(immutable|mutable)\s+boolean\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(true|false|TRUE|FALSE)\s*;?\s*$)R"};
+            R"R(^(immutable|mutable|convert)\s+boolean\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(true|false|TRUE|FALSE)\s*;?\s*$)R"};
 
     ///
     /// Name Default Options
     ///
     static const std::regex enum_pattern{
-            R"R(^(immutable|mutable)\s+enum\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([a-zA-Z][a-zA-Z0-9]*)\s*;\s*options\s+(([a-zA-Z][a-zA-Z0-9]*\s*,\s*)+([a-zA-Z][a-zA-Z0-9]*))$)R"};
+            R"R(^(immutable|mutable|convert)\s+enum\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([a-zA-Z][a-zA-Z0-9]*)\s*;\s*options\s+(([a-zA-Z][a-zA-Z0-9]*\s*,\s*)+([a-zA-Z][a-zA-Z0-9]*))$)R"};
 
     ///
     /// Type Name Default RangeMin RangeMax
     ///
     static const std::regex numeric_pattern{
-            R"R(^(immutable|mutable)\s+(real|integer)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([0-9.+-eE]+)\s*;\s*range\s+([0-9.+-eE]+)\s*,\s*([0-9.+-eE]+)\s*,\s*([0-9.+-eE]+)$)R"};
+            R"R(^(immutable|mutable|convert)\s+(real|integer)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([0-9.+-eE]+)\s*;\s*range\s+([0-9.+-eE]+)\s*,\s*([0-9.+-eE]+)\s*,\s*([0-9.+-eE]+)$)R"};
 
     ///
     /// Name Default Regex
     ///
     static const std::regex string_pattern{
-            R"R(^(immutable|mutable)\s+string\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"(.*)"\s*;\s*regex (.*)$)R"};
+            R"R(^(immutable|mutable|convert)\s+string\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"(.*)"\s*;\s*regex (.*)$)R"};
 
     std::ifstream input_file;
     input_file.open(input_filename, std::ios::in);
@@ -130,6 +130,7 @@ bool parse(const std::string& input_filename, std::string& escaped_file_content,
                                                   .default_value = matches[3].str(),
                                                   .comment = comment,
                                                   .is_mutable = matches[1].str() == "mutable",
+                                                  .is_convert = matches[1].str() == "convert",
                                                   .requirement = requires_string});
                 param_comment.clear();
                 requires_string.clear();
@@ -142,6 +143,7 @@ bool parse(const std::string& input_filename, std::string& escaped_file_content,
                                                   .default_value = matches[3].str(),
                                                   .comment = comment,
                                                   .is_mutable = matches[1].str() == "mutable",
+                                                  .is_convert = matches[1].str() == "convert",
                                                   .requirement = requires_string,
                                                   .options = matches[4].str()});
                 param_comment.clear();
@@ -155,6 +157,7 @@ bool parse(const std::string& input_filename, std::string& escaped_file_content,
                                                   .default_value = matches[4].str(),
                                                   .comment = comment,
                                                   .is_mutable = matches[1].str() == "mutable",
+                                                  .is_convert = matches[1].str() == "convert",
                                                   .requirement = requires_string,
                                                   .options = {},
                                                   .range_min = matches[5].str(),
@@ -171,6 +174,7 @@ bool parse(const std::string& input_filename, std::string& escaped_file_content,
                                                   .default_value = matches[3].str(),
                                                   .comment = comment,
                                                   .is_mutable = matches[1].str() == "mutable",
+                                                  .is_convert = matches[1].str() == "convert",
                                                   .requirement = requires_string,
                                                   .options = {},
                                                   .range_min = {},

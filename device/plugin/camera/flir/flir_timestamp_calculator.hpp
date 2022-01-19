@@ -144,6 +144,10 @@ private:
     /// 5ms
     static constexpr int64_t ShiftationToleranceUs_ = 5'000;
 
+    static constexpr int64_t ShiftationUsAlternative_ = -2'500;
+
+    static constexpr int64_t ShiftationToleranceUsAlternative_ = 600;
+
     ///
     /// @brief Cycle of FLIR embedded timestamp, in us
     ///
@@ -179,6 +183,10 @@ private:
     /// @brief Period of camera image, in ns
     ///
     int64_t PeriodNs_;
+
+    int64_t UsingShiftationUs_;
+
+    int64_t UsingShiftationToleranceUs_;
 
     ///
     /// @brief Upper limit of interval duration of a shifted trigger

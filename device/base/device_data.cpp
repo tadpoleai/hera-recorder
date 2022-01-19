@@ -73,8 +73,30 @@ DeviceDataPtr DeviceData::read_from(std::ifstream& ifs)
             return nullptr;
         }
         return data;
-    } catch (...) {
+    } catch (std::exception& e) {
+        log::warn << "read_from " << e.what() << log::endl;
         return nullptr;
+    }
+}
+
+DeviceDataPtrWithIndex DeviceData::read_from_and_tell_index(std::ifstream& ifs)
+{
+    try {
+        int64_t tellg = ifs.tellg();
+        uint32_t length;
+        ifs.read((char*)&length, sizeof(length));
+        if (ifs.gcount() != sizeof(length)) {
+            return {-1, nullptr};
+        }
+
+        auto data = create(length);
+        ifs.read((char*)data.get() + sizeof(length), length - sizeof(length));
+        if (ifs.gcount() != uint32_t(length - sizeof(length))) {
+            return {-1, nullptr};
+        }
+        return {tellg, data};
+    } catch (...) {
+        return {-1, nullptr};
     }
 }
 

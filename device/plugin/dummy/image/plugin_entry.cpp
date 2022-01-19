@@ -1,18 +1,18 @@
-/// 
+///
 /// @file plugin_entry.cpp
 /// @author lyu zheming (zheming.lyu@wayz.ai)
-/// @brief 
+/// @brief
 /// @date 2020-08-19
-/// 
+///
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
-/// 
+///
 
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
 
+#include "data/dummy_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 namespace wayz {
@@ -24,15 +24,15 @@ namespace image {
 ///
 /// @brief A dummy device image, for sample, Derived from Device
 ///
-HERA_PLUGIN_DEFINE_START(1)
+HERA_PLUGIN_DEFINE_START("dummy/image", 0x0102, 1)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(DummyImage, "dummy/image")
 
 #ifdef WITH_DRIVER
 
@@ -72,11 +72,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
     // Total length of device data
     auto length = sizeof(ImageData);
-    auto data = data::DeviceData::create(length,
-                                         id_,
-                                         DeviceVendorType::DummyImage,
-                                         DeviceDataType::DummyImageData,
-                                         sequence_++);
+    auto data = ImageData::create(length, id_, sequence_++);
     auto derived_data = static_cast<ImageData*>(data.get());
 
     derived_data->data.image_width = 480;
@@ -102,7 +98,7 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (!storage_data->is_type(DeviceDataType::DummyImageData)) {
+    if (!storage_data->is_type(ImageData::TypeVal)) {
         return data::SensorData::broken_data();
     }
 

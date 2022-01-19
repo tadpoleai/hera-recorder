@@ -12,9 +12,9 @@
 #include <cstdlib>
 #include <ctime>
 
+#include "data/lidar_data.hpp"
 #include "hesai_defs.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
@@ -32,7 +32,9 @@ namespace hesai {
 ///
 /// @brief Hesai Lidar
 ///
-HERA_PLUGIN_DEFINE_START(250)
+HERA_PLUGIN_DEFINE_START("lidar/hesai", 0x0511, 250)
+
+#include "plugin_data.hpp"
 
 static constexpr size_t EthernetMTU_ = 1500;  ///< MTU/PacketSize of ethernet interface
 
@@ -47,8 +49,6 @@ uint8_t receive_buffer_[EthernetMTU_];  ///< UDP Receive buffer
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(LidarHesai, "lidar/hesai")
 
 #ifdef WITH_DRIVER
 
@@ -136,20 +136,19 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
     // Total length of device data
     auto length = sizeof(HesaiPacket);
-    auto data_type = DeviceDataType::LidarHesaiPacketFullSynced;
+    data::DeviceDataPtr data{nullptr};
     switch (local_parameters_.get_SyncType()) {
     case SyncType::Full:
-        data_type = DeviceDataType::LidarHesaiPacketFullSynced;
+        data = HesaiPacketFullSynced::create(length, id_, sequence_++);
         break;
     case SyncType::Local:
-        data_type = DeviceDataType::LidarHesaiPacketLocalSynced;
+        data = HesaiPacketLocalSynced::create(length, id_, sequence_++);
         break;
     case SyncType::Disabled:
-        data_type = DeviceDataType::LidarHesaiPacketUnSynced;
+        data = HesaiPacketUnSynced::create(length, id_, sequence_++);
         break;
     }
 
-    auto data = data::DeviceData::create(length, id_, DeviceVendorType::LidarHesai, data_type, sequence_++);
     auto derived_data = static_cast<HesaiPacket*>(data.get());
 
     // Use Memcpy to directly fill buf
@@ -183,9 +182,9 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (!storage_data->is_type(DeviceDataType::LidarHesaiPacketFullSynced) &&
-        !storage_data->is_type(DeviceDataType::LidarHesaiPacketLocalSynced) &&
-        !storage_data->is_type(DeviceDataType::LidarHesaiPacketUnSynced)) {
+    if (!storage_data->is_type(HesaiPacketFullSynced::TypeVal) &&
+        !storage_data->is_type(HesaiPacketLocalSynced::TypeVal) &&
+        !storage_data->is_type(HesaiPacketUnSynced::TypeVal)) {
         return data::SensorData::broken_data();
     }
 
@@ -203,16 +202,16 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     }
 
     double is_dual = false;
-    data::PointsXYZI::ReturnType return_type;
+    data::Points::ReturnType return_type;
     switch (raw_data->data.return_mode) {
     case HesaiPacket::ReturnMode::Strongest:
-        return_type = data::PointsXYZI::ReturnType::Strongest;
+        return_type = data::Points::ReturnType::Strongest;
         break;
     case HesaiPacket::ReturnMode::LastReturn:
-        return_type = data::PointsXYZI::ReturnType::Last;
+        return_type = data::Points::ReturnType::Last;
         break;
     case HesaiPacket::ReturnMode::DualReturn:
-        return_type = data::PointsXYZI::ReturnType::Dual;
+        return_type = data::Points::ReturnType::Dual;
         is_dual = true;
         break;
     default:
@@ -234,7 +233,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     double motor_speed = (double)(raw_data->data.motor_speed) * hesai::MotorSpeedGranularity;
 
     // Create a temp vector
-    std::vector<data::PointsXYZI::PointXYZI> lidar_points;
+    std::vector<data::Points::PointXYZCIDPAT> lidar_points;
     lidar_points.reserve(hesai::NumPointsPerPacket);
 
     for (auto data_block_index = 0; data_block_index < hesai::NumDataBlockPerPacket; ++data_block_index) {
@@ -244,7 +243,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         for (auto channel_index = 0; channel_index < hesai::NumChannelPerDataBlock; ++channel_index) {
             const auto* channel = &data_block->channels[channel_index];
 
-            data::PointsXYZI::PointXYZI lidar_point;
+            data::Points::PointXYZCIDPAT lidar_point;
             lidar_point.intensity = channel->reflectivity;
 
             switch (raw_data->data.lidar_type) {
@@ -276,24 +275,24 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
 
     // Create a SensorData from DeviceData
     auto point_number = lidar_points.size();
-    auto length = sizeof(data::PointsXYZI::PointXYZI) * point_number + sizeof(data::PointsXYZI);
-    auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::PointsXYZI, length);
-    auto lidar_sensor_data = static_cast<data::PointsXYZI*>(sensor_data.get());
+    auto length = sizeof(data::Points::PointXYZCIDPAT) * point_number + sizeof(data::Points);
+    auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::Points, length);
+    auto lidar_sensor_data = static_cast<data::Points*>(sensor_data.get());
 
     // Memcpy from temp vector
     lidar_sensor_data->point_number = point_number;
 
     if (!is_dual) {
-        memcpy(lidar_sensor_data->points, lidar_points.data(), sizeof(data::PointsXYZI::PointXYZI) * point_number);
+        memcpy(lidar_sensor_data->points, lidar_points.data(), sizeof(data::Points::PointXYZCIDPAT) * point_number);
     } else {
         for (auto data_block_index = 0; data_block_index < hesai::NumDataBlockPerPacket / 2; ++data_block_index) {
             memcpy(&lidar_sensor_data->points[data_block_index * hesai::NumChannelPerDataBlock],
                    &lidar_points[2 * data_block_index * hesai::NumChannelPerDataBlock],
-                   sizeof(data::PointsXYZI::PointXYZI) * hesai::NumChannelPerDataBlock);
+                   sizeof(data::Points::PointXYZCIDPAT) * hesai::NumChannelPerDataBlock);
             memcpy(&lidar_sensor_data
                             ->points[data_block_index * hesai::NumChannelPerDataBlock + hesai::NumPointsPerPacket / 2],
                    &lidar_points[(2 * data_block_index + 1) * hesai::NumChannelPerDataBlock],
-                   sizeof(data::PointsXYZI::PointXYZI) * hesai::NumChannelPerDataBlock);
+                   sizeof(data::Points::PointXYZCIDPAT) * hesai::NumChannelPerDataBlock);
         }
     }
 
@@ -311,7 +310,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     int64_t t_recv = (raw_data->get_timestamp_receive_ns());
 
     // Calculate laser firing timestamp of the first laser beam
-    if (storage_data->is_type(DeviceDataType::LidarHesaiPacketFullSynced)) {
+    if (storage_data->is_type(HesaiPacketFullSynced::TypeVal)) {
         if (labs(t_packet - t_recv) > MaxDelayTolerance) {
             // Synchronization lost
             /// @note If Synchronization is lost, i.e. t_recv is more than t_fire by MaxDelayTolerance,
@@ -320,7 +319,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
             return data::SensorData::broken_data();
         }
         lidar_sensor_data->timestamp_intrinsic_ns = t_packet;
-    } else if (storage_data->is_type(DeviceDataType::LidarHesaiPacketLocalSynced)) {
+    } else if (storage_data->is_type(HesaiPacketLocalSynced::TypeVal)) {
         lidar_sensor_data->timestamp_intrinsic_ns = t_packet;
     } else {
         lidar_sensor_data->timestamp_intrinsic_ns = t_recv;
@@ -330,7 +329,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     lidar_sensor_data->meta.return_type = return_type;
     switch (raw_data->data.lidar_type) {
     case HesaiPacket::LidarType::PandarXT32:
-        lidar_sensor_data->meta.vendor = data::PointsXYZI::LidarVendor::VendorHesai;
+        lidar_sensor_data->meta.vendor = data::Points::LidarVendor::VendorHesai;
 
         lidar_sensor_data->meta.rotation_direction = -1;
 

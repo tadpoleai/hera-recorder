@@ -10,6 +10,7 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/point_cloud.h>
+#include <sensor_msgs/PointField.h>
 
 #include "ros_message_impl.hpp"
 
@@ -17,19 +18,128 @@ namespace wayz {
 namespace hera {
 namespace convert {
 
-template<>
-std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::PointsXYZI>(
-        device::data::SensorDataPtr& sensor_data,
-        const std::string& topic_prefix,
-        const std::string& frame_id,
-        const common::Remapper* remapper)
+#pragma pack(push, 1)
+struct PointXYZIRT {
+    float x;
+    float y;
+    float z;
+    float intensity;
+    uint16_t ring;
+    float time;
+};
+#pragma pack(pop)
+
+static std::vector<ROSMessagePtr> convertXYZIRTCloud(device::data::SensorDataPtr& sensor_data,
+                                                     const std::string& topic_prefix,
+                                                     const std::string& frame_id,
+                                                     const common::Remapper* remapper)
 {
-    auto data_impl = reinterpret_cast<device::data::PointsXYZI*>(sensor_data.get());
+    auto data_impl = reinterpret_cast<device::data::Points*>(sensor_data.get());
+    std::vector<ROSMessagePtr> ret;
+
+    if (data_impl->meta.return_type == device::data::Points::ReturnType::Dual) {
+        log::error << "Dual Pointcloud2 in xyzirt Mode is not supported yet!" << log::endl;
+        return {};
+    }
+
+    auto message = ROSMessage::create<ROSMessageType::PointCloud2>();
+    auto ros_message = reinterpret_cast<sensor_msgs::PointCloud2*>(message->ptr);
+
+    message->topic_name = remapper->remap(topic_prefix + "point_cloud2");
+    message->timestamp_ns = sensor_data->timestamp_intrinsic_ns;
+    ros_message->header.seq = sensor_data->sequence;
+    time::Timestamp ts = sensor_data->timestamp_intrinsic_ns;
+    ros_message->header.stamp = ros::Time(ts.tv_sec, ts.tv_nsec);
+    ros_message->header.frame_id = frame_id;
+    ros_message->height = 1;
+    ros_message->width = data_impl->point_number;
+    ros_message->is_bigendian = false;
+    ros_message->is_dense = true;
+    ros_message->point_step = sizeof(PointXYZIRT);
+    ros_message->row_step = 0;
+    ros_message->data.resize(sizeof(PointXYZIRT) * data_impl->point_number);
+
+    {
+        sensor_msgs::PointField field;
+        field.name = "x";
+        field.offset = 0;
+        field.count = 1;
+        field.datatype = sensor_msgs::PointField::FLOAT32;
+        ros_message->fields.push_back(field);
+    }
+    {
+        sensor_msgs::PointField field;
+        field.name = "y";
+        field.offset = 4;
+        field.count = 1;
+        field.datatype = sensor_msgs::PointField::FLOAT32;
+        ros_message->fields.push_back(field);
+    }
+    {
+        sensor_msgs::PointField field;
+        field.name = "z";
+        field.offset = 8;
+        field.count = 1;
+        field.datatype = sensor_msgs::PointField::FLOAT32;
+        ros_message->fields.push_back(field);
+    }
+    {
+        sensor_msgs::PointField field;
+        field.name = "intensity";
+        field.offset = 12;
+        field.count = 1;
+        field.datatype = sensor_msgs::PointField::FLOAT32;
+        ros_message->fields.push_back(field);
+    }
+    {
+        sensor_msgs::PointField field;
+        field.name = "ring";
+        field.offset = 16;
+        field.count = 1;
+        field.datatype = sensor_msgs::PointField::UINT16;
+        ros_message->fields.push_back(field);
+    }
+    {
+        sensor_msgs::PointField field;
+        field.name = "time";
+        field.offset = 18;
+        field.count = 1;
+        field.datatype = sensor_msgs::PointField::FLOAT32;
+        ros_message->fields.push_back(field);
+    }
+
+    for (size_t index_pt = 0; index_pt < data_impl->point_number; ++index_pt) {
+        auto ros_pt = reinterpret_cast<PointXYZIRT*>(ros_message->data.data());
+        ros_pt += index_pt;
+
+        ros_pt->x = data_impl->points[index_pt].x;
+        ros_pt->y = data_impl->points[index_pt].y;
+        ros_pt->z = data_impl->points[index_pt].z;
+        ros_pt->intensity = data_impl->points[index_pt].intensity;
+        ros_pt->ring = data_impl->points[index_pt].ring;
+        ros_pt->time = data_impl->points[index_pt].time_offset;
+    }
+
+    ret.emplace_back(std::move(message));
+    return ret;
+};
+
+template<>
+std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::Points>(device::data::SensorDataPtr& sensor_data,
+                                                                               const std::string& topic_prefix,
+                                                                               const std::string& frame_id,
+                                                                               const common::Remapper* remapper)
+{
+    auto data_impl = reinterpret_cast<device::data::Points*>(sensor_data.get());
+
+    if (data_impl->meta.point_format == device::data::Points::PointFormat::XYZIRT) {
+        return convertXYZIRTCloud(sensor_data, topic_prefix, frame_id, remapper);
+    }
 
     std::vector<ROSMessagePtr> ret;
 
     size_t single_return_point_number = data_impl->point_number;
-    if (data_impl->meta.return_type == device::data::PointsXYZI::ReturnType::Dual) {
+    if (data_impl->meta.return_type == device::data::Points::ReturnType::Dual) {
         single_return_point_number /= 2;
     }
 
@@ -50,9 +160,9 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::PointsXYZ
         const float* dst_ptr_end =
                 dst_ptr + (size_t)(single_return_point_number) * (sizeof(pcl::PointXYZI) / sizeof(float));
 
-        using Pt = device::data::PointsXYZI::PointXYZI;
+        using Pt = device::data::Points::PointXYZCIDPAT;
         for (; dst_ptr < dst_ptr_end;) {
-            memcpy(dst_ptr, src_ptr, sizeof(Pt));
+            memcpy(dst_ptr, src_ptr, std::min(sizeof(Pt), sizeof(pcl::PointXYZI)));
             dst_ptr += sizeof(pcl::PointXYZI) / sizeof(float);
             src_ptr += sizeof(Pt) / sizeof(float);
         }
@@ -64,7 +174,7 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::PointsXYZ
         ret.emplace_back(std::move(message));
     }
 
-    if (data_impl->meta.return_type == device::data::PointsXYZI::ReturnType::Dual) {
+    if (data_impl->meta.return_type == device::data::Points::ReturnType::Dual) {
         auto message = ROSMessage::create<ROSMessageType::PointCloud2>();
         auto ros_message = reinterpret_cast<sensor_msgs::PointCloud2*>(message->ptr);
 
@@ -82,9 +192,9 @@ std::vector<ROSMessagePtr> ROSMessage::convert<device::SensorDataType::PointsXYZ
         const float* dst_ptr_end =
                 dst_ptr + (size_t)(single_return_point_number) * (sizeof(pcl::PointXYZI) / sizeof(float));
 
-        using Pt = device::data::PointsXYZI::PointXYZI;
+        using Pt = device::data::Points::PointXYZCIDPAT;
         for (; dst_ptr < dst_ptr_end;) {
-            memcpy(dst_ptr, src_ptr, sizeof(Pt));
+            memcpy(dst_ptr, src_ptr, std::min(sizeof(Pt), sizeof(pcl::PointXYZI)));
             dst_ptr += sizeof(pcl::PointXYZI) / sizeof(float);
             src_ptr += sizeof(Pt) / sizeof(float);
         }

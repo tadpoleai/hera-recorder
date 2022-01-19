@@ -2,24 +2,15 @@
 .home
   AcquisitionControl
 
-  van-cell(
-    title="数据监视"
-    :is-link="started"
-    @click="onClickMonitorLink"
-  )
+  van-cell(title='数据监视', :is-link='started', @click='onClickMonitorLink')
 
   AcquisitionSetting
 
-  van-cell-group(
-    title="数据管理"
-  )
+  van-cell-group(title='数据管理')
     DiskUsage
 
-    van-cell(
-      @click="onClickStorageLink"
-      is-link
-    ) 机内数据
-  
+    van-cell(@click='onClickStorageLink', is-link) 机内数据
+
   Preference
 </template>
 

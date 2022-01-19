@@ -1,9 +1,5 @@
 <template lang="pug">
-  van-icon.checked-icon(
-    :name="iconName"
-    size="large"
-    :color="iconColor"
-  )
+van-icon.checked-icon(:name='iconName', size='large', :color='iconColor')
 </template>
 
 <script lang="ts">
@@ -24,6 +20,7 @@ export default class CheckedIcon extends Vue {
 </script>
 
 <style lang="stylus">
-.checked-icon
-  margin-left: 2px
+.checked-icon {
+  margin-left: 2px;
+}
 </style>

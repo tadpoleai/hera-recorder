@@ -90,9 +90,9 @@ void Bridge::spin()
         }
 
         switch (data->sensor_data_type) {
-        case device::SensorDataType::PointsXYZI:
+        case device::SensorDataType::Points:
             if (int32_t(data->sensor_id) == lidar_sensor_id_ || lidar_sensor_id_ < 0) {
-                auto data_impl = reinterpret_cast<device::data::PointsXYZI*>(data.get());
+                auto data_impl = reinterpret_cast<device::data::Points*>(data.get());
                 lidar_handler(data_impl);
             }
             break;
@@ -108,7 +108,7 @@ void Bridge::spin()
     }
 }
 
-void Bridge::lidar_handler(const device::data::PointsXYZI* const data)
+void Bridge::lidar_handler(const device::data::Points* const data)
 {
     const bool ccw = (data->meta.rotation_direction > 0);
     for (size_t i = 0; i < data->point_number; ++i) {

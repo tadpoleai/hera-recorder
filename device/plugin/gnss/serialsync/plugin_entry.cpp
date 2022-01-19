@@ -11,8 +11,8 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "data/gnss_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
@@ -43,7 +43,9 @@ namespace serialsync {
 ///
 /// @see <a href="https://www.gpsinformation.org/dale/nmea.htm" target="_blank"
 /// rel="noopener noreferrer">NMEA data</a>
-HERA_PLUGIN_DEFINE_START(1)
+HERA_PLUGIN_DEFINE_START("gnss/serialsync", 0x0301, 1)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -79,8 +81,6 @@ time::Timestamp shiftation_timestamp_;
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(GnssSerialsync, "gnss/serialsync")
 
 #ifdef WITH_DRIVER
 HeraErrno DevicePlugin::connect()
@@ -159,7 +159,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
         }
         // Only accept NMEA::GPGGA / GNGGA
         /// @see https://www.gpsinformation.org/dale/nmea.htm#GGA
-        if (token != "$GPGGA" && token != "$GNGGA") {
+        if (!getline(nmea, token, ',') || token.size() < 6) {
             throw std::runtime_error("got non-gga sentence '" + token + "'");
         }
 
@@ -169,7 +169,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
         }
 
         // Valid time info (No signal from satellites)
-        if (token.size() != 0) {
+        if (token.size() < 6) {
             // Tokenize GPTS
             auto hours = std::stoull(token.substr(0, 2));
             auto minutes = std::stoull(token.substr(2, 2));
@@ -224,11 +224,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
     // Total length of device data
     auto nmea_sentence_length = nmea_sentence_str->size();
     auto length = sizeof(SerialSyncNmea) + nmea_sentence_length;
-    auto data = data::DeviceData::create(length,
-                                         id_,
-                                         DeviceVendorType::GnssSerialsync,
-                                         DeviceDataType::GnssSerialsyncNmea,
-                                         sequence_++);
+    auto data = SerialSyncNmea::create(length, id_, sequence_++);
     auto derived_data = static_cast<SerialSyncNmea*>(data.get());
 
     // Copy data
@@ -250,7 +246,7 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (!storage_data->is_type(DeviceDataType::GnssSerialsyncNmea)) {
+    if (!storage_data->is_type(SerialSyncNmea::TypeVal)) {
         return data::SensorData::broken_data();
     }
 
@@ -271,9 +267,10 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
     for (auto i = 1; i < 9; ++i) {
         navsatfix_sensor_data->position_covariance[i] = 0;
     }
-    navsatfix_sensor_data->latitude = NAN;
-    navsatfix_sensor_data->longitude = NAN;
-    navsatfix_sensor_data->altitude = NAN;
+    navsatfix_sensor_data->latitude = 0;
+    navsatfix_sensor_data->longitude = 0;
+    navsatfix_sensor_data->altitude = 0;
+    navsatfix_sensor_data->num_satellites = 0;
 
     // Return if time::Timestamp is not valid
     if (raw_data->data.timestamp_valid == 0) {
@@ -286,6 +283,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         double longitude = NAN;
         double altitude = NAN;
         auto fixed = data::NavSatFix::StatusType::NO_Fix;
+        int32_t num_satellites = 0;
 
         // Tokenize nmea sentence
         std::string token;
@@ -294,7 +292,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         std::stringstream nmea(nmea_sentence_str);
 
         // Sentence Identifier (Token 1)
-        if (!getline(nmea, token, ',')) {
+        if (!getline(nmea, token, ',') || token.size() < 6) {
             throw std::runtime_error("Can not tokenize token 1");
         }
         // Only accept NMEA::GPGGA / GNGGA
@@ -309,7 +307,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         }
 
         // Valid time info
-        if (token.size() == 0) {
+        if (token.size() < 6) {
             throw std::runtime_error("Can not tokenize gpts '" + token + "'");
         }
 
@@ -360,6 +358,9 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         if (!getline(nmea, token, ',')) {
             throw std::runtime_error("Can not tokenize token 3");
         }
+        if (token.size() < 4) {
+            throw std::runtime_error("Invalid latitude number '" + token + "'");
+        }
 
         auto lat_degree = std::stoull(token.substr(0, 2));
         auto lat_minute = std::stod(token.substr(2));
@@ -386,6 +387,9 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         // Longitude (Token 5)
         if (!getline(nmea, token, ',')) {
             throw std::runtime_error("Can not tokenize token 5");
+        }
+        if (token.size() < 5) {
+            throw std::runtime_error("Invalid longitude number '" + token + "'");
         }
         auto lon_degree = std::stoull(token.substr(0, 3));
         auto lon_minute = std::stod(token.substr(3));
@@ -418,10 +422,16 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         }
         switch (token[0]) {
         case '4':
-            fixed = data::NavSatFix::StatusType::FIX;
+            fixed = data::NavSatFix::StatusType::GBAS_FIX;
+            break;
+        case '5':
+            fixed = data::NavSatFix::StatusType::SBAS_Fix;
+            break;
+        case '0':
+            fixed = data::NavSatFix::StatusType::NO_Fix;
             break;
         default:
-            fixed = data::NavSatFix::StatusType::NO_Fix;
+            fixed = data::NavSatFix::StatusType::FIX;
             break;
         }
 
@@ -429,6 +439,10 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         if (!getline(nmea, token, ',')) {
             throw std::runtime_error("Can not tokenize token 8");
         }
+        if (token.size() < 1) {
+            throw std::runtime_error("Invalid num satellites '" + token + "'");
+        }
+        num_satellites = std::stol(token);
 
         // Horizontal dilution of precision (Token 9)
         if (!getline(nmea, token, ',')) {
@@ -436,7 +450,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         }
 
         // Antenna altitude above/below mean sea level (Token 10)
-        if (!getline(nmea, token, ',')) {
+        if (!getline(nmea, token, ',') || token.size() < 1) {
             throw std::runtime_error("Can not tokenize token 10");
         }
         altitude = std::stod(token);
@@ -450,7 +464,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         }
 
         // Undulation - the relationship between the geoid and the WGS84 ellipsoid (Token 12)
-        if (!getline(nmea, token, ',')) {
+        if (!getline(nmea, token, ',') || token.size() < 1) {
             throw std::runtime_error("Can not tokenize token 12");
         }
         altitude += std::stod(token);
@@ -499,9 +513,10 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         navsatfix_sensor_data->longitude = longitude;
         navsatfix_sensor_data->altitude = altitude;
         navsatfix_sensor_data->status.status = fixed;
+        navsatfix_sensor_data->num_satellites = num_satellites;
     } catch (std::exception& err) {
-        log::warn << "SerialSync: convert(), " << err.what() << log::endl;
-        return data::SensorData::broken_data();
+        // log::warn << "SerialSync: convert(), " << err.what() << log::endl;
+        return sensor_data;
     }
 
     return sensor_data;

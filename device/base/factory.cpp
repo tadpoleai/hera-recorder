@@ -113,6 +113,26 @@ std::string Factory::plugin_description(const std::string& vendor_type)
     return R"({"comment":"", "label": "", "parameters": []})";
 }
 
+std::string Factory::plugin_param_plain_rules(const std::string& vendor_type)
+{
+    if (!is_loaded) {
+        load_plugins();
+    }
+
+    if (!check_type(vendor_type)) {
+        log::warn << "Factory::type_parameters: Unknown vendor type: " << vendor_type << log::endl;
+        return "\n";
+    }
+
+    for (const auto& device_handle : device_handles) {
+        if (vendor_type == device_handle.type_name) {
+            return device_handle.param_plain_rules;
+        }
+    }
+
+    return "\n";
+}
+
 DevicePtr Factory::create(const uint32_t id,
                           const std::string& vendor_type,
                           const std::string& name,
@@ -161,6 +181,26 @@ data::SensorDataPtr Factory::convert(const data::DeviceDataPtr& data, const Para
     log::warn << "Factory::convert: Unknown vendor type :" << static_cast<uint16_t>(data->get_vendor_type())
               << log::endl;
     return data::SensorData::broken_data();
+}
+
+std::unique_ptr<ParametersInterface> Factory::create_param(const std::string& vendor_type)
+{
+    if (!is_loaded) {
+        load_plugins();
+    }
+
+    for (const auto& device_handle : device_handles) {
+        if (vendor_type == device_handle.type_name) {
+            if (device_handle.create_param) {
+                return std::unique_ptr<ParametersInterface>(device_handle.create_param());
+            } else {
+                log::warn << "Factory::create_param: driver is not loaded" << log::endl;
+            }
+        }
+    }
+
+    log::warn << "Factory::create_param: Unknown vendor type: " << vendor_type << log::endl;
+    return nullptr;
 }
 
 }  // namespace device

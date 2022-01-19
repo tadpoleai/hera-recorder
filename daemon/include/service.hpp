@@ -15,6 +15,7 @@
 #include "daemon/rpc/gen-cpp/Service.h"
 #include "device/include/include.hpp"
 #include "frequecy_calculator.hpp"
+#include "network/network.hpp"
 #include "serialize.hpp"
 #include "storage/include/upload.hpp"
 
@@ -39,7 +40,8 @@ public:
         started_(false),
         recording_(false),
         start_time_sec_(0),
-        remote_servers_(config.upload_servers)
+        remote_servers_(config.upload_servers),
+        network_(config.network_exclude_interfaces)
     {
         log::open_aux(&log_messages_);
         generate_meta();
@@ -83,6 +85,17 @@ public:
     virtual void getStorage(std::vector<StorageRecordFile>& _return) override;
     virtual void deleteStorage(std::vector<StorageRecordFile>& _return, const std::vector<std::string>& names) override;
 
+    virtual void createNetworkInterface(std::vector<NetworkInterface>& _return,
+                                        const std::string& ifName,
+                                        const std::string& addr,
+                                        const std::string& netmask) override;
+    virtual void retrieveNetworkInterface(std::vector<NetworkInterface>& _return) override;
+    virtual void updateNetworkInterface(std::vector<NetworkInterface>& _return,
+                                        const std::string& ifName,
+                                        const std::string& addr,
+                                        const std::string& netmask) override;
+    virtual void deleteNetworkInterface(std::vector<NetworkInterface>& _return, const std::string& ifName) override;
+
     virtual void getUploadServers(std::vector<std::string>& _return) override;
     virtual void getUploadProcesses(std::vector<UploadProcess>& _return) override;
     virtual void getLocalDisks(std::vector<LocalDisk>& _return) override;
@@ -110,6 +123,8 @@ private:
     void append_storage_status(std::vector<StorageRecordFile>& _return);
 
     void append_upload_processes(std::vector<UploadProcess>& _return);
+
+    void append_network_interfaces(std::vector<NetworkInterface>& _return, const std::vector<Interface>& input);
 
 private:
     const std::string DataDirectory_;
@@ -148,6 +163,9 @@ private:
 
     // Log
     std::vector<log::impl::LogString> log_messages_;
+
+    // Network
+    Network network_;
 };
 
 }  // namespace daemon

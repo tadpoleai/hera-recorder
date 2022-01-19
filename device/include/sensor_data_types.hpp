@@ -38,13 +38,14 @@ enum class SensorDataType : uint16_t {
     SENSOR_DATA_TYPE_DEFINE(DummyImage,
                             0x0102)  ///< A dummy message, no correspond ROS Message, only to debug image show
     SENSOR_DATA_TYPE_DEFINE(ImuMagneticField, 0x0201)         ///< ROS Imu and MagneticField
+    SENSOR_DATA_TYPE_DEFINE(ImuComposed, 0x0202)              ///< Composed Imu Messages -> ROS Imu and MagneticField
     SENSOR_DATA_TYPE_DEFINE(NavSatFix, 0x0301)                ///< ROS NavSatFix
     SENSOR_DATA_TYPE_DEFINE(InsBestPosition, 0x0381)          ///< Ins Best Position -> ROS NavSatFix
     SENSOR_DATA_TYPE_DEFINE(InsCorrectedImu, 0x0382)          ///< Ins CorrectImu -> ROS Imu
     SENSOR_DATA_TYPE_DEFINE(InsInsPosition, 0x0383)           ///< Ins Position -> ROS NavSatFix
     SENSOR_DATA_TYPE_DEFINE(CompressedImage, 0x0401)          ///< ROS CompressedImage
     SENSOR_DATA_TYPE_DEFINE(Image, 0x0402)                    ///< ROS Image, some minor format conversion needed
-    SENSOR_DATA_TYPE_DEFINE(PointsXYZI, 0x0501)               ///< ROS PointCloud2, some PCL function needed
+    SENSOR_DATA_TYPE_DEFINE(Points, 0x0501)                   ///< ROS PointCloud2, some PCL function needed
     SENSOR_DATA_TYPE_DEFINE(LaserScan, 0x0502)                ///< ROS LaserScan
     SENSOR_DATA_TYPE_DEFINE(OdometryFrontWheelSpeed, 0x0601)  ///< For Odometry
     SENSOR_DATA_TYPE_DEFINE(OdometryRearWheelSpeed, 0x0602)   ///< For Odometry

@@ -28,6 +28,34 @@ public:
     double magnetic_field[3];       ///< array of 3-axis magnetic field, in Tesla, right-handed
 };
 
+///
+/// @brief SensorData for Gyro, Acc, MagneticField and Filtered all data composed
+///
+class ImuComposed final : public SensorData {
+public:
+    int8_t have_temperature;
+    double temperature;  ///< temperature in Degree Celsius
+
+    int8_t have_baro_pressure;
+    double baro_pressure;  ///< baro pressure in Pascals.
+
+    int8_t have_angular_velocity;
+    double angular_velocity[3];  ///< array of 3-axis angular velocity, in rad/s, CCW, right-handed
+
+    int8_t have_linear_acceleration;
+    double linear_acceleration[3];  ///< array of 3-axis linear acceleration, in m/s^2, right-handed
+
+    int8_t have_magnetic_field;
+    double magnetic_field[3];  ///< array of 3-axis magnetic field, in Tesla, right-handed
+
+    int8_t have_orientation;
+    double orientation[4];  ///< orientation in quaternion form (xyzw), right-handed
+
+    int8_t have_free_linear_acceleration;
+    double free_linear_acceleration[3];  ///< array of 3-axis free (without gravity) linear acceleration, in m/s^2,
+                                         ///< right-handed
+};
+
 #pragma pack(pop)
 
 }  // namespace data

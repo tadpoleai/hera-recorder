@@ -95,7 +95,7 @@ int main(int argc, char** argv)
     std::shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
     g_server_ptr = new TThreadedServer(processor, serverTransport, transportFactory, protocolFactory);
 
-    g_broadcaster_ptr = new daemon::Broadcaster(config.name, config.heartbeat_interfaces, config.heartbeat_mode);
+    g_broadcaster_ptr = new daemon::Broadcaster(config.name, config.network_exclude_interfaces, false);
 
     log::info << "HeraMain: Daemon Started" << log::endl;
     g_server_ptr->serve();

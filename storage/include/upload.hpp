@@ -123,11 +123,19 @@ public:
     virtual void terminate(){};
 
     ///
+    /// @brief Get if transmission is waiting
+    ///
+    inline bool waiting() const noexcept
+    {
+        return status_.stage == Stage::Inited;
+    }
+
+    ///
     /// @brief Get if transmission is running
     ///
     inline bool running() const noexcept
     {
-        return status_.stage == Stage::InProgress || status_.stage == Stage::Inited;
+        return status_.stage == Stage::InProgress;
     }
 
     ///
@@ -186,9 +194,12 @@ public:
     static void load_plugins(const std::string& plugins_path = "/usr/local/lib/hera/plugin");
 
 private:
-    static std::vector<PluginEntry> plugin_entries;  ///< Registered children
-    static std::mutex load_mutex;
-    static bool is_loaded;
+    static std::vector<PluginEntry> plugin_entries_;  ///< Registered children
+    static std::mutex load_mutex_;
+    static bool is_loaded_;
+
+protected:
+    static std::mutex upload_mutex_;
 };
 
 }  // namespace upload

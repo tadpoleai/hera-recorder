@@ -32,10 +32,18 @@ public:
     /// type and the last time differential corrections were received.  A
     /// fix is valid when status >= STATUS_FIX.
     ///
-    /// @note The definition above is defined by ROS.
+    /// @note (deprecated)
+    /// The definition above is defined by ROS.
     /// due to compatibility issues, only 'FIX' and 'NO_Fix' is used in Wayz's
     /// backend codes(@gaia)_. so set this to 'FIX' when result is valid, otherwise,
     /// set to 'NO_Fix'
+    ///
+    /// @note Update
+    /// Since version 4.6.5, the StatusType should be interpreted as follow
+    /// NO_Fix = No solution
+    /// FIX = Single Point / DGPS
+    /// SBAS_Fix = Floating Solution of RTK-GPS
+    /// GBAS_Fix = Fixed Solution of RTK-GPS
     ///
     enum class StatusType : int8_t {
         NO_Fix = -1,   ///< unable to fix position
@@ -76,11 +84,13 @@ public:
 
     ///
     /// @brief Latitude [degrees]. Positive is north of equator; negative is south.
+    /// (quiet NaN not available).
     ///
     double latitude;
 
     ///
     /// @brief Longitude [degrees]. Positive is east of prime meridian; negative is west.
+    /// (quiet NaN not available).
     ///
     double longitude;
 
@@ -106,6 +116,8 @@ public:
     /// along the diagonal. If only Dilution of Precision is available,
     // estimate an approximate covariance from that.
     PositionCovarianceType position_covariance_type;
+
+    int32_t num_satellites;  ///< Number of satellites in use
 };
 
 #pragma pack(pop)

@@ -1,28 +1,13 @@
 <template lang="pug">
-van-cell-group
-  div(slot="title" style="display: flex; justify-content: space-between;")
-    span 偏好设置
-    van-icon(
-      type="info"
-      :name="show ? 'arrow-up' : 'arrow-down'"
-      size="large"
-      @click="show = !show"
+van-cell-group(title='其他设置')
+  van-cell(key='1', title='快捷操作按钮', center)
+    van-switch(
+      slot='right-icon',
+      :value='useFab',
+      @input='setPreference({ key: "useFab", value: $event })',
+      size='24px'
     )
-  transition(name="van-fade")
-    template(
-      v-if="show"
-    )
-      van-cell(
-        title="快捷操作按钮"
-        center
-      )
-        van-switch(
-          slot="right-icon"
-          :value="useFab"
-          @input="setPreference({ key: 'useFab', value: $event })"
-          size="24px"
-        )
- 
+  van-cell(key='2', title='网络设置', is-link, @click='onClickNetwork')
 </template>
 
 <script lang="ts">
@@ -40,6 +25,10 @@ export default class Preference extends Vue {
   @PreferenceModule.Mutation setPreference;
 
   show = false;
+
+  onClickNetwork() {
+    this.$router.push('network');
+  }
 }
 </script>
 

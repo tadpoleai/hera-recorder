@@ -11,8 +11,8 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "data/ins_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
@@ -41,7 +41,9 @@ namespace novatelspan {
 /// time-shiftation between auxiliary GNSS-Device and "Sync Board" is calculated by MCU on "Sync
 /// Board", and then send by serial_transport with msgtype 1.
 ///
-HERA_PLUGIN_DEFINE_START(30)
+HERA_PLUGIN_DEFINE_START("ins/novatelspan", 0x0381, 30)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -77,8 +79,6 @@ time::Timestamp shiftation_timestamp_;
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(InsNovatelSpan, "ins/novatelspan")
 
 #ifdef WITH_DRIVER
 
@@ -157,11 +157,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
     auto frame_data_length = binary_framed_data->size();
     auto length =
             sizeof(NovatelSpanBinaryData) - sizeof(NovatelSpanBinaryData::NovatelBinaryStruct) + frame_data_length;
-    auto data = data::DeviceData::create(length,
-                                         id_,
-                                         DeviceVendorType::InsNovatelSpan,
-                                         DeviceDataType::InsNovatelSpanBinaryData,
-                                         sequence_++);
+    auto data = NovatelSpanBinaryData::create(length, id_, sequence_++);
     auto derived_data = static_cast<NovatelSpanBinaryData*>(data.get());
 
     derived_data->shiftation_timestamp = shiftation_timestamp_;
@@ -182,7 +178,7 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (!storage_data->is_type(DeviceDataType::InsNovatelSpanBinaryData)) {
+    if (!storage_data->is_type(NovatelSpanBinaryData::TypeVal)) {
         return data::SensorData::broken_data();
     }
 

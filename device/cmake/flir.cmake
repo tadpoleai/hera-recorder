@@ -9,7 +9,7 @@ if(ARCHITECTURE STREQUAL "arm64")
 endif()
 
 if(NOT PLUGIN_EXIT)
-  find_package(OpenCV 3.4 REQUIRED)
+  find_package(OpenCV)
   if(OpenCV_FOUND)
     message_plugin("OpenCV found, version = ${OpenCV_VERSION}")
 

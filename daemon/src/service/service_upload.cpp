@@ -229,6 +229,7 @@ void Service::append_upload_processes(std::vector<UploadProcess>& result)
     result.reserve(upload_managers_.size());
     for (const auto& m : upload_managers_) {
         UploadProcess p;
+        p.waiting = m->waiting();
         p.running = m->running();
         p.errored = m->errored();
         p.reason = m->get_status().error_reason;

@@ -123,6 +123,22 @@ struct DiskUsageStatus {
     2: required double diskTotalSpace;
 }
 
+// Network
+struct SubInterface {
+    1: required string ifName;
+    2: required string address;
+    3: required string netmask;
+    4: required string broadcast;
+}
+
+struct NetworkInterface {
+    1: required string ifName;
+    2: required string address;
+    3: required string netmask;
+    4: required string broadcast;
+    5: required list<SubInterface> children;
+}
+
 // Uploads
 enum UploadOperationType {
     Start = 0,
@@ -142,6 +158,8 @@ struct UploadRequest {
 struct UploadProcess {
     1: required bool running;
     2: required bool errored;
+    5: required bool waiting;
+
     3: required string reason;
 
     10: UploadRequest request;
@@ -200,6 +218,12 @@ service Service
     // Storage
     list<StorageRecordFile> getStorage();
     list<StorageRecordFile> deleteStorage(1: list<string> names);
+
+    // Network
+    list<NetworkInterface> createNetworkInterface(1: string ifBaseName, 2: string address, 3: string netmask);
+    list<NetworkInterface> retrieveNetworkInterface();
+    list<NetworkInterface> updateNetworkInterface(1: string ifChildName, 2: string address, 3: string netmask);
+    list<NetworkInterface> deleteNetworkInterface(1: string ifChildName);
 
     // Upload
     list<string> getUploadServers();

@@ -43,3 +43,26 @@ immutable enum ReturnType = Strongest; options Strongest, Last, Dual
 # --- 在该选项下, 激光雷达数据包报告的时分秒将不被采用,
 # --- 而是采用数据包到达工控机时的接受时间作为传感器时间;
 immutable enum SyncType = Full; options Full, Local, Disabled
+
+# 累计帧
+# 是否将多帧激光点累计
+convert boolean Accumulate = false;
+
+# 分圈方式
+# 该选项决定激光累计一帧时的划分方式
+# Options:
+# - Angle: 按角度划分
+# --- 按角度过0划分出一整圈
+# - Time: 按时间划分
+# --- 按一定时间划分出一整圈
+convert enum SectionBase = Angle; options Angle, Time
+
+# 分圈时间 
+# 当分圈方式为按时间时, 按多少时间划分一帧
+convert real SectionTime = 0.1; range 0.05, 1.0, 0.01
+
+# 输出点云格式
+# Options:
+# - XYZI: (Default) XYZI格式，包含坐标和Intensity
+# - XYZIRT: XYZIRT 格式，包含坐标，Intensity，Ring, Time(offset)
+convert enum PointFormat = XYZI; options XYZI, XYZIRT

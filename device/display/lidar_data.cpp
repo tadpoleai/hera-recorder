@@ -70,8 +70,8 @@ private:
 };
 
 template<>
-SingleDisplayData SingleDisplayData::parse<SensorDataType::PointsXYZI>(std::vector<SensorDataPtr>&& sensor_datas,
-                                                                       const bool is_detail)
+SingleDisplayData SingleDisplayData::parse<SensorDataType::Points>(std::vector<SensorDataPtr>&& sensor_datas,
+                                                                   const bool is_detail)
 {
     static constexpr auto CanvasPixelSize = 600;
     static constexpr auto CanvasPixelCenter = CanvasPixelSize / 2;
@@ -86,12 +86,12 @@ SingleDisplayData SingleDisplayData::parse<SensorDataType::PointsXYZI>(std::vect
     auto render_history = std::unique_ptr<float[]>(new float[CanvasPixelNum]);
     memset(canvas.get(), BgBrightness, CanvasDataSize);
     for (auto&& data : sensor_datas) {
-        if (data->sensor_data_type != SensorDataType::PointsXYZI) {
+        if (data->sensor_data_type != SensorDataType::Points) {
             continue;
         }
 
-        auto data_impl = reinterpret_cast<data::PointsXYZI*>(data.get());
-        bool is_dual = (data_impl->meta.return_type == data::PointsXYZI::ReturnType::Dual);
+        auto data_impl = reinterpret_cast<data::Points*>(data.get());
+        bool is_dual = (data_impl->meta.return_type == data::Points::ReturnType::Dual);
         if (!is_dual) {
             for (size_t i = 0; i < data_impl->point_number; ++i) {
                 auto* pt = &data_impl->points[i];

@@ -1,14 +1,13 @@
 <template lang="pug">
 div
   Parameter(
-    v-for="parameterRule in activeParameterRules"
-    :rule="parameterRule"
-    :valueString="valuesMap[parameterRule.name]"
-    :isAsync="isAdjustParameter"
-    @asyncInput="asyncInput({type: parameterRule.name, value: $event})"
-    @syncInput="syncInput({type: parameterRule.name, value: $event})"
+    v-for='parameterRule in activeParameterRules',
+    :rule='parameterRule',
+    :valueString='valuesMap[parameterRule.name]',
+    :isAsync='isAdjustParameter',
+    @asyncInput='asyncInput({ type: parameterRule.name, value: $event })',
+    @syncInput='syncInput({ type: parameterRule.name, value: $event })'
   )
-
 </template>
 
 <script lang="ts">

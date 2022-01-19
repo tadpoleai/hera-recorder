@@ -1,18 +1,18 @@
-/// 
+///
 /// @file plugin_entry.cpp
 /// @author lyu zheming (zheming.lyu@wayz.ai)
-/// @brief 
+/// @brief
 /// @date 2020-08-19
-/// 
+///
 /// @copyright Copyright 2018 Wayz.ai. All Rights Reserved.
-/// 
+///
 
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
 
+#include "data/dummy_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 namespace wayz {
@@ -24,15 +24,15 @@ namespace foobar {
 ///
 /// @brief A dummy device foobar, for sample, Derived from Device
 ///
-HERA_PLUGIN_DEFINE_START(5)
+HERA_PLUGIN_DEFINE_START("dummy/foobar", 0x0101, 5)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(DummyFoobar, "dummy/foobar")
 
 #ifdef WITH_DRIVER
 
@@ -75,11 +75,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
     auto string_length = string_message.size();
     // Total length of device data
     auto length = sizeof(FoobarData) + string_length;
-    auto data = data::DeviceData::create(length,
-                                         id_,
-                                         DeviceVendorType::DummyFoobar,
-                                         DeviceDataType::DummyFoobarData,
-                                         sequence_++);
+    auto data = FoobarData::create(length, id_, sequence_++);
     auto derived_data = static_cast<FoobarData*>(data.get());
 
     // Set non-buf-typed fields
@@ -113,7 +109,7 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameter)
 {
-    if (!storage_data->is_type(DeviceDataType::DummyFoobarData)) {
+    if (!storage_data->is_type(FoobarData::TypeVal)) {
         return data::SensorData::broken_data();
     }
 

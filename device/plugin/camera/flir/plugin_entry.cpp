@@ -14,8 +14,8 @@
 
 #include <common/include/logger/logger.hpp>
 
+#include "data/camera_data.hpp"
 #include "plugin_common.hpp"
-#include "plugin_data.hpp"
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
@@ -37,7 +37,9 @@ namespace flir {
 ///
 /// @brief Flir (former PointGrey) Camera, Derived from Device
 ///
-HERA_PLUGIN_DEFINE_START(1)
+HERA_PLUGIN_DEFINE_START("camera/flir", 0x0401, 1)
+
+#include "plugin_data.hpp"
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
@@ -45,6 +47,8 @@ HERA_PLUGIN_DEFINE_FUNCTIONS
 HeraErrno handle_flir_error(const FlyCapture2::Error& error, const std::string& extra = {});
 
 HeraErrno set_property(FlyCapture2::PropertyType type, bool auto_set, float value);
+
+HeraErrno set_white_balance(bool auto_set, int blue, int red);
 
 HeraErrno set_range_auto_exposure();
 
@@ -60,8 +64,8 @@ HeraErrno save_cc_parameter(const driver::ColorCorrectionParameter& ccm);
 
 HeraErrno load_cc_parameter(driver::ColorCorrectionParameter& cc_param);
 
-static constexpr int32_t GrabTimeoutMs_ = 200;  ///< Timeout for grabbing an image data
-static constexpr int32_t NumBuffers_ = 5;       ///< Size of image buffer in FLIR's SDK
+static constexpr int32_t GrabTimeoutMs_ = 300;  ///< Timeout for grabbing an image data
+static constexpr int32_t NumBuffers_ = 30;      ///< Size of image buffer in FLIR's SDK
 
 static constexpr double ExposureGranularity = 1;  ///< @todo
 static constexpr double ShutterTimeGranularity23S6CMode7 = 0.027506;
@@ -79,8 +83,6 @@ std::unique_ptr<driver::ColorCorrecterBGR16> correcter_{nullptr};  ///< Color Co
 #endif
 
 HERA_PLUGIN_DEFINE_END
-
-HERA_PLUGIN_EXPORT(CameraFlir, "camera/flir");
 
 #ifdef WITH_DRIVER
 
@@ -147,6 +149,7 @@ HeraErrno DevicePlugin::connect()
         mode = FlyCapture2::MODE_4;
         break;
     }
+
     switch (local_parameters_.get_Format()) {
     case Format::MONO8:
         pixel_format = FlyCapture2::PIXEL_FORMAT_MONO8;
@@ -159,6 +162,18 @@ HeraErrno DevicePlugin::connect()
         break;
     case Format::RAW12:
         pixel_format = FlyCapture2::PIXEL_FORMAT_RAW12;
+        break;
+    case Format::YUV411:
+        pixel_format = FlyCapture2::PIXEL_FORMAT_411YUV8;
+        break;
+    case Format::YUV422:
+        pixel_format = FlyCapture2::PIXEL_FORMAT_422YUV8;
+        break;
+    case Format::YUV444:
+        pixel_format = FlyCapture2::PIXEL_FORMAT_444YUV8;
+        break;
+    case Format::RGB8:
+        pixel_format = FlyCapture2::PIXEL_FORMAT_RGB8;
         break;
     }
 
@@ -251,6 +266,15 @@ HeraErrno DevicePlugin::connect()
 
     // Set Gain
     set_property(FlyCapture2::GAIN, local_parameters_.get_AutoGain(), local_parameters_.get_Gain());
+
+    // Set Gamma
+    set_property(FlyCapture2::GAMMA, false, local_parameters_.get_Gamma());
+
+    // Set Brightness
+    set_property(FlyCapture2::BRIGHTNESS, false, local_parameters_.get_Brightness());
+
+    // Set WB
+    set_white_balance(local_parameters_.get_AutoWB(), local_parameters_.get_WBBlue(), local_parameters_.get_WBRed());
 
     // Set AutoExposureRange
     set_range_auto_exposure();
@@ -366,16 +390,11 @@ data::DeviceDataPtr DevicePlugin::fetch()
         auto raw_image_size = raw_image.GetDataSize();
         // Total length of device data
         auto length = sizeof(FlirRawImage) + raw_image_size;
-        auto data = data::DeviceData::create(length,
-                                             id_,
-                                             DeviceVendorType::CameraFlir,
-                                             DeviceDataType::CameraFlirRawImage,
-                                             sequence_++);
+        auto data = FlirRawImage::create(length, id_, sequence_++);
         auto derived_data = static_cast<FlirRawImage*>(data.get());
 
         // Copy data
         derived_data->timestamp_intrinsic_ns = timestamp_intrinsic_ns;
-
         derived_data->image_meta.rows = rows;
         derived_data->image_meta.cols = cols;
         derived_data->image_meta.stride = raw_image.GetStride();
@@ -391,54 +410,6 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
         return data;
     }
-
-    // auto t0 = time::Timestamp::now();
-    // Convert to 16bpp and Debayer
-    FlyCapture2::Image converted_image;
-    error = raw_image.Convert(FlyCapture2::PIXEL_FORMAT_RAW16, &converted_image);
-    if (error != FlyCapture2::PGRERROR_OK) {
-        log::warn << "Flir: " << get_name() << " can not convert, data abandoned" << log::endl;
-        return nullptr;
-    }
-
-    int32_t debayer_code;
-    switch (raw_image.GetBayerTileFormat()) {
-    case FlyCapture2::RGGB:
-        debayer_code = cv::COLOR_BayerRG2RGB_EA;
-        break;
-    case FlyCapture2::GRBG:
-        debayer_code = cv::COLOR_BayerGR2RGB_EA;
-        break;
-    case FlyCapture2::GBRG:
-        debayer_code = cv::COLOR_BayerGB2RGB_EA;
-        break;
-    case FlyCapture2::BGGR:
-        debayer_code = cv::COLOR_BayerBG2RGB_EA;
-        break;
-    default:
-        debayer_code = cv::COLOR_BayerRG2RGB_EA;
-        break;
-    }
-    cv::Mat mat_bayer(rows, cols, CV_16UC1, converted_image.GetData());
-    cv::Mat mat_rgb16(rows, cols, CV_16UC3);
-    cv::cvtColor(mat_bayer, mat_rgb16, debayer_code);
-
-    // auto t1 = time::Timestamp::now();
-    // Do color correction
-    const size_t ImagePixelNum = rows * cols;
-    uint8_t* corrected_data = new uint8_t[3 * ImagePixelNum];
-    correcter_->process(mat_rgb16.data, corrected_data, ImagePixelNum);
-
-    // auto t2 = time::Timestamp::now();
-    // Start Compression
-    auto tj_instance = tjInitCompress();
-    if (!tj_instance) {
-        log::warn << "Flir: " << get_name() << " can not compress, data abandoned" << log::endl;
-        delete[] corrected_data;
-        return nullptr;
-    }
-    uint8_t* jpeg_image = nullptr;
-    size_t jpeg_image_size = 0;
 
     auto tjsamp = TJSAMP_420;
     switch (local_parameters_.get_JpegSamp()) {
@@ -462,44 +433,168 @@ data::DeviceDataPtr DevicePlugin::fetch()
         break;
     }
 
-    /// @todo Check source image format
-    tjCompress2(tj_instance,
-                corrected_data,
-                cols,
-                0,
-                rows,
-                TJPF_BGR,                             // Source Image Format
-                &jpeg_image,                          // Output Image Pointer
-                &jpeg_image_size,                     // Output Image Size
-                tjsamp,                               // YUV Binning
-                local_parameters_.get_JpegQuality(),  // Quality
-                TJFLAG_FASTDCT);
+    // Convert to 16bpp and Debayer
+    if (local_parameters_.get_Format() == +Format::RAW8 || local_parameters_.get_Format() == +Format::RAW12) {
+        FlyCapture2::Image converted_image;
+        error = raw_image.Convert(FlyCapture2::PIXEL_FORMAT_RAW16, &converted_image);
+        if (error != FlyCapture2::PGRERROR_OK) {
+            log::warn << "Flir: " << get_name() << " can not convert to raw16, data abandoned" << log::endl;
+            return nullptr;
+        }
 
-    // Total length of device data
-    auto length = sizeof(FlirCompressedImage) + jpeg_image_size;
-    auto data = data::DeviceData::create(length,
-                                         id_,
-                                         DeviceVendorType::CameraFlir,
-                                         DeviceDataType::CameraFlirCompressedImage,
-                                         sequence_++);
-    auto derived_data = static_cast<FlirCompressedImage*>(data.get());
+        int32_t debayer_code;
+        switch (raw_image.GetBayerTileFormat()) {
+        case FlyCapture2::RGGB:
+            debayer_code = cv::COLOR_BayerRG2RGB_EA;
+            break;
+        case FlyCapture2::GRBG:
+            debayer_code = cv::COLOR_BayerGR2RGB_EA;
+            break;
+        case FlyCapture2::GBRG:
+            debayer_code = cv::COLOR_BayerGB2RGB_EA;
+            break;
+        case FlyCapture2::BGGR:
+            debayer_code = cv::COLOR_BayerBG2RGB_EA;
+            break;
+        default:
+            debayer_code = cv::COLOR_BayerRG2RGB_EA;
+            break;
+        }
+        cv::Mat mat_bayer(rows, cols, CV_16UC1, converted_image.GetData());
+        cv::Mat mat_rgb16(rows, cols, CV_16UC3);
+        cv::cvtColor(mat_bayer, mat_rgb16, debayer_code);
 
-    // Copy data
-    derived_data->timestamp_intrinsic_ns = timestamp_intrinsic_ns;
-    derived_data->compress_format = data::CompressedImage::CompressFormat::JPEG;
-    derived_data->image_data_size = jpeg_image_size;
-    memcpy(derived_data->image_data, jpeg_image, jpeg_image_size);
+        // Do color correction
+        const size_t ImagePixelNum = rows * cols;
+        uint8_t* corrected_data = new uint8_t[3 * ImagePixelNum];
+        correcter_->process(mat_rgb16.data, corrected_data, ImagePixelNum);
 
-    tjDestroy(tj_instance);
-    tjFree(jpeg_image);
-    delete[] corrected_data;
+        // Start Compression
+        auto tj_instance = tjInitCompress();
+        if (!tj_instance) {
+            log::warn << "Flir: " << get_name() << " can not compress for corrected_rgb8, data abandoned" << log::endl;
+            delete[] corrected_data;
+            return nullptr;
+        }
+        uint8_t* jpeg_image = nullptr;
+        size_t jpeg_image_size = 0;
 
-    // auto t3 = time::Timestamp::now();
+        /// @todo Check source image format
+        tjCompress2(tj_instance,
+                    corrected_data,
+                    cols,
+                    0,
+                    rows,
+                    TJPF_BGR,                             // Source Image Format
+                    &jpeg_image,                          // Output Image Pointer
+                    &jpeg_image_size,                     // Output Image Size
+                    tjsamp,                               // YUV Binning
+                    local_parameters_.get_JpegQuality(),  // Quality
+                    TJFLAG_FASTDCT);
 
-    // log::debug << "Time: cvt: " << t1 - t0 << ", cc: " << t2 - t1 << ", comp: " << t3 - t2 << ", total: " << t3 - t1
-    //            << log::endl;
+        // Total length of device data
+        auto length = sizeof(FlirCompressedImage) + jpeg_image_size;
+        auto data = FlirCompressedImage::create(length, id_, sequence_++);
+        auto derived_data = static_cast<FlirCompressedImage*>(data.get());
 
-    return data;
+        // Copy data
+        derived_data->timestamp_intrinsic_ns = timestamp_intrinsic_ns;
+        derived_data->compress_format = data::CompressedImage::CompressFormat::JPEG;
+        derived_data->image_data_size = jpeg_image_size;
+        memcpy(derived_data->image_data, jpeg_image, jpeg_image_size);
+
+        tjDestroy(tj_instance);
+        tjFree(jpeg_image);
+        delete[] corrected_data;
+
+        return data;
+    } else if (local_parameters_.get_Format() == +Format::RGB8) {
+        // Start Compression
+        auto tj_instance = tjInitCompress();
+        if (!tj_instance) {
+            log::warn << "Flir: " << get_name() << " can not compress for org_rgb8, data abandoned" << log::endl;
+            return nullptr;
+        }
+        uint8_t* jpeg_image = nullptr;
+        size_t jpeg_image_size = 0;
+
+        /// @todo Check source image format
+        tjCompress2(tj_instance,
+                    raw_image.GetData(),
+                    cols,
+                    0,
+                    rows,
+                    TJPF_RGB,                             // Source Image Format
+                    &jpeg_image,                          // Output Image Pointer
+                    &jpeg_image_size,                     // Output Image Size
+                    tjsamp,                               // YUV Binning
+                    local_parameters_.get_JpegQuality(),  // Quality
+                    TJFLAG_FASTDCT);
+
+        // Total length of device data
+        auto length = sizeof(FlirCompressedImage) + jpeg_image_size;
+        auto data = FlirCompressedImage::create(length, id_, sequence_++);
+        auto derived_data = static_cast<FlirCompressedImage*>(data.get());
+
+        // Copy data
+        derived_data->timestamp_intrinsic_ns = timestamp_intrinsic_ns;
+        derived_data->compress_format = data::CompressedImage::CompressFormat::JPEG;
+        derived_data->image_data_size = jpeg_image_size;
+        memcpy(derived_data->image_data, jpeg_image, jpeg_image_size);
+
+        tjDestroy(tj_instance);
+        tjFree(jpeg_image);
+        return data;
+    } else if (local_parameters_.get_Format() == +Format::YUV411 || local_parameters_.get_Format() == +Format::YUV422 ||
+               local_parameters_.get_Format() == +Format::YUV444) {
+
+        FlyCapture2::Image converted_image;
+        error = raw_image.Convert(FlyCapture2::PIXEL_FORMAT_RGB, &converted_image);
+        if (error != FlyCapture2::PGRERROR_OK) {
+            log::warn << "Flir: " << get_name() << " can not convert to rgb8, data abandoned" << log::endl;
+            return nullptr;
+        }
+        // Start Compression
+        auto tj_instance = tjInitCompress();
+        if (!tj_instance) {
+            log::warn << "Flir: " << get_name() << " can not compress for rgb8, data abandoned" << log::endl;
+            return nullptr;
+        }
+
+        uint8_t* jpeg_image = nullptr;
+        size_t jpeg_image_size = 0;
+
+        /// @todo Check source image format
+        tjCompress2(tj_instance,
+                    converted_image.GetData(),
+                    cols,
+                    0,
+                    rows,
+                    TJPF_RGB,                             // Source Image Format
+                    &jpeg_image,                          // Output Image Pointer
+                    &jpeg_image_size,                     // Output Image Size
+                    tjsamp,                               // YUV Binning
+                    local_parameters_.get_JpegQuality(),  // Quality
+                    TJFLAG_FASTDCT);
+
+        // Total length of device data
+        auto length = sizeof(FlirCompressedImage) + jpeg_image_size;
+        auto data = FlirCompressedImage::create(length, id_, sequence_++);
+        auto derived_data = static_cast<FlirCompressedImage*>(data.get());
+
+        // Copy data
+        derived_data->timestamp_intrinsic_ns = timestamp_intrinsic_ns;
+        derived_data->compress_format = data::CompressedImage::CompressFormat::JPEG;
+        derived_data->image_data_size = jpeg_image_size;
+        memcpy(derived_data->image_data, jpeg_image, jpeg_image_size);
+
+        tjDestroy(tj_instance);
+        tjFree(jpeg_image);
+        return data;
+    } else {
+        log::warn << "Flir: Unsupported Format, data dropped" << log::endl;
+        return nullptr;
+    }
 }
 
 /// @todo Add muttable parameter for EV, Shutter Range, Brightneess, etc.
@@ -520,6 +615,14 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
         return set_range_auto_shutter();
     } else if (type == "MinGain" || type == "MaxGain") {
         return set_range_auto_gain();
+    } else if (type == "WBBlue" || type == "WBRed") {
+        return set_white_balance(local_parameters_.get_AutoWB(),
+                                 local_parameters_.get_WBBlue(),
+                                 local_parameters_.get_WBRed());
+    } else if (type == "Brightness") {
+        return set_property(FlyCapture2::BRIGHTNESS, false, local_parameters_.get_Brightness());
+    } else if (type == "Gamma") {
+        return set_property(FlyCapture2::GAMMA, false, local_parameters_.get_Gamma());
     } else if (type == "ColorTemp") {
         correcter_->adjust_color_temp(local_parameters_.get_ColorTemp());
         return HeraErrno::OK;
@@ -559,6 +662,46 @@ HeraErrno DevicePlugin::set_property(FlyCapture2::PropertyType type, bool auto_s
         value = property_info.absMax;
     }
     property.absValue = value;
+
+    return handle_flir_error(camera_.SetProperty(&property));
+}
+
+HeraErrno DevicePlugin::set_white_balance(bool auto_set, int blue, int red)
+{
+    FlyCapture2::PropertyInfo property_info;
+    property_info.type = FlyCapture2::WHITE_BALANCE;
+    FlyCapture2::Error error = camera_.GetPropertyInfo(&property_info);
+    if (error != FlyCapture2::PGRERROR_OK) {
+        return handle_flir_error(error);
+    }
+
+    if (!property_info.present) {
+        log::warn << "Property white_balance is not present" << log::endl;
+        return HeraErrno::ImmutableParameter;
+    }
+
+    log::debug << "Flir: Get white_balance, min = " << property_info.min << ", max " << property_info.max << log::endl;
+
+    FlyCapture2::Property property;
+    property.type = FlyCapture2::WHITE_BALANCE;
+    property.autoManualMode = (auto_set && property_info.autoSupported);
+    property.absControl = false;
+    property.onOff = property_info.onOffSupported;
+
+    log::debug << "Flir: Set white_balance, blue = " << blue << ", red = " << red << log::endl;
+
+    if (blue < property_info.min) {
+        blue = property_info.min;
+    } else if (blue > property_info.max) {
+        blue = property_info.max;
+    }
+    if (red < property_info.min) {
+        red = property_info.min;
+    } else if (red > property_info.max) {
+        red = property_info.max;
+    }
+    property.valueA = blue;
+    property.valueB = red;
 
     return handle_flir_error(camera_.SetProperty(&property));
 }
@@ -739,7 +882,7 @@ HeraErrno DevicePlugin::handle_flir_error(const FlyCapture2::Error& error, const
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    if (storage_data->is_type(DeviceDataType::CameraFlirCompressedImage)) {
+    if (storage_data->is_type(FlirCompressedImage::TypeVal)) {
         // Raw DeviceData of Derived Type
         auto raw_data = static_cast<FlirCompressedImage*>(storage_data.get());
 
@@ -755,7 +898,7 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
         camera_sensor_data->image_data_size = image_data_size;
         memcpy(camera_sensor_data->image_data, &(raw_data->image_data), image_data_size);
         return sensor_data;
-    } else if (storage_data->is_type(DeviceDataType::CameraFlirRawImage)) {
+    } else if (storage_data->is_type(FlirRawImage::TypeVal)) {
         // Raw DeviceData of Derived Type
         auto raw_data = static_cast<FlirRawImage*>(storage_data.get());
 
