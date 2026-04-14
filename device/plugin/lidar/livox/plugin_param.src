@@ -1,0 +1,23 @@
+@ 激光雷达/Livox Mid360
+@ Phase 1 目标：稳定实时采集并保存原始点包与IMU包
+
+# SDK配置文件路径
+# Livox SDK2 使用的 JSON 配置文件绝对路径
+immutable string ConfigPath = ""; regex ^.*$
+
+# 设备序列号过滤
+# 留空表示绑定首个发现的设备
+immutable string DeviceSn = ""; regex ^.*$
+
+# 同步方式
+# Options:
+# - Full: 使用设备时间并按主机日期校正
+# - Local: 使用设备时间，不与主机日期对齐
+# - Disabled: 使用主机接收时间
+immutable enum SyncType = Full; options Full, Local, Disabled
+
+# 开启IMU采集
+immutable boolean EnableImu = true;
+
+# 采集线程取包超时时间[ms]
+immutable integer FetchTimeoutMs = 50; range 1, 1000, 1

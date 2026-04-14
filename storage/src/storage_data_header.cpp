@@ -29,8 +29,38 @@ constexpr std::array<char, 16> StorageDataHeader::MagicV3 = {"HERA_STORAGE_V3"};
 constexpr std::array<char, 16> StorageDataHeader::MagicV4 = {"HERA_STORAGE_V4"};
 
 constexpr std::array<char, 32> StorageDataHeader::MagicIndices = {  //
-        0,   0,   0,   0,   0,  0,   0,  0,  0,  0, 0,  0, 0,   0, 0, 0,
-        'I', 'N', 'D', 'X', 23, -19, 20, 13, -4, 4, -4, 1, -10, 4, 9, 22};
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    'I',
+    'N',
+    'D',
+    'X',
+    23,
+    static_cast<char>(-19),
+    20,
+    13,
+    static_cast<char>(-4),
+    4,
+    static_cast<char>(-4),
+    1,
+    static_cast<char>(-10),
+    4,
+    9,
+    22};
 
 StorageDataHeader::StorageDataHeader(const int32_t version, const bool is_extra, const bool is_logs) :
     Version(version),

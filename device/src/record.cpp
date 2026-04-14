@@ -1,4 +1,5 @@
 #include <atomic>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -20,6 +21,17 @@ void sig_int_handler_func(int s)
 int main(int argc, char** argv)
 {
     log::onlyprint();
+
+    const char* plugin_path_env = std::getenv("HERA_DEVICE_PLUGIN_PATH");
+    const char* load_driver_env = std::getenv("HERA_DEVICE_LOAD_DRIVER");
+    const bool load_driver =
+            (load_driver_env && (std::string(load_driver_env) == "1" || std::string(load_driver_env) == "true"));
+    const std::string plugin_path =
+            (plugin_path_env && std::string(plugin_path_env).size() > 0) ? std::string(plugin_path_env)
+                                                                          : "/usr/local/lib/hera/plugin";
+    device::Factory::load_plugins(load_driver, plugin_path);
+    log::info << "Factory preloaded plugins from " << plugin_path
+              << (load_driver ? " with driver" : " without driver") << log::endl;
 
     struct sigaction sig_int_handler;
     sig_int_handler.sa_handler = sig_int_handler_func;
@@ -44,6 +56,15 @@ int main(int argc, char** argv)
         ifs.close();
     } catch (std::exception& e) {
         log::error << "Can not open config file" << profile << ", since " << e.what() << log::endl;
+        log::flush();
+        exit(-1);
+    }
+
+    if (!profile_json.contains("storage") || !profile_json.contains("ipcs") || !profile_json.contains("devices")) {
+        log::error << "Invalid Hera config: missing one of required keys [storage, ipcs, devices]. "
+                   << "You may have passed a sensor SDK config (e.g. Livox config) instead of hera-device-record "
+                      "config."
+                   << log::endl;
         log::flush();
         exit(-1);
     }
@@ -82,13 +103,26 @@ int main(int argc, char** argv)
                 log::info << "Registering ipc " << forward_index << " to device " << type << "/" << name << log::endl;
             }
 
-            devices.emplace_back(device::Factory::create(id++, type, name, forward_bool, ipc_ptr, storage.get()));
+            auto device_ptr = device::Factory::create(id++, type, name, forward_bool, ipc_ptr, storage.get());
+            if (!device_ptr) {
+                log::error << "Can not create device " << type << "/" << name
+                           << ". Check plugin loading path and whether driver plugin exists." << log::endl;
+                log::flush();
+                exit(-1);
+            }
+            devices.emplace_back(std::move(device_ptr));
 
             for (const auto& parameter : device["parameters"]) {
                 std::string type = parameter["type"];
                 std::string value = parameter["value"];
                 log::info << "  Setting parameter " << type << " = " << value << log::endl;
-                devices.back()->parameter(type, value);
+                auto err = devices.back()->parameter(type, value);
+                if (err != HeraErrno::OK) {
+                    log::error << "  Setting parameter failed " << type << " = " << value << ", errno=" << err
+                               << log::endl;
+                    log::flush();
+                    exit(-1);
+                }
             }
         }
         storage->finish_add_device();
