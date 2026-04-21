@@ -17,7 +17,7 @@ void print_help(char** argv)
     std::cout << argv[0] << ": "
               << "Tool to view / trim / rebuild header of hera storage data" << std::endl;
 
-    std::cout << "usage:\t" << argv[0] << " -i <source_data> [-el] [-b]"
+    std::cout << "usage:\t" << argv[0] << " -i <source_data> [-elpa] [-b]"
               << "\t[-m -s <start_time> -t <duration> [-o <output_data>]] [-qhv]" << std::endl;
 
     std::cout << "\t-i\tSource data file\n"
@@ -26,6 +26,10 @@ void print_help(char** argv)
               << "\t-e\tFlag to print extra info in storage file\n"
 
               << "\t-l\tFlag to print logs in storage file\n"
+
+              << "\t-p\tFlag to print livox raw packet statistics\n"
+
+              << "\t-a\tFlag to print insta raw packet statistics\n"
 
               << "\t-b\tFlag to rebuild damaged storage header\n"
 
@@ -68,7 +72,7 @@ int main(int argc, char** argv)
 
     // opterr = 0;
     while (true) {
-        switch (getopt(argc, argv, "i:elbms:t:o:qhv")) {
+        switch (getopt(argc, argv, "i:elpabms:t:o:qhv")) {
         case 'i':
             config.filename = optarg;
             continue;
@@ -77,6 +81,12 @@ int main(int argc, char** argv)
             continue;
         case 'l':
             config.print_logs = true;
+            continue;
+        case 'p':
+            config.livox_stats = true;
+            continue;
+        case 'a':
+            config.insta_stats = true;
             continue;
         case 'b':
             config.rebuild = true;
@@ -137,6 +147,24 @@ int main(int argc, char** argv)
 
     if (config.rebuild && config.trim) {
         std::cout << argv[0] << ": Rebuild & Trimming is not supported to use on the same time." << std::endl;
+        print_help(argv);
+        exit(1);
+    }
+
+    if (config.livox_stats && (config.rebuild || config.trim)) {
+        std::cout << argv[0] << ": Livox statistics can not run together with rebuild/trim." << std::endl;
+        print_help(argv);
+        exit(1);
+    }
+
+    if (config.insta_stats && (config.rebuild || config.trim)) {
+        std::cout << argv[0] << ": Insta statistics can not run together with rebuild/trim." << std::endl;
+        print_help(argv);
+        exit(1);
+    }
+
+    if (config.insta_stats && config.livox_stats) {
+        std::cout << argv[0] << ": Insta statistics and Livox statistics can not run together." << std::endl;
         print_help(argv);
         exit(1);
     }

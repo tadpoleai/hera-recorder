@@ -34,6 +34,8 @@ public:
         std::string outfilename;  ///< filename of output storage data (after trim)
         bool rebuild{false};      ///< flag to rebuild broken header
         bool trim{false};         ///< flag to trim data
+        bool livox_stats{false};  ///< flag to print livox raw packet statistics
+        bool insta_stats{false};  ///< flag to print insta raw packet statistics
         bool print_extra{false};
         bool print_logs{false};
         bool isverbose{false};
@@ -88,6 +90,16 @@ private:
     /// @brief thread function for read messsage from storage (for trimming)
     ///
     void trim_thread_function();
+
+    ///
+    /// @brief thread function for scanning livox packet statistics
+    ///
+    void livox_stats_thread_function();
+
+    ///
+    /// @brief thread function for scanning insta packet statistics
+    ///
+    void insta_stats_thread_function();
 
 private:
     std::thread* read_thread_;            ///< thread handler of reading

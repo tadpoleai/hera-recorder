@@ -1,0 +1,84 @@
+{
+  "storage": "insta_phase1.hera",
+  "record": 1,
+  "ipcs": [
+    {
+      "key": 0,
+      "size": 1048576,
+      "length": 8
+    }
+  ],
+  "devices": [
+    {
+      "type": "camera/insta",
+      "name": "x4",
+      "forward": -1,
+      "parameters": [
+        {
+          "type": "DeviceSn",
+          "value": ""
+        },
+        {
+          "type": "WorkMode",
+          "value": "RecordDownload"
+        },
+        {
+          "type": "AutoStartRecording",
+          "value": "true"
+        },
+        {
+          "type": "AutoDownload",
+          "value": "true"
+        },
+        {
+          "type": "DownloadDir",
+          "value": "."
+        },
+        {
+          "type": "EnableAudio",
+          "value": "false"
+        },
+        {
+          "type": "UsingLrv",
+          "value": "false"
+        },
+        {
+          "type": "VideoResolution",
+          "value": "R3840x1920P30"
+        },
+        {
+          "type": "FixedLrvResolution",
+          "value": "true"
+        },
+        {
+          "type": "VideoBitrate",
+          "value": "524288"
+        },
+        {
+          "type": "CameraTimeoutMs",
+          "value": "10000"
+        },
+        {
+          "type": "EnableGyro",
+          "value": "true"
+        },
+        {
+          "type": "SyncLocalTime",
+          "value": "true"
+        },
+        {
+          "type": "EnableInCameraStitching",
+          "value": "false"
+        },
+        {
+          "type": "LogLevel",
+          "value": "Error"
+        },
+        {
+          "type": "FetchTimeoutMs",
+          "value": "50"
+        }
+      ]
+    }
+  ]
+}

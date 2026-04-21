@@ -1,0 +1,26 @@
+@ 相机/Insta360 Webcam(UVC)
+@ Phase 1 目标：在 Jetson 上通过 V4L2 稳定采集视频码流并原始落盘
+
+# V4L2 设备路径
+immutable string DevicePath = "/dev/video0"; regex ^.*$
+
+# 期望分辨率宽
+immutable integer Width = 1920; range 320, 7680, 16
+
+# 期望分辨率高
+immutable integer Height = 960; range 240, 4320, 16
+
+# 期望帧率
+immutable integer Fps = 30; range 1, 120, 1
+
+# 像素格式
+# Options:
+# - MJPG: MJPEG 码流，优先用于原始编码落盘
+# - YUYV: 原始 YUYV
+immutable enum PixelFormat = MJPG; options MJPG, YUYV
+
+# 单帧读取缓存上限[bytes]
+immutable integer ReadBufferBytes = 2097152; range 65536, 16777216, 65536
+
+# 采集线程取包超时时间[ms]
+immutable integer FetchTimeoutMs = 50; range 1, 1000, 1

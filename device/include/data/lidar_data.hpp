@@ -53,6 +53,7 @@ public:
         VelodyneVLP32C = 0x102,
         VelodyneHDL32E = 0x103,
         VendorHesai = 0x200,
+        VendorLivox = 0x300,
         VendorSick = 0x400,
         VendorLeishen = 0x800
     };

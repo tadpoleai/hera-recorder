@@ -1,6 +1,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <cstdlib>
 #include <unistd.h>
 
 #include "common/include/logger/logger.hpp"
@@ -14,6 +15,18 @@ using namespace wayz::hera;
 using namespace wayz::hera::convert;
 
 Converter* g_converter_ptr = nullptr;
+
+void preload_device_plugins()
+{
+    const char* plugin_path_env = std::getenv("HERA_DEVICE_PLUGIN_PATH");
+    const char* load_driver_env = std::getenv("HERA_DEVICE_LOAD_DRIVER");
+    const bool load_driver =
+        (load_driver_env && (std::string(load_driver_env) == "1" || std::string(load_driver_env) == "true"));
+    const std::string plugin_path =
+        (plugin_path_env && std::string(plugin_path_env).size() > 0) ? std::string(plugin_path_env)
+                                      : "/usr/local/lib/hera/plugin";
+    device::Factory::load_plugins(load_driver, plugin_path);
+}
 
 void print_help(char** argv)
 {
@@ -73,6 +86,7 @@ void print_convert_param_rules(char** argv)
 {
     log::onlyprint();
     log::set_level(log::LogLevel::Error);
+    preload_device_plugins();
     print_version(argv);
     std::cout << "\nPrinting parameter maps.\n" << std::endl;
     for (auto& type : device::Factory::plugin_types()) {
@@ -95,6 +109,8 @@ void sig_int_handler_func(int s)
 
 int main(int argc, char** argv)
 {
+    preload_device_plugins();
+
     struct sigaction sig_int_handler;
     sig_int_handler.sa_handler = sig_int_handler_func;
     sigemptyset(&sig_int_handler.sa_mask);

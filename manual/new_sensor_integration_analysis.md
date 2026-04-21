@@ -278,6 +278,27 @@
 
 ---
 
+## 9. Phase 2 第一阶段（已落地）
+
+已在 `hera-storage-tool` 增加 Livox 原始数据统计能力（按 `.hera` 文件离线扫描）：
+
+- 统计点包（`0x0521/0x0522/0x0523`）和 IMU 包（`0x0524`）的包数与字节数。
+- 统计首尾接收时间戳（ns）、时长（s）和平均频率（Hz）。
+- 提供全局统计与按 `device_id` 统计。
+
+命令示例：
+
+```bash
+./build_livox_phase1/storage/hera-storage-tool -i <record.hera> -p
+```
+
+说明：
+
+- `-p` 模式与 `-b`（重建头）或 `-m`（裁剪）互斥。
+- 该阶段先完成“内部工具链统计闭环”，为下一步 ROS 导出和离线时间对齐提供输入质量评估依据。
+
+---
+
 ## 9. 可执行步骤（按阶段）
 
 ### 9.1 Phase 1：打通采集链路并稳定落盘
@@ -311,6 +332,20 @@
 3. Phase 2 验收
    - 两源数据在统一时间轴下可对齐。
    - ROS/内部工具链都能得到可用输出。
+
+当前状态（2026-04-14）：
+
+1. 已实现 Livox 点包到 `SensorDataType::Points` 的最小转换（支持高精度/低精度笛卡尔点型），并保留 Livox IMU 到 `ImuMagneticField`。
+2. 已在 `hera-convert` 增加插件预加载（支持通过 `HERA_DEVICE_PLUGIN_PATH` 使用本地编译的 livox base 插件）。
+3. 当前机器缺少 ROS（kinetic/melodic/noetic 之一），因此 `WITH_CONVERT=ON` 配置会被 ROS 依赖阻断；需要在 ROS 环境机完成最终 `hera-convert` 编译与 bag 导出验证。
+
+Insta Phase 1 当前状态（2026-04-15）：
+
+1. 已新增 `camera/insta` 插件骨架，采集链路采用 `StreamDelegate` 回调入队 + `fetch` 超时出队模式。
+2. 已定义并落盘两类原始 `DeviceData`：`InstaVideoPacket(0x0421)` 与 `InstaGyroPacket(0x0422)`。
+3. `do_convert` 暂保持最小实现（返回 `broken_data`），以满足“Phase 1 稳定落盘优先”。
+4. 已在 `hera-storage-tool` 增加 Insta 统计模式 `-a`，可输出 video/gyro 的包数、字节数、时间范围与频率。
+5. 驱动插件编译依赖 Insta SDK（`camera/camera.h` + SDK 库），通过 `INSTA_SDK_ROOT` 指定；缺 SDK 时仅构建 base 插件。
 
 ### 9.3 Phase 3：可选高清原始影像支持
 

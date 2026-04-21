@@ -10,6 +10,9 @@
 
 #include "tool.hpp"
 
+#include <limits>
+#include <unordered_map>
+
 #include <mutex>
 #include <semaphore.h>
 
@@ -19,6 +22,86 @@
 namespace wayz {
 namespace hera {
 namespace storage {
+
+namespace {
+
+constexpr device::DeviceDataType kLivoxPacketFullSyncedType = 0x0521;
+constexpr device::DeviceDataType kLivoxPacketUnSyncedType = 0x0522;
+constexpr device::DeviceDataType kLivoxPacketLocalSyncedType = 0x0523;
+constexpr device::DeviceDataType kLivoxImuPacketType = 0x0524;
+constexpr device::DeviceDataType kInstaVideoPacketType = 0x0421;
+constexpr device::DeviceDataType kInstaGyroPacketType = 0x0422;
+constexpr device::DeviceDataType kInstaWebcamVideoPacketType = 0x0431;
+
+inline bool is_livox_point_type(const device::data::DeviceDataPtr& data)
+{
+    return data->is_type(kLivoxPacketFullSyncedType) || data->is_type(kLivoxPacketUnSyncedType) ||
+           data->is_type(kLivoxPacketLocalSyncedType);
+}
+
+inline bool is_livox_imu_type(const device::data::DeviceDataPtr& data)
+{
+    return data->is_type(kLivoxImuPacketType);
+}
+
+inline bool is_insta_video_type(const device::data::DeviceDataPtr& data)
+{
+    return data->is_type(kInstaVideoPacketType) || data->is_type(kInstaWebcamVideoPacketType);
+}
+
+inline bool is_insta_gyro_type(const device::data::DeviceDataPtr& data)
+{
+    return data->is_type(kInstaGyroPacketType);
+}
+
+struct PacketStats {
+    uint64_t packet_count{0};
+    uint64_t total_bytes{0};
+    uint64_t first_ts{std::numeric_limits<uint64_t>::max()};
+    uint64_t last_ts{0};
+
+    void add(const device::data::DeviceDataPtr& data)
+    {
+        const auto ts = data->get_timestamp_receive_ns();
+        ++packet_count;
+        total_bytes += data->get_length();
+        if (first_ts > ts) {
+            first_ts = ts;
+        }
+        if (last_ts < ts) {
+            last_ts = ts;
+        }
+    }
+
+    double duration_seconds() const
+    {
+        if (packet_count <= 1 || last_ts <= first_ts) {
+            return 0.0;
+        }
+        return double(last_ts - first_ts) / double(time::OneSecond);
+    }
+
+    double packet_rate_hz() const
+    {
+        auto duration = duration_seconds();
+        if (duration <= 0.0) {
+            return 0.0;
+        }
+        return double(packet_count - 1) / duration;
+    }
+};
+
+void print_packet_stats(const std::string& title, const PacketStats& stats)
+{
+    std::cout << title << ": packets=" << stats.packet_count << ", bytes=" << stats.total_bytes;
+    if (stats.packet_count > 0) {
+        std::cout << ", first_ts(ns)=" << stats.first_ts << ", last_ts(ns)=" << stats.last_ts
+                  << ", duration(s)=" << stats.duration_seconds() << ", rate(Hz)=" << stats.packet_rate_hz();
+    }
+    std::cout << std::endl;
+}
+
+}  // namespace
 
 Tool::Tool(const Config& config) :
     read_thread_(nullptr), running_(false), progess_size_(0), total_size_(0), storage_(nullptr), config_(config)
@@ -48,6 +131,14 @@ Tool::Tool(const Config& config) :
             log::info << "Storage: Start trimming '" << config_.filename << "'" << log::endl;
             running_ = true;
             read_thread_ = new std::thread(&Tool::trim_thread_function, this);
+        } else if (config_.livox_stats) {
+            log::info << "Storage: Start scanning livox stats in '" << config_.filename << "'" << log::endl;
+            running_ = true;
+            read_thread_ = new std::thread(&Tool::livox_stats_thread_function, this);
+        } else if (config_.insta_stats) {
+            log::info << "Storage: Start scanning insta stats in '" << config_.filename << "'" << log::endl;
+            running_ = true;
+            read_thread_ = new std::thread(&Tool::insta_stats_thread_function, this);
         }
     } else {
         log::error << "Storage: File '" << config_.filename << "' can not open or is invalid" << log::endl;
@@ -183,6 +274,98 @@ void Tool::trim_thread_function()
     running_ = false;
 
     log::info << "Trim: Trimming finished" << log::endl;
+}
+
+void Tool::livox_stats_thread_function()
+{
+    PacketStats point_stats;
+    PacketStats imu_stats;
+    std::unordered_map<uint32_t, PacketStats> point_stats_per_device;
+    std::unordered_map<uint32_t, PacketStats> imu_stats_per_device;
+
+    while (auto data = storage_->read()) {
+        progess_size_ += data->get_length();
+
+        if (is_livox_point_type(data)) {
+            point_stats.add(data);
+            point_stats_per_device[data->get_device_id()].add(data);
+            continue;
+        }
+
+        if (is_livox_imu_type(data)) {
+            imu_stats.add(data);
+            imu_stats_per_device[data->get_device_id()].add(data);
+        }
+    }
+
+    running_ = false;
+    storage_.reset();
+
+    std::cout << "\n==== Livox Raw Packet Statistics ====" << std::endl;
+    print_packet_stats("Point(all)", point_stats);
+    print_packet_stats("IMU(all)", imu_stats);
+
+    if (!point_stats_per_device.empty()) {
+        std::cout << "-- Point per device --" << std::endl;
+        for (const auto& item : point_stats_per_device) {
+            print_packet_stats("device_id=" + std::to_string(item.first), item.second);
+        }
+    }
+
+    if (!imu_stats_per_device.empty()) {
+        std::cout << "-- IMU per device --" << std::endl;
+        for (const auto& item : imu_stats_per_device) {
+            print_packet_stats("device_id=" + std::to_string(item.first), item.second);
+        }
+    }
+
+    std::cout << "=====================================" << std::endl;
+}
+
+void Tool::insta_stats_thread_function()
+{
+    PacketStats video_stats;
+    PacketStats gyro_stats;
+    std::unordered_map<uint32_t, PacketStats> video_stats_per_device;
+    std::unordered_map<uint32_t, PacketStats> gyro_stats_per_device;
+
+    while (auto data = storage_->read()) {
+        progess_size_ += data->get_length();
+
+        if (is_insta_video_type(data)) {
+            video_stats.add(data);
+            video_stats_per_device[data->get_device_id()].add(data);
+            continue;
+        }
+
+        if (is_insta_gyro_type(data)) {
+            gyro_stats.add(data);
+            gyro_stats_per_device[data->get_device_id()].add(data);
+        }
+    }
+
+    running_ = false;
+    storage_.reset();
+
+    std::cout << "\n==== Insta Raw Packet Statistics ====" << std::endl;
+    print_packet_stats("Video(all)", video_stats);
+    print_packet_stats("Gyro(all)", gyro_stats);
+
+    if (!video_stats_per_device.empty()) {
+        std::cout << "-- Video per device --" << std::endl;
+        for (const auto& item : video_stats_per_device) {
+            print_packet_stats("device_id=" + std::to_string(item.first), item.second);
+        }
+    }
+
+    if (!gyro_stats_per_device.empty()) {
+        std::cout << "-- Gyro per device --" << std::endl;
+        for (const auto& item : gyro_stats_per_device) {
+            print_packet_stats("device_id=" + std::to_string(item.first), item.second);
+        }
+    }
+
+    std::cout << "=====================================" << std::endl;
 }
 
 }  // namespace storage

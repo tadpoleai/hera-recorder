@@ -1,0 +1,65 @@
+@ 相机/Insta360 USB 相机
+@ Phase 1 目标：稳定实时采集并保存预览码流与 Gyro 原始数据
+
+# SDK 根目录
+# 用于驱动插件探测，优先级见 plugin.cmake
+immutable string SdkRoot = ""; regex ^.*$
+
+# 设备序列号过滤
+# 留空表示绑定首个发现的设备
+immutable string DeviceSn = ""; regex ^.*$
+
+# 工作模式
+# Options:
+# - Stream: 实时预览流回调写入.hera
+# - RecordDownload: 仅SDK控制录制，结束后下载文件
+immutable enum WorkMode = RecordDownload; options Stream, RecordDownload
+
+# 在 RecordDownload 模式连接后自动开始录制
+immutable boolean AutoStartRecording = true;
+
+# 在 RecordDownload 模式断开时自动下载录制文件
+immutable boolean AutoDownload = true;
+
+# 在 RecordDownload 模式断开时下载目录
+immutable string DownloadDir = "."; regex ^.*$
+
+# 开启音频流
+immutable boolean EnableAudio = false;
+
+# 使用 LRV 低分辨率流
+immutable boolean UsingLrv = false;
+
+# 预览视频分辨率
+# Options:
+# - R3840x1920P30
+# - R2560x1280P30
+# - R1440x720P30
+immutable enum VideoResolution = R3840x1920P30; options R3840x1920P30, R2560x1280P30, R1440x720P30
+
+# 使用固定 LRV 预览分辨率(1440x720P30)
+immutable boolean FixedLrvResolution = true;
+
+# 视频码率[bps]
+immutable integer VideoBitrate = 524288; range 131072, 8000000, 65536
+
+# SDK 超时设置[ms]
+immutable integer CameraTimeoutMs = 10000; range 1000, 60000, 100
+
+# 采集线程取包超时时间[ms]
+immutable integer FetchTimeoutMs = 50; range 1, 1000, 1
+
+# 开启 Gyro 采集
+immutable boolean EnableGyro = true;
+
+# 同步本机时间到相机
+immutable boolean SyncLocalTime = true;
+
+# 启用机内拼接（X4/X5）
+immutable boolean EnableInCameraStitching = false;
+
+# SDK 日志等级
+# Options:
+# - Error: 仅错误日志
+# - Verbose: 调试日志
+immutable enum LogLevel = Error; options Error, Verbose

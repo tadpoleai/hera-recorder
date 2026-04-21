@@ -4,6 +4,8 @@
 ///
 
 #include <chrono>
+#include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <condition_variable>
 #include <cstddef>
@@ -16,6 +18,7 @@
 #include <vector>
 
 #include "data/imu_data.hpp"
+#include "data/lidar_data.hpp"
 #include "plugin_common.hpp"
 #include "plugin_param.hpp"
 
@@ -29,6 +32,43 @@ namespace hera {
 namespace device {
 namespace lidar {
 namespace livox {
+
+namespace {
+
+constexpr uint8_t kLivoxLidarCartesianCoordinateHighData = 0x01;
+constexpr uint8_t kLivoxLidarCartesianCoordinateLowData = 0x02;
+
+#pragma pack(push, 1)
+struct LivoxCartesianHighRawPoint {
+    int32_t x_mm;
+    int32_t y_mm;
+    int32_t z_mm;
+    uint8_t reflectivity;
+    uint8_t tag;
+};
+
+struct LivoxCartesianLowRawPoint {
+    int16_t x_cm;
+    int16_t y_cm;
+    int16_t z_cm;
+    uint8_t reflectivity;
+    uint8_t tag;
+};
+#pragma pack(pop)
+
+inline void fill_common_point_fields(data::Points::PointXYZCIDPAT& pt)
+{
+    pt.horizontal_distance = std::sqrt(pt.x * pt.x + pt.y * pt.y);
+    pt.azimuth = std::atan2(pt.y, pt.x);
+    pt.pitch = std::atan2(pt.z, std::max(1e-6f, pt.horizontal_distance));
+}
+
+inline int32_t parse_ring_from_tag(uint8_t tag)
+{
+    return static_cast<int32_t>(tag & 0x1F);
+}
+
+}  // namespace
 
 HERA_PLUGIN_DEFINE_START("lidar/livox", 0x0521, 128)
 
@@ -66,6 +106,12 @@ struct RuntimeState {
     std::string sn_filter;
     std::string bound_sn;
     uint32_t bound_handle = 0;
+
+    std::atomic<uint64_t> rx_point_packets{0};
+    std::atomic<uint64_t> rx_imu_packets{0};
+    std::atomic<uint64_t> out_point_packets{0};
+    std::atomic<uint64_t> out_imu_packets{0};
+    uint64_t last_stats_log_ns = 0;
 };
 
 static std::mutex g_sdk_mutex;
@@ -87,6 +133,24 @@ static uint64_t parse_timestamp_ns(const LivoxLidarEthernetPacket* pkt)
 }
 
 static constexpr uint16_t kLivoxHeaderSize = offsetof(LivoxLidarEthernetPacket, data);
+
+static void maybe_log_stats(const std::shared_ptr<RuntimeState>& rt)
+{
+    const uint64_t now_ns = static_cast<uint64_t>(time::Timestamp::now());
+    if (rt->last_stats_log_ns == 0) {
+        rt->last_stats_log_ns = now_ns;
+        return;
+    }
+
+    if (now_ns - rt->last_stats_log_ns < static_cast<uint64_t>(time::OneSecond)) {
+        return;
+    }
+
+    rt->last_stats_log_ns = now_ns;
+    log::info << "Livox: " << rt->bound_sn << " rx(point/imu)=" << rt->rx_point_packets.load() << "/"
+              << rt->rx_imu_packets.load() << ", out(point/imu)=" << rt->out_point_packets.load() << "/"
+              << rt->out_imu_packets.load() << log::endl;
+}
 
 static std::shared_ptr<RuntimeState> find_runtime(uint32_t handle)
 {
@@ -188,6 +252,8 @@ static void PointCloudCallback(uint32_t handle,
         memcpy(sample.payload.data(), data->data, payload_size);
     }
 
+    rt->rx_point_packets.fetch_add(1);
+
     enqueue_sample(rt, std::move(sample));
 }
 
@@ -235,6 +301,8 @@ static void ImuDataCallback(uint32_t handle,
         sample.acc_y = imu->acc_y;
         sample.acc_z = imu->acc_z;
     }
+
+    rt->rx_imu_packets.fetch_add(1);
 
     enqueue_sample(rt, std::move(sample));
 }
@@ -357,6 +425,7 @@ data::DeviceDataPtr DevicePlugin::fetch()
         if (!local_rt->cv.wait_for(lock,
                                    std::chrono::milliseconds(timeout_ms),
                                    [&]() { return local_rt->stopped || !local_rt->queue.empty(); })) {
+            maybe_log_stats(local_rt);
             return nullptr;
         }
         if (local_rt->stopped || local_rt->queue.empty()) {
@@ -387,6 +456,8 @@ data::DeviceDataPtr DevicePlugin::fetch()
         if (!sample.payload.empty()) {
             memcpy(raw->payload, sample.payload.data(), sample.payload.size());
         }
+        local_rt->out_imu_packets.fetch_add(1);
+        maybe_log_stats(local_rt);
         return data;
     }
 
@@ -420,6 +491,9 @@ data::DeviceDataPtr DevicePlugin::fetch()
         memcpy(raw->payload, sample.payload.data(), sample.payload.size());
     }
 
+    local_rt->out_point_packets.fetch_add(1);
+    maybe_log_stats(local_rt);
+
     return data;
 }
 
@@ -439,6 +513,86 @@ data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_
                                              const ParametersInterface* parameters)
 {
     (void)parameters;
+
+    if (storage_data->is_type(LivoxPacketFullSynced::TypeVal) || storage_data->is_type(LivoxPacketLocalSynced::TypeVal) ||
+        storage_data->is_type(LivoxPacketUnSynced::TypeVal)) {
+        auto raw_data = static_cast<LivoxPacket*>(storage_data.get());
+
+        std::vector<data::Points::PointXYZCIDPAT> points;
+        points.reserve(raw_data->dot_num);
+
+        if (raw_data->livox_data_type == kLivoxLidarCartesianCoordinateHighData) {
+            const auto max_points = raw_data->payload_size / sizeof(LivoxCartesianHighRawPoint);
+            const auto point_count = std::min<size_t>(raw_data->dot_num, max_points);
+            auto raw_points = reinterpret_cast<const LivoxCartesianHighRawPoint*>(raw_data->payload);
+
+            for (size_t i = 0; i < point_count; ++i) {
+                data::Points::PointXYZCIDPAT pt{};
+                pt.x = static_cast<float>(raw_points[i].x_mm) / 1000.0f;
+                pt.y = static_cast<float>(raw_points[i].y_mm) / 1000.0f;
+                pt.z = static_cast<float>(raw_points[i].z_mm) / 1000.0f;
+                pt.intensity = static_cast<float>(raw_points[i].reflectivity);
+                pt.channel = parse_ring_from_tag(raw_points[i].tag);
+                pt.ring = pt.channel;
+                pt.time_offset = 0.0f;
+                fill_common_point_fields(pt);
+                points.emplace_back(pt);
+            }
+        } else if (raw_data->livox_data_type == kLivoxLidarCartesianCoordinateLowData) {
+            const auto max_points = raw_data->payload_size / sizeof(LivoxCartesianLowRawPoint);
+            const auto point_count = std::min<size_t>(raw_data->dot_num, max_points);
+            auto raw_points = reinterpret_cast<const LivoxCartesianLowRawPoint*>(raw_data->payload);
+
+            for (size_t i = 0; i < point_count; ++i) {
+                data::Points::PointXYZCIDPAT pt{};
+                pt.x = static_cast<float>(raw_points[i].x_cm) / 100.0f;
+                pt.y = static_cast<float>(raw_points[i].y_cm) / 100.0f;
+                pt.z = static_cast<float>(raw_points[i].z_cm) / 100.0f;
+                pt.intensity = static_cast<float>(raw_points[i].reflectivity);
+                pt.channel = parse_ring_from_tag(raw_points[i].tag);
+                pt.ring = pt.channel;
+                pt.time_offset = 0.0f;
+                fill_common_point_fields(pt);
+                points.emplace_back(pt);
+            }
+        } else {
+            log::warn << "Livox: unsupported point data type " << static_cast<uint32_t>(raw_data->livox_data_type)
+                      << log::endl;
+            return data::SensorData::broken_data();
+        }
+
+        if (points.empty()) {
+            return data::SensorData::broken_data();
+        }
+
+        auto length = static_cast<uint32_t>(sizeof(data::Points) + sizeof(data::Points::PointXYZCIDPAT) * points.size());
+        auto sensor_data = data::SensorData::create_from(storage_data, SensorDataType::Points, length);
+        auto lidar_data = static_cast<data::Points*>(sensor_data.get());
+
+        lidar_data->point_number = static_cast<uint32_t>(points.size());
+        memcpy(lidar_data->points, points.data(), sizeof(data::Points::PointXYZCIDPAT) * points.size());
+
+        if (storage_data->is_type(LivoxPacketUnSynced::TypeVal)) {
+            lidar_data->timestamp_intrinsic_ns = raw_data->timestamp_host_ns;
+        } else {
+            lidar_data->timestamp_intrinsic_ns = raw_data->timestamp_device_ns;
+        }
+
+        lidar_data->meta.vendor = data::Points::LidarVendor::VendorLivox;
+        lidar_data->meta.return_type = data::Points::ReturnType::Strongest;
+        lidar_data->meta.point_format = data::Points::PointFormat::XYZI;
+        lidar_data->meta.rotation_direction = 0;
+        lidar_data->meta.num_channel = 40;
+        lidar_data->meta.nominal_pitch_increment = 0;
+        lidar_data->meta.time_increment = 0;
+        lidar_data->meta.time_increment_horizontal = 0;
+        lidar_data->meta.total_time = 0;
+        lidar_data->meta.nominal_min_range = 0.1;
+        lidar_data->meta.nominal_max_range = 260.0;
+        lidar_data->meta.azimuth = lidar_data->points[0].azimuth;
+
+        return sensor_data;
+    }
 
     if (storage_data->is_type(LivoxImuPacket::TypeVal)) {
         auto raw_data = static_cast<LivoxImuPacket*>(storage_data.get());
