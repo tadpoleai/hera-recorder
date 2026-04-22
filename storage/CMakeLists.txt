@@ -88,8 +88,18 @@ foreach(PLUGIN_SRC ${PLUGIN_SRC_LIST})
 endforeach(PLUGIN_SRC)
 
 file(GLOB_RECURSE TOOL_SRC "tool/*.cpp")
+# Separate extract_insta from main tool
+list(REMOVE_ITEM TOOL_SRC "${CMAKE_CURRENT_SOURCE_DIR}/tool/extract_insta.cpp")
 add_executable(${PROJECT_NAME}-tool ${TOOL_SRC})
 target_link_libraries(${PROJECT_NAME}-tool hera-common hera-storage hera-device)
+
+# Build extract-insta same way as tool
+add_executable(${PROJECT_NAME}-extract-insta tool/extract_insta.cpp)
+target_link_libraries(${PROJECT_NAME}-extract-insta hera-common hera-storage hera-device ${CMAKE_DL_LIBS})
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  # Keep transitive shared-lib dependencies during link (avoids dropping hera-device with --as-needed)
+  target_link_options(${PROJECT_NAME}-extract-insta PRIVATE -Wl,--no-as-needed)
+endif()
 
 # Install shared libraries
 install(
@@ -104,7 +114,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
 
 # Install tools
 install(
-  TARGETS ${PROJECT_NAME}-tool
+  TARGETS ${PROJECT_NAME}-tool ${PROJECT_NAME}-extract-insta
   PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE
               WORLD_READ
   DESTINATION bin)
