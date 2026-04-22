@@ -20,7 +20,7 @@
         },
         {
           "type": "WorkMode",
-          "value": "RecordDownload"
+          "value": "Stream"
         },
         {
           "type": "AutoStartRecording",
@@ -64,7 +64,7 @@
         },
         {
           "type": "SyncLocalTime",
-          "value": "true"
+          "value": "false"
         },
         {
           "type": "EnableInCameraStitching",
@@ -72,7 +72,7 @@
         },
         {
           "type": "LogLevel",
-          "value": "Error"
+          "value": "Verbose"
         },
         {
           "type": "FetchTimeoutMs",

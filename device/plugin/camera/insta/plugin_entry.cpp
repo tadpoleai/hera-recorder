@@ -11,11 +11,15 @@
 #include <cstring>
 #include <ctime>
 #include <deque>
+#include <cstdlib>
+#include <cctype>
 #include <limits>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
+
+#include <unistd.h>
 
 #include "plugin_common.hpp"
 #include "plugin_param.hpp"
@@ -39,6 +43,99 @@ constexpr size_t kMaxVideoPayloadBytes = 8 * 1024 * 1024;
 constexpr size_t kMaxGyroPayloadBytes = 2 * 1024 * 1024;
 constexpr size_t kMaxQueueBytes = 64 * 1024 * 1024;
 
+std::string join_path(const std::string& dir, const std::string& name)
+{
+    if (dir.empty() || dir == ".") {
+        return name;
+    }
+    if (dir.back() == '/' || dir.back() == '\\') {
+        return dir + name;
+    }
+    return dir + "/" + name;
+}
+
+std::string basename_from_url(const std::string& url)
+{
+    const auto slash = url.find_last_of("/\\");
+    if (slash == std::string::npos || slash + 1 >= url.size()) {
+        return "insta_record.mp4";
+    }
+    return url.substr(slash + 1);
+}
+
+bool download_media_urls(const std::shared_ptr<ins_camera::Camera>& camera,
+                        const ins_camera::MediaUrl& media_url,
+                        const std::string& output_dir)
+{
+    if (!camera || media_url.Empty()) {
+        return false;
+    }
+
+    if (access(output_dir.c_str(), F_OK) != 0) {
+        log::warn << "Insta: download directory does not exist: " << output_dir << log::endl;
+        return false;
+    }
+
+    bool all_ok = true;
+    const auto& urls = media_url.OriginUrls();
+    for (size_t i = 0; i < urls.size(); ++i) {
+        const auto& remote = urls[i];
+        const auto local = join_path(output_dir, basename_from_url(remote));
+        if (!camera->DownloadCameraFile(remote, local)) {
+            all_ok = false;
+            log::warn << "Insta: download failed: " << remote << " -> " << local << log::endl;
+            continue;
+        }
+        log::info << "Insta: downloaded " << local << log::endl;
+    }
+
+    return all_ok;
+}
+
+bool parse_bool(const std::string& value, const bool default_value)
+{
+    if (value.empty()) {
+        return default_value;
+    }
+
+    std::string normalized = value;
+    std::transform(normalized.begin(), normalized.end(), normalized.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+
+    if (normalized == "1" || normalized == "true" || normalized == "yes" || normalized == "on") {
+        return true;
+    }
+    if (normalized == "0" || normalized == "false" || normalized == "no" || normalized == "off") {
+        return false;
+    }
+    return default_value;
+}
+
+bool stop_recording_with_optional_download(const std::shared_ptr<ins_camera::Camera>& camera,
+                                           const bool auto_download,
+                                           const std::string& download_dir)
+{
+    if (!camera) {
+        return false;
+    }
+
+    const auto media_url = camera->StopRecording();
+    if (media_url.Empty()) {
+        log::warn << "Insta: StopRecording returned empty media url" << log::endl;
+        return false;
+    }
+
+    if (!auto_download) {
+        for (const auto& url : media_url.OriginUrls()) {
+            log::info << "Insta: recorded media url " << url << log::endl;
+        }
+        return true;
+    }
+
+    return download_media_urls(camera, media_url, download_dir);
+}
+
 ins_camera::VideoResolution map_video_resolution(const VideoResolution value)
 {
     if (value._to_integral() == static_cast<int32_t>(VideoResolution::R2560x1280P30)) {
@@ -54,6 +151,25 @@ ins_camera::VideoResolution map_lrv_resolution(const bool fixed_lrv_resolution)
 {
     (void)fixed_lrv_resolution;
     return ins_camera::VideoResolution::RES_1440_720P30;
+}
+
+bool start_recording_normal_video(const std::shared_ptr<ins_camera::Camera>& camera,
+                                  const VideoResolution resolution,
+                                  const int32_t video_bitrate)
+{
+    if (!camera) {
+        return false;
+    }
+
+    ins_camera::RecordParams record_params;
+    record_params.resolution = map_video_resolution(resolution);
+    record_params.bitrate = std::max<int32_t>(131072, video_bitrate);
+
+    if (!camera->SetVideoCaptureParams(record_params, ins_camera::CameraFunctionMode::FUNCTION_MODE_NORMAL_VIDEO)) {
+        log::warn << "Insta: SetVideoCaptureParams(FUNCTION_MODE_NORMAL_VIDEO) failed" << log::endl;
+    }
+
+    return camera->StartRecording();
 }
 
 template <typename CameraType>
@@ -219,6 +335,11 @@ std::shared_ptr<RuntimeState> runtime_;
 std::shared_ptr<ins_camera::Camera> camera_;
 std::shared_ptr<ins_camera::StreamDelegate> stream_delegate_;
 std::atomic<bool> stream_started_{false};
+std::atomic<bool> is_stream_mode_{true};
+std::atomic<bool> record_started_{false};
+std::atomic<bool> runtime_auto_download_{true};
+std::string runtime_download_dir_{"."};
+std::mutex camera_op_mutex_;
 
 static void maybe_log_stats(const std::shared_ptr<RuntimeState>& rt)
 {
@@ -248,6 +369,7 @@ HERA_PLUGIN_DEFINE_END
 HeraErrno DevicePlugin::connect()
 {
     stream_started_.store(false);
+    record_started_.store(false);
     runtime_ = std::make_shared<RuntimeState>();
 
     if (local_parameters_.get_LogLevel()._to_integral() == static_cast<int32_t>(LogLevel::Verbose)) {
@@ -257,9 +379,20 @@ HeraErrno DevicePlugin::connect()
     }
 
     ins_camera::DeviceDiscovery discovery;
-    auto list = discovery.GetAvailableDevices();
+    std::vector<ins_camera::DeviceDescriptor> list;
+    const auto discover_timeout_ms = std::max<int32_t>(1000, local_parameters_.get_CameraTimeoutMs());
+    const auto discover_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(discover_timeout_ms);
+    while (std::chrono::steady_clock::now() < discover_deadline) {
+        list = discovery.GetAvailableDevices();
+        if (!list.empty()) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+
     if (list.empty()) {
-        return handle_error(HeraErrno::CanNotOpenCamera, "Insta: no USB camera discovered");
+        return handle_error(HeraErrno::CanNotOpenCamera,
+                            "Insta: no USB camera discovered (check USB mode=Android and retry)");
     }
 
     auto selected = list[0];
@@ -280,14 +413,31 @@ HeraErrno DevicePlugin::connect()
     }
 
     camera_ = std::make_shared<ins_camera::Camera>(selected.info);
-    discovery.FreeDeviceDescriptors(list);
 
-    if (!camera_ || !camera_->Open()) {
+    try {
+        if (!camera_ || !camera_->Open()) {
+            discovery.FreeDeviceDescriptors(list);
+            camera_.reset();
+            return handle_error(HeraErrno::CanNotOpenCamera, "Insta: camera open failed");
+        }
+    } catch (const std::exception& e) {
+        discovery.FreeDeviceDescriptors(list);
         camera_.reset();
-        return handle_error(HeraErrno::CanNotOpenCamera, "Insta: camera open failed");
+        return handle_error(HeraErrno::CanNotOpenCamera, std::string("Insta: camera open exception: ") + e.what());
+    } catch (...) {
+        discovery.FreeDeviceDescriptors(list);
+        camera_.reset();
+        return handle_error(HeraErrno::CanNotOpenCamera, "Insta: camera open unknown exception");
     }
 
+    discovery.FreeDeviceDescriptors(list);
+
     camera_->SetTimeout(std::max<int32_t>(1000, local_parameters_.get_CameraTimeoutMs()));
+
+    const bool stream_mode = local_parameters_.get_WorkMode()._to_integral() == static_cast<int32_t>(WorkMode::Stream);
+    is_stream_mode_.store(stream_mode);
+    runtime_auto_download_.store(local_parameters_.get_AutoDownload());
+    runtime_download_dir_ = local_parameters_.get_DownloadDir();
 
     if (local_parameters_.get_SyncLocalTime()) {
         std::time_t now = std::time(nullptr);
@@ -296,39 +446,86 @@ HeraErrno DevicePlugin::connect()
         }
     }
 
-    stream_delegate_ = std::make_shared<HeraStreamDelegate>(runtime_, local_parameters_.get_EnableGyro());
-    camera_->SetStreamDelegate(stream_delegate_);
+    if (stream_mode) {
+        stream_delegate_ = std::make_shared<HeraStreamDelegate>(runtime_, local_parameters_.get_EnableGyro());
+        camera_->SetStreamDelegate(stream_delegate_);
 
-    if (local_parameters_.get_EnableInCameraStitching()) {
-        if (!camera_->EnableInCameraStitching(true)) {
-            log::warn << "Insta: EnableInCameraStitching failed (device may not support it)" << log::endl;
+        if (local_parameters_.get_EnableInCameraStitching()) {
+            if (!camera_->EnableInCameraStitching(true)) {
+                log::warn << "Insta: EnableInCameraStitching failed (device may not support it)" << log::endl;
+            }
+        }
+
+        ins_camera::LiveStreamParam param;
+        param.video_resolution = map_video_resolution(local_parameters_.get_VideoResolution());
+        param.lrv_video_resulution = map_lrv_resolution(local_parameters_.get_FixedLrvResolution());
+        param.video_bitrate = std::max<int32_t>(131072, local_parameters_.get_VideoBitrate());
+        param.enable_audio = local_parameters_.get_EnableAudio();
+        param.using_lrv = local_parameters_.get_UsingLrv();
+
+        // Note: Do NOT call SetVideoCaptureParams for FUNCTION_MODE_LIVE_STREAM in 2.0.2 SDK
+        // It causes USB timeouts and device disconnect. StartLiveStreaming handles the mode setup.
+
+        try {
+            if (!camera_->StartLiveStreaming(param)) {
+                camera_->Close();
+                camera_.reset();
+                stream_delegate_.reset();
+                runtime_.reset();
+                return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StartLiveStreaming failed");
+            }
+        } catch (const std::exception& e) {
+            if (camera_) {
+                camera_->Close();
+            }
+            camera_.reset();
+            stream_delegate_.reset();
+            runtime_.reset();
+            return handle_error(HeraErrno::CanNotOpenCamera,
+                                std::string("Insta: StartLiveStreaming exception: ") + e.what());
+        } catch (...) {
+            if (camera_) {
+                camera_->Close();
+            }
+            camera_.reset();
+            stream_delegate_.reset();
+            runtime_.reset();
+            return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StartLiveStreaming unknown exception");
+        }
+
+        stream_started_.store(true);
+    } else {
+        if (local_parameters_.get_AutoStartRecording()) {
+            try {
+                if (!start_recording_normal_video(
+                        camera_, local_parameters_.get_VideoResolution(), local_parameters_.get_VideoBitrate())) {
+                    camera_->Close();
+                    camera_.reset();
+                    runtime_.reset();
+                    return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StartRecording failed");
+                }
+            } catch (const std::exception& e) {
+                if (camera_) {
+                    camera_->Close();
+                }
+                camera_.reset();
+                runtime_.reset();
+                return handle_error(HeraErrno::CanNotOpenCamera,
+                                    std::string("Insta: StartRecording exception: ") + e.what());
+            } catch (...) {
+                if (camera_) {
+                    camera_->Close();
+                }
+                camera_.reset();
+                runtime_.reset();
+                return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StartRecording unknown exception");
+            }
+            record_started_.store(true);
+            log::info << "Insta: RecordDownload mode started recording" << log::endl;
+        } else {
+            log::info << "Insta: RecordDownload mode, waiting external start" << log::endl;
         }
     }
-
-    ins_camera::LiveStreamParam param;
-    param.video_resolution = map_video_resolution(local_parameters_.get_VideoResolution());
-    param.lrv_video_resulution = map_lrv_resolution(local_parameters_.get_FixedLrvResolution());
-    param.video_bitrate = std::max<int32_t>(131072, local_parameters_.get_VideoBitrate());
-    param.enable_audio = local_parameters_.get_EnableAudio();
-    param.using_lrv = local_parameters_.get_UsingLrv();
-
-    ins_camera::RecordParams record_params;
-    record_params.resolution = param.video_resolution;
-    record_params.bitrate = 0;
-    if (!camera_->SetVideoCaptureParams(record_params, ins_camera::CameraFunctionMode::FUNCTION_MODE_LIVE_STREAM)) {
-        log::warn << "Insta: SetVideoCaptureParams(FUNCTION_MODE_LIVE_STREAM) failed, continue with SDK defaults"
-                  << log::endl;
-    }
-
-    if (!camera_->StartLiveStreaming(param)) {
-        camera_->Close();
-        camera_.reset();
-        stream_delegate_.reset();
-        runtime_.reset();
-        return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StartLiveStreaming failed");
-    }
-
-    stream_started_.store(true);
 
     return HeraErrno::Success;
 }
@@ -344,9 +541,23 @@ void DevicePlugin::disconnect()
     }
 
     if (camera_) {
-        // Some CameraSDK builds may crash in StopLiveStreaming() during teardown.
-        // Closing the camera session directly is stable and sufficient for cleanup.
-        if (stream_started_.load()) {
+        if (!is_stream_mode_.load() && record_started_.load()) {
+            try {
+                record_started_.store(false);
+                if (!stop_recording_with_optional_download(
+                        camera_, runtime_auto_download_.load(), runtime_download_dir_)) {
+                    log::warn << "Insta: stop recording completed with errors" << log::endl;
+                }
+            } catch (const std::exception& e) {
+                log::warn << "Insta: StopRecording exception: " << e.what() << log::endl;
+            } catch (...) {
+                log::warn << "Insta: StopRecording unknown exception" << log::endl;
+            }
+        }
+
+        if (is_stream_mode_.load() && stream_started_.load()) {
+            // Some CameraSDK builds may crash in StopLiveStreaming() during teardown.
+            // Closing the camera session directly is stable and sufficient for cleanup.
             stream_started_.store(false);
         }
         camera_->Close();
@@ -361,6 +572,10 @@ data::DeviceDataPtr DevicePlugin::fetch()
 {
     auto local_rt = runtime_;
     if (!local_rt) {
+        return nullptr;
+    }
+
+    if (!is_stream_mode_.load()) {
         return nullptr;
     }
 
@@ -442,8 +657,72 @@ data::DeviceDataPtr DevicePlugin::fetch()
 
 HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::string& value)
 {
-    (void)type;
-    (void)value;
+    if (type == "DownloadDir") {
+        std::lock_guard<std::mutex> lock(camera_op_mutex_);
+        if (!value.empty()) {
+            runtime_download_dir_ = value;
+            log::info << "Insta: runtime DownloadDir set to " << runtime_download_dir_ << log::endl;
+        }
+        return HeraErrno::Success;
+    }
+
+    if (type == "AutoDownload") {
+        runtime_auto_download_.store(parse_bool(value, runtime_auto_download_.load()));
+        log::info << "Insta: runtime AutoDownload set to " << (runtime_auto_download_.load() ? "true" : "false")
+                  << log::endl;
+        return HeraErrno::Success;
+    }
+
+    if (is_stream_mode_.load()) {
+        return HeraErrno::Success;
+    }
+
+    if (!camera_) {
+        return HeraErrno::CanNotOpenCamera;
+    }
+
+    if (type == "StartRecording") {
+        std::lock_guard<std::mutex> lock(camera_op_mutex_);
+        if (record_started_.load()) {
+            return HeraErrno::Success;
+        }
+        try {
+            if (!start_recording_normal_video(camera_, local_parameters_.get_VideoResolution(),
+                                              local_parameters_.get_VideoBitrate())) {
+                return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StartRecording command failed");
+            }
+            record_started_.store(true);
+            log::info << "Insta: StartRecording command success" << log::endl;
+            return HeraErrno::Success;
+        } catch (const std::exception& e) {
+            return handle_error(HeraErrno::CanNotOpenCamera,
+                                std::string("Insta: StartRecording command exception: ") + e.what());
+        } catch (...) {
+            return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StartRecording command unknown exception");
+        }
+    }
+
+    if (type == "StopRecording" || type == "StopAndDownload") {
+        std::lock_guard<std::mutex> lock(camera_op_mutex_);
+        if (!record_started_.load()) {
+            return HeraErrno::Success;
+        }
+        try {
+            const bool auto_download = (type == "StopAndDownload") ? true : runtime_auto_download_.load();
+            if (!stop_recording_with_optional_download(camera_, auto_download, runtime_download_dir_)) {
+                return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StopRecording command failed");
+            }
+            record_started_.store(false);
+            log::info << "Insta: " << type << " command success" << log::endl;
+            return HeraErrno::Success;
+        } catch (const std::exception& e) {
+            return handle_error(HeraErrno::CanNotOpenCamera,
+                                std::string("Insta: StopRecording command exception: ") + e.what());
+        } catch (...) {
+            return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StopRecording command unknown exception");
+        }
+    }
+
     return HeraErrno::OK;
 }
 
