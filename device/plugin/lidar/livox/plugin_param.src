@@ -3,7 +3,7 @@
 
 # SDK配置文件路径
 # Livox SDK2 使用的 JSON 配置文件绝对路径
-immutable string ConfigPath = ""; regex ^.*$
+immutable string ConfigPath = "/etc/mid360_config.json"; regex ^.*$
 
 # 设备序列号过滤
 # 留空表示绑定首个发现的设备

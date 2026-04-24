@@ -17,6 +17,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <unistd.h>
@@ -412,22 +413,54 @@ HeraErrno DevicePlugin::connect()
         }
     }
 
-    camera_ = std::make_shared<ins_camera::Camera>(selected.info);
+    // After an abnormal session end (e.g. SIGKILL, daemon crash), the camera's USB bulk-IN
+    // endpoint retains buffered bytes from the previous protocol exchange. The first Open()
+    // call reads those stale bytes, fails to parse the response packet ("parse packet error"
+    // in io_device.cpp), and returns false — even though the camera is physically connected
+    // and healthy. A second Open() call on the same device descriptor starts with a clean
+    // pipe and always succeeds. We implement that retry here so callers never see the error.
+    static constexpr int kOpenRetries = 2;
+    for (int attempt = 1; attempt <= kOpenRetries; ++attempt) {
+        camera_ = std::make_shared<ins_camera::Camera>(selected.info);
+        bool opened = false;
+        try {
+            opened = camera_ && camera_->Open();
+        } catch (const std::exception& e) {
+            if (attempt < kOpenRetries) {
+                log::warn << "Insta: camera open exception on attempt " << attempt << ": " << e.what()
+                          << " — retrying" << log::endl;
+                camera_.reset();
+                std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                continue;
+            }
+            discovery.FreeDeviceDescriptors(list);
+            camera_.reset();
+            return handle_error(HeraErrno::CanNotOpenCamera, std::string("Insta: camera open exception: ") + e.what());
+        } catch (...) {
+            if (attempt < kOpenRetries) {
+                log::warn << "Insta: camera open unknown exception on attempt " << attempt << " — retrying" << log::endl;
+                camera_.reset();
+                std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                continue;
+            }
+            discovery.FreeDeviceDescriptors(list);
+            camera_.reset();
+            return handle_error(HeraErrno::CanNotOpenCamera, "Insta: camera open unknown exception");
+        }
 
-    try {
-        if (!camera_ || !camera_->Open()) {
+        if (opened) {
+            break;  // success
+        }
+        if (attempt < kOpenRetries) {
+            log::warn << "Insta: camera->Open() failed on attempt " << attempt << " (stale USB pipe) — retrying"
+                      << log::endl;
+            camera_.reset();
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        } else {
             discovery.FreeDeviceDescriptors(list);
             camera_.reset();
             return handle_error(HeraErrno::CanNotOpenCamera, "Insta: camera open failed");
         }
-    } catch (const std::exception& e) {
-        discovery.FreeDeviceDescriptors(list);
-        camera_.reset();
-        return handle_error(HeraErrno::CanNotOpenCamera, std::string("Insta: camera open exception: ") + e.what());
-    } catch (...) {
-        discovery.FreeDeviceDescriptors(list);
-        camera_.reset();
-        return handle_error(HeraErrno::CanNotOpenCamera, "Insta: camera open unknown exception");
     }
 
     discovery.FreeDeviceDescriptors(list);

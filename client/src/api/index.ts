@@ -11,7 +11,7 @@ function connect(callback: (err: any | void) => void): Hera.Service.Client {
     transport: TBufferedTransport,
     protocol: TBinaryProtocol,
     https: false,
-    path: '',
+    path: '/hera',
     headers: {
       Host: store.hostUrl
     }

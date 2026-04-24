@@ -15,7 +15,7 @@ export interface State {
 
 const defaultHost = window.location.hostname;
 const env = process.env.NODE_ENV || 'production';
-let defaultPort = 10093;
+let defaultPort = 80;
 if (env != 'production') {
   defaultPort = 10094;
 }

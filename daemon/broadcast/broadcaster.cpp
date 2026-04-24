@@ -82,13 +82,13 @@ void Broadcaster::thread_function()
         }
 
         for (auto ifa = ifList; ifa != nullptr; ifa = ifa->ifa_next) {
-            if (ifa->ifa_addr->sa_family != AF_INET) {
+            if (ifa->ifa_addr == nullptr || ifa->ifa_addr->sa_family != AF_INET) {
                 continue;
             }
 
             bool find = false;
             std::string ifa_name(ifa->ifa_name);
-            for (const auto if_name : ifs_) {
+            for (const auto& if_name : ifs_) {
                 find = (if_name == ifa_name);
                 if (find) {
                     break;
@@ -100,6 +100,9 @@ void Broadcaster::thread_function()
 
             struct sockaddr_in b_addr;
             b_addr.sin_family = AF_INET;
+            if (ifa->ifa_dstaddr == nullptr) {
+                continue;
+            }
             auto sin = (struct sockaddr_in*)ifa->ifa_dstaddr;
             b_addr.sin_addr.s_addr = sin->sin_addr.s_addr;
             b_addr.sin_port = htons(port_);

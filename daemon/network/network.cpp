@@ -55,7 +55,7 @@ const std::vector<Interface>& Network::retrieve()
     }
 
     for (auto ifa = ifList; ifa != nullptr; ifa = ifa->ifa_next) {
-        if (ifa->ifa_addr->sa_family != AF_INET) {
+        if (ifa->ifa_addr == nullptr || ifa->ifa_addr->sa_family != AF_INET) {
             continue;
         }
 
