@@ -37,14 +37,16 @@ stages:
     name: 编译
     jobs:
 
-      # ── Job A: arm64 Jetson deb（主要产物）────────────────────────────
-      # 使用 Docker buildx + QEMU 在 x86 runner 上模拟 arm64 环境编译。
-      # 若要更快的原生构建，将 runsOn 改为注册了 Jetson 的私有资源组：
+      # ── Job A: arm64 Jetson deb（aarch64 交叉编译）─────────────────────
+      # 在 ubuntu:22.04 容器内用 gcc-aarch64-linux-gnu 交叉编译。
+      # 云效公共 runner 无 network namespace 权限，Docker+QEMU 方案不可用。
+      # 若要使用 Jetson 原生构建，可将 runsOn 改为自托管 arm64 runner：
       #   runsOn: private/<your-runner-group-id>
-      # 并在 Jetson 上安装云效 Runner Agent 后注册。
       build_arm64:
-        name: 编译 arm64 (Jetson)
-        runsOn: public/cn-hangzhou
+        name: 编译 arm64 (aarch64 交叉编译)
+        runsOn:
+          group: public/cn-hangzhou
+          container: ubuntu:22.04
 
         steps:
           extract_version_arm64:
@@ -52,76 +54,68 @@ stages:
             name: 提取版本号
             with:
               run: |
-                # 云效 tag push 时变量名可能是 GIT_BRANCH 或 PIPELINE_GIT_BRANCH
                 TAG="${GIT_BRANCH:-${PIPELINE_GIT_BRANCH:-}}"
                 VERSION="${TAG#refs/tags/}"
                 VERSION="${VERSION#v}"
                 [ -z "${VERSION}" ] && VERSION="dev"
-                # 云效步骤各自独立 shell，PIPELINE_ENV 不可用；用工作区文件传递
                 echo "${VERSION}" > "${WORK_SPACE}/build_version_arm64"
                 echo "[ci] arm64 version = ${VERSION}"
 
-          setup_docker_qemu:
+          install_deps_arm64:
             step: Command
-            name: 安装 Docker + 注册 QEMU arm64 模拟器
+            name: 安装 aarch64 交叉编译依赖
             with:
               run: |
-                # 安装 docker.io（如未预装）
-                if ! command -v docker &>/dev/null; then
-                  export DEBIAN_FRONTEND=noninteractive
-                  apt-get update -qq
-                  apt-get install -y docker.io
-                fi
-                # service start 在容器环境下会谎报成功但 daemon 未启动；
-                # 改为直接启动 dockerd：vfs 不依赖 overlay2，iptables=false 避免权限问题
-                if ! docker info &>/dev/null 2>&1; then
-                  echo "[ci] starting dockerd directly (vfs driver)..."
-                  nohup dockerd \
-                    --storage-driver=vfs \
-                    --data-root=/tmp/docker-data \
-                    --exec-root=/tmp/docker-exec \
-                    --iptables=false \
-                    >/tmp/dockerd.log 2>&1 &
-                  for i in $(seq 1 30); do
-                    docker info &>/dev/null 2>&1 && echo "[ci] docker daemon ready ($i)" && break || true
-                    echo "waiting... ($i/30)"
-                    sleep 2
-                  done
-                  if ! docker info &>/dev/null 2>&1; then
-                    echo "=== dockerd.log ==="
-                    cat /tmp/dockerd.log || true
-                    echo "=== dockerd failed to start ==="
-                    exit 1
-                  fi
-                fi
-                docker version
-                docker run --rm --privileged \
-                  tonistiigi/binfmt:latest --install arm64
-                docker buildx create --use --name arm64-builder \
-                  --driver docker-container 2>/dev/null || true
-                docker buildx inspect arm64-builder --bootstrap
+                export DEBIAN_FRONTEND=noninteractive
+                dpkg --add-architecture arm64
+                apt-get update -qq
+                apt-get install -y --no-install-recommends \
+                  gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+                  cmake make git pkg-config dpkg-dev \
+                  thrift-compiler \
+                  libboost-dev:arm64 libboost-filesystem-dev:arm64 \
+                  libboost-thread-dev:arm64 libboost-program-options-dev:arm64 \
+                  libevent-dev:arm64 libconfig++-dev:arm64 \
+                  libthrift-dev:arm64 \
+                  libturbojpeg0-dev:arm64 \
+                  libusb-1.0-0-dev:arm64
+                mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include
+                ln -sf /usr/lib/aarch64-linux-gnu/libturbojpeg.so \
+                       /opt/libjpeg-turbo/lib64/libturbojpeg.so
+                ln -sf /usr/include/turbojpeg.h \
+                       /opt/libjpeg-turbo/include/turbojpeg.h
 
-          build_deb_arm64:
+          compile_arm64:
             step: Command
-            name: 构建 arm64 deb
+            name: 交叉编译 arm64
             with:
               run: |
                 VERSION="$(cat "${WORK_SPACE}/build_version_arm64")"
-                SDK_ARG=""
-                if [ -n "${INSTA_SDK_OSS_URL:-}" ]; then
-                  SDK_ARG="--build-arg INSTA_SDK_URL=${INSTA_SDK_OSS_URL}"
-                fi
+                export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+                export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig
+                mkdir -p build_arm64 && cd build_arm64
+                cmake .. \
+                  -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain-aarch64.cmake \
+                  -DCMAKE_BUILD_TYPE=Release \
+                  -DWITH_DAEMON=ON \
+                  -DWITH_REPLAY=ON \
+                  -DWITH_CONVERT=OFF \
+                  -DWITH_SLAM=OFF \
+                  -DWITH_GIT_INFO=OFF \
+                  -DCMAKE_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu \
+                  -DJPEG_TURBO_ROOT_DIR=/opt/libjpeg-turbo \
+                  -Dforce-git-info="${VERSION}"
+                make -j"$(nproc)"
 
+          package_arm64:
+            step: Command
+            name: 打包 arm64 deb
+            with:
+              run: |
+                VERSION="$(cat "${WORK_SPACE}/build_version_arm64")"
+                bash scripts/make_artifacts.sh arm64
                 mkdir -p dist
-                docker buildx build \
-                  --platform linux/arm64 \
-                  --builder arm64-builder \
-                  --build-arg VERSION="${VERSION}" \
-                  ${SDK_ARG} \
-                  --output "type=local,dest=./dist" \
-                  -f cloud/docker/Dockerfile.build-arm64 \
-                  .
-
+                bash scripts/make_deb.sh "${VERSION}" artifacts dist arm64
                 echo "[ci] arm64 产物："
                 ls -lh dist/*.deb
 
