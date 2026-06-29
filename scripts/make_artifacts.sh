@@ -1,92 +1,81 @@
-echo "Making Artifacts"
+#!/bin/bash
+# Collect build artifacts for packaging.
+#
+# Usage:
+#   make_artifacts.sh [arch]      # arch: amd64 (default) | arm64
+#
+# For amd64: collects from build_amd64/ (full build including convert + slam)
+# For arm64: collects from build_arm64/ (daemon + replay + storage only)
+set -euo pipefail
 
-cd $(dirname "$0")/..
+ARCH="${1:-amd64}"
+BUILD_DIR="build_${ARCH}"
 
-mkdir -p artifacts/client
-mkdir -p artifacts/manual
-mkdir -p artifacts/header/hera/common
-mkdir -p artifacts/header/hera/storage
-mkdir -p artifacts/header/hera/device
-mkdir -p artifacts/header/hera/convert
-mkdir -p artifacts/script
+echo "Making Artifacts (arch=${ARCH}, build_dir=${BUILD_DIR})"
+
+cd "$(dirname "$0")/.."
+
 mkdir -p artifacts/script/daemon
-mkdir -p artifacts/share
 
-# Client
-cp -r build_client/* artifacts/client
+mkdir -p "artifacts/bin/${ARCH}/"
+mkdir -p "artifacts/lib/${ARCH}/"
+mkdir -p "artifacts/plugin/${ARCH}/base"
+mkdir -p "artifacts/plugin/${ARCH}/driver"
+mkdir -p "artifacts/plugin/${ARCH}/upload"
 
-# Header
-cp -r common/include/* artifacts/header/hera/common
-cp -r device/include/* artifacts/header/hera/device
-cp -r storage/include/* artifacts/header/hera/storage
-cp -r convert/include/* artifacts/header/hera/convert
+# ── Binaries ──────────────────────────────────────────────────────────────────
+if [ "${ARCH}" = "amd64" ]; then
+    # amd64 includes convert + slam (optional — skip if not built)
+    for d in convert/hera-*; do
+        [ -f "${BUILD_DIR}/${d}" ] && cp "${BUILD_DIR}/${d}" "artifacts/bin/${ARCH}/" || true
+    done
+    [ -f "${BUILD_DIR}/convert/libhera-convert-ros-message.so" ] && \
+        cp "${BUILD_DIR}/convert/libhera-convert-ros-message.so" "artifacts/lib/${ARCH}/" || true
 
-# archs=("amd64" "arm")
-archs=("amd64")
-arch_index=0
-while ((arch_index < 1)); do
-    arch=${archs[arch_index]}
+    for slam_bin in \
+        "${BUILD_DIR}/slam/bridge/hera-slam-"* \
+        "${BUILD_DIR}/slam/caller/hera-slam-"* \
+        "${BUILD_DIR}/slam/result/hera-slam-"*; do
+        [ -f "${slam_bin}" ] && cp "${slam_bin}" "artifacts/bin/${ARCH}/" || true
+    done
+fi
 
-    mkdir -p artifacts/bin/$arch/
-    mkdir -p artifacts/lib/$arch/
-    mkdir -p artifacts/plugin/$arch/base
-    mkdir -p artifacts/plugin/$arch/driver
-    mkdir -p artifacts/plugin/$arch/upload
-
-    # Binaries
-    if (($arch_index == 0)); then
-        cp -r build_$arch/convert/hera-* artifacts/bin/$arch
-        cp -r build_$arch/convert/libhera-convert-ros-message.so artifacts/lib/$arch
-        cp -r \
-            build_$arch/slam/bridge/hera-slam-* \
-            build_$arch/slam/caller/hera-slam-* \
-            build_$arch/slam/result/hera-slam-* \
-            artifacts/bin/$arch
+# Daemon, device tools, replay, storage tools (both arches)
+for sub in daemon device replay storage; do
+    if compgen -G "${BUILD_DIR}/${sub}/hera-*" > /dev/null 2>&1; then
+        cp -r "${BUILD_DIR}/${sub}/hera-"* "artifacts/bin/${ARCH}/"
     fi
-
-    cp -r \
-        build_$arch/daemon/hera-* \
-        build_$arch/device/hera-* \
-        build_$arch/replay/hera-* \
-        build_$arch/storage/hera-* \
-        artifacts/bin/$arch
-
-    # Libraries
-    cp -r \
-        build_$arch/common/libhera-common.so \
-        build_$arch/device/libhera-device.so \
-        build_$arch/storage/libhera-storage.so \
-        artifacts/lib/$arch
-
-    # Plugins
-    cp -r \
-        build_$arch/device/base/libhera-device-plugin-*-base.so \
-        artifacts/plugin/$arch/base
-    cp -r \
-        build_$arch/device/driver/libhera-device-plugin-*-driver.so \
-        artifacts/plugin/$arch/driver
-    cp -r \
-        build_$arch/storage/upload/libhera-storage-upload-*.so \
-        artifacts/plugin/$arch/upload
-
-    ((arch_index++))
 done
 
-# Script
-cp -r daemon/script/hera-daemon.service artifacts/script/daemon
-cp -r daemon/script/udiskie.service artifacts/script/daemon
-cp -r daemon/config/daemon.conf artifacts/script/daemon
+# ── Libraries ─────────────────────────────────────────────────────────────────
+for lib in common/libhera-common.so device/libhera-device.so storage/libhera-storage.so; do
+    [ -f "${BUILD_DIR}/${lib}" ] && \
+        cp "${BUILD_DIR}/${lib}" "artifacts/lib/${ARCH}/" || true
+done
 
-# Shared
-cp -r convert/config artifacts/share
-cp -r daemon/config artifacts/share
-cp -r slam/carto artifacts/share
-cp -r cmake/export/* artifacts/share
+# ── Plugins ───────────────────────────────────────────────────────────────────
+if compgen -G "${BUILD_DIR}/device/base/libhera-device-plugin-*-base.so" > /dev/null 2>&1; then
+    cp "${BUILD_DIR}/device/base/libhera-device-plugin-"*"-base.so" \
+       "artifacts/plugin/${ARCH}/base/"
+fi
 
-# Manual
-cp -r README.md artifacts
-cp -r manual/* artifacts/manual
+# Camera / sensor driver plugins (may be absent if SDK not found)
+if compgen -G "${BUILD_DIR}/device/driver/libhera-device-plugin-*-driver.so" > /dev/null 2>&1; then
+    cp "${BUILD_DIR}/device/driver/libhera-device-plugin-"*"-driver.so" \
+       "artifacts/plugin/${ARCH}/driver/"
+fi
 
-# Install Script
-cp -r scripts/install_artifacts.sh artifacts/
-chmod +x artifacts/install_artifacts.sh
+if compgen -G "${BUILD_DIR}/storage/upload/libhera-storage-upload-*.so" > /dev/null 2>&1; then
+    cp "${BUILD_DIR}/storage/upload/libhera-storage-upload-"*.so \
+       "artifacts/plugin/${ARCH}/upload/"
+fi
+
+# ── Systemd + config ──────────────────────────────────────────────────────────
+cp daemon/script/hera-daemon.service artifacts/script/daemon/
+cp daemon/script/udiskie.service     artifacts/script/daemon/ 2>/dev/null || true
+cp daemon/config/daemon.conf         artifacts/script/daemon/
+
+echo "Artifacts ready in artifacts/ (arch=${ARCH})"
+echo "  bins:    $(ls artifacts/bin/${ARCH}/ | wc -l) files"
+echo "  libs:    $(ls artifacts/lib/${ARCH}/ | wc -l) files"
+echo "  plugins: $(find artifacts/plugin/${ARCH}/ -name '*.so' | wc -l) .so files"

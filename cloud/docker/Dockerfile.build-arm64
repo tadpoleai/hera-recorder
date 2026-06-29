@@ -1,0 +1,92 @@
+# =============================================================================
+# Dockerfile.build-arm64
+#
+# 在 arm64 容器内（通过 QEMU 或原生 arm64 runner）编译 hera-daemon 并打包 .deb。
+#
+# 云效 CI 使用方式（x86 runner + QEMU 模拟）：
+#   docker run --rm --privileged tonistiigi/binfmt --install arm64
+#   docker buildx build \
+#     --platform linux/arm64 \
+#     --build-arg VERSION=4.10.0 \
+#     --build-arg INSTA_SDK_URL=<oss-presigned-url> \   # 可选
+#     --output type=local,dest=./dist \
+#     -f cloud/docker/Dockerfile.build-arm64 \
+#     .
+#
+# 输出：./dist/hera-daemon_<VERSION>_arm64.deb
+#
+# Insta360 CameraSDK 说明：
+#   若不提供 INSTA_SDK_URL，摄像头驱动插件不编译（其余功能正常）。
+#   摄像头插件可在首次部署后手动复制到 /usr/local/lib/hera/plugin/driver/。
+# =============================================================================
+
+FROM --platform=linux/arm64 ubuntu:22.04 AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG VERSION=dev
+# 可选：Insta360 CameraSDK arm64 压缩包的 OSS presigned URL
+ARG INSTA_SDK_URL=""
+
+# ── 系统依赖 ──────────────────────────────────────────────────────────────────
+RUN sed -i 's|http://ports.ubuntu.com|http://mirrors.aliyun.com/ubuntu-ports|g' \
+        /etc/apt/sources.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+        build-essential g++ cmake make git pkg-config \
+        libusb-1.0-0-dev \
+        libboost-dev libboost-filesystem-dev libboost-thread-dev \
+        libboost-program-options-dev \
+        libevent-dev libconfig++-dev \
+        libthrift-dev thrift-compiler \
+        libturbojpeg0-dev \
+        dpkg-dev wget curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# libturbojpeg 路径适配（Ubuntu 22.04 arm64 的包路径与 cmake 默认不同）
+RUN mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include && \
+    ln -sf /usr/lib/aarch64-linux-gnu/libturbojpeg.so \
+           /opt/libjpeg-turbo/lib64/libturbojpeg.so && \
+    ln -sf /usr/include/turbojpeg.h \
+           /opt/libjpeg-turbo/include/turbojpeg.h
+
+# ── 可选：下载 Insta360 CameraSDK ────────────────────────────────────────────
+RUN if [ -n "${INSTA_SDK_URL}" ]; then \
+        mkdir -p /opt/insta_sdk && \
+        wget -q "${INSTA_SDK_URL}" -O /tmp/insta_sdk.tar.gz && \
+        tar -xzf /tmp/insta_sdk.tar.gz -C /opt/insta_sdk --strip-components=1 && \
+        rm /tmp/insta_sdk.tar.gz && \
+        echo "Insta SDK installed at /opt/insta_sdk"; \
+    else \
+        echo "INSTA_SDK_URL not set, building without camera driver plugin"; \
+    fi
+
+# ── 源码编译 ──────────────────────────────────────────────────────────────────
+WORKDIR /src
+COPY . /src
+
+RUN INSTA_SDK_ARG="" && \
+    if [ -d /opt/insta_sdk ]; then \
+        INSTA_SDK_ARG="-DINSTA_SDK_ROOT=/opt/insta_sdk"; \
+    fi && \
+    mkdir -p build_arm64 && cd build_arm64 && \
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DWITH_DAEMON=ON \
+        -DWITH_REPLAY=ON \
+        -DWITH_CONVERT=OFF \
+        -DWITH_SLAM=OFF \
+        -DWITH_GIT_INFO=OFF \
+        -DJPEG_TURBO_ROOT_DIR=/opt/libjpeg-turbo \
+        -Dforce-git-info="${VERSION}" \
+        ${INSTA_SDK_ARG} && \
+    make -j"$(nproc)"
+
+# ── 制品收集 ──────────────────────────────────────────────────────────────────
+RUN bash scripts/make_artifacts.sh arm64
+
+# ── 打包 .deb ─────────────────────────────────────────────────────────────────
+RUN bash scripts/make_deb.sh "${VERSION}" artifacts dist arm64 && \
+    echo "Built:" && ls -lh dist/*.deb
+
+# ── 导出阶段：只保留 .deb ─────────────────────────────────────────────────────
+FROM scratch AS export
+COPY --from=builder /src/dist/ /
