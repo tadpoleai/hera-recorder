@@ -47,7 +47,8 @@ target_link_libraries(
   ${PROJECT_NAME}-broadcast
   ${PROJECT_NAME}-network
   ${THRIFT}
-  ${LIBCONFIG})
+  ${LIBCONFIG}
+  hera-git-info)
 
 # Build finder
 add_executable(${PROJECT_NAME}-finder "finder/finder.cpp")

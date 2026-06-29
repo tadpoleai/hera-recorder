@@ -1,7 +1,12 @@
 # Find TurboJpeg
 string(ASCII 27 Escape)
 
-set(JPEG_TURBO_ROOT_DIR /opt/libjpeg-turbo)
+# Allow override via environment or cmake variable
+if(DEFINED ENV{JPEG_TURBO_ROOT_DIR})
+  set(JPEG_TURBO_ROOT_DIR $ENV{JPEG_TURBO_ROOT_DIR})
+elseif(NOT DEFINED JPEG_TURBO_ROOT_DIR)
+  set(JPEG_TURBO_ROOT_DIR /opt/libjpeg-turbo)
+endif()
 set(JPEG_TURBO_INCLUDE_DIR ${JPEG_TURBO_ROOT_DIR}/include)
 set(JPEG_TURBO_LIBRARY_DIR ${JPEG_TURBO_ROOT_DIR}/lib64)
 set(JPEG_TURBO_LIBS ${JPEG_TURBO_LIBRARY_DIR}/libturbojpeg${DYNAMIC_LIB_EXT})

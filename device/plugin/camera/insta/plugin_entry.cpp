@@ -64,33 +64,80 @@ std::string basename_from_url(const std::string& url)
     return url.substr(slash + 1);
 }
 
-bool download_media_urls(const std::shared_ptr<ins_camera::Camera>& camera,
-                        const ins_camera::MediaUrl& media_url,
-                        const std::string& output_dir)
+// Returns list of successfully downloaded local paths (empty on failure).
+std::vector<std::string> download_media_urls(const std::shared_ptr<ins_camera::Camera>& camera,
+                                             const ins_camera::MediaUrl& media_url,
+                                             const std::string& output_dir)
 {
     if (!camera || media_url.Empty()) {
-        return false;
+        return {};
     }
 
     if (access(output_dir.c_str(), F_OK) != 0) {
         log::warn << "Insta: download directory does not exist: " << output_dir << log::endl;
-        return false;
+        return {};
     }
 
-    bool all_ok = true;
+    std::vector<std::string> downloaded;
     const auto& urls = media_url.OriginUrls();
     for (size_t i = 0; i < urls.size(); ++i) {
         const auto& remote = urls[i];
         const auto local = join_path(output_dir, basename_from_url(remote));
         if (!camera->DownloadCameraFile(remote, local)) {
-            all_ok = false;
             log::warn << "Insta: download failed: " << remote << " -> " << local << log::endl;
             continue;
         }
-        log::info << "Insta: downloaded " << local << log::endl;
+
+        // The SDK may save the file with a different extension than the URL suggests
+        // (e.g. URL says .insv but file lands as .mp4 when stitching mode changes format).
+        // Find the actual file on disk.
+        std::string actual = local;
+        if (access(local.c_str(), F_OK) != 0) {
+            static const std::vector<std::string> kAltExts = {".mp4", ".insv", ".MP4", ".INSV"};
+            const auto dot = local.rfind('.');
+            const std::string stem = (dot != std::string::npos) ? local.substr(0, dot) : local;
+            for (const auto& ext : kAltExts) {
+                const std::string candidate = stem + ext;
+                if (access(candidate.c_str(), F_OK) == 0) {
+                    actual = candidate;
+                    log::info << "Insta: SDK saved file as " << actual
+                              << " (URL had " << local << ")" << log::endl;
+                    break;
+                }
+            }
+        }
+
+        log::info << "Insta: downloaded " << actual << log::endl;
+        downloaded.push_back(actual);
     }
 
-    return all_ok;
+    return downloaded;
+}
+
+// Write a minimal JSON sidecar so hera-storage-ingest-insta-video can locate
+// the MP4 and anchor frames to the hera timeline via record_start_host_ns.
+void write_session_json(const std::string& output_dir,
+                        uint64_t record_start_host_ns,
+                        const std::vector<std::string>& mp4_paths)
+{
+    const auto path = join_path(output_dir, "insta_session.json");
+    std::ofstream f(path);
+    if (!f) {
+        log::warn << "Insta: cannot write session JSON to " << path << log::endl;
+        return;
+    }
+
+    f << "{\n";
+    f << "  \"record_start_host_ns\": " << record_start_host_ns << ",\n";
+    f << "  \"device_vendor_type\": 1057,\n";  // 0x0421
+    f << "  \"mp4_files\": [";
+    for (size_t i = 0; i < mp4_paths.size(); ++i) {
+        if (i > 0) f << ", ";
+        f << "\"" << mp4_paths[i] << "\"";
+    }
+    f << "]\n}\n";
+
+    log::info << "Insta: session metadata -> " << path << log::endl;
 }
 
 bool parse_bool(const std::string& value, const bool default_value)
@@ -113,30 +160,33 @@ bool parse_bool(const std::string& value, const bool default_value)
     return default_value;
 }
 
-bool stop_recording_with_optional_download(const std::shared_ptr<ins_camera::Camera>& camera,
-                                           const bool auto_download,
-                                           const std::string& download_dir)
+// Returns downloaded local MP4 paths (empty if download skipped or failed).
+std::vector<std::string> stop_recording_with_optional_download(
+    const std::shared_ptr<ins_camera::Camera>& camera,
+    const bool auto_download,
+    const std::string& download_dir)
 {
     if (!camera) {
-        return false;
+        return {};
     }
 
     const auto media_url = camera->StopRecording();
     if (media_url.Empty()) {
         log::warn << "Insta: StopRecording returned empty media url" << log::endl;
-        return false;
+        return {};
     }
 
     if (!auto_download) {
         for (const auto& url : media_url.OriginUrls()) {
             log::info << "Insta: recorded media url " << url << log::endl;
         }
-        return true;
+        return {};
     }
 
     return download_media_urls(camera, media_url, download_dir);
 }
 
+// Resolutions for USB live-streaming (equirectangular, 2:1 ratio).
 ins_camera::VideoResolution map_video_resolution(const VideoResolution value)
 {
     if (value._to_integral() == static_cast<int32_t>(VideoResolution::R2560x1280P30)) {
@@ -148,6 +198,19 @@ ins_camera::VideoResolution map_video_resolution(const VideoResolution value)
     return ins_camera::VideoResolution::RES_3840_1920P30;
 }
 
+// Resolutions for SD card recording (square per-lens, as used in SDK demo option 6).
+// EnableInCameraStitching() then stitches the two lenses to equirectangular on-device.
+ins_camera::VideoResolution map_record_resolution(const VideoResolution value)
+{
+    if (value._to_integral() == static_cast<int32_t>(VideoResolution::R1440x720P30)) {
+        return ins_camera::VideoResolution::RES_2880_2880P30;  // 5.7K per-lens
+    }
+    if (value._to_integral() == static_cast<int32_t>(VideoResolution::R2560x1280P30)) {
+        return ins_camera::VideoResolution::RES_2880_2880P30;  // 5.7K per-lens
+    }
+    return ins_camera::VideoResolution::RES_3840_3840P30;  // 8K per-lens (matches R3840x1920P30 intent)
+}
+
 ins_camera::VideoResolution map_lrv_resolution(const bool fixed_lrv_resolution)
 {
     (void)fixed_lrv_resolution;
@@ -156,14 +219,37 @@ ins_camera::VideoResolution map_lrv_resolution(const bool fixed_lrv_resolution)
 
 bool start_recording_normal_video(const std::shared_ptr<ins_camera::Camera>& camera,
                                   const VideoResolution resolution,
-                                  const int32_t video_bitrate)
+                                  const int32_t video_bitrate,
+                                  const bool enable_stitching = false)
 {
     if (!camera) {
         return false;
     }
 
+    // Mirror the SDK demo's two-step flow (option 12 then option 6):
+    //   1. EnableInCameraStitching  — called standalone BEFORE any mode change
+    //   2. SetVideoSubMode          — may reset camera mode state
+    //   3. SetVideoCaptureParams    — sets per-lens square resolution for SD recording
+    //   4. StartRecording
+    //
+    // SetVideoSubMode after EnableInCameraStitching (not before) avoids the firmware
+    // clearing the stitching flag during a mode transition.
+    if (enable_stitching) {
+        if (!camera->EnableInCameraStitching(true)) {
+            log::warn << "Insta: EnableInCameraStitching failed — recording will be dual-fisheye" << log::endl;
+        } else {
+            log::info << "Insta: EnableInCameraStitching OK" << log::endl;
+        }
+    }
+
+    if (!camera->SetVideoSubMode(ins_camera::SubVideoMode::VIDEO_NORMAL)) {
+        log::warn << "Insta: SetVideoSubMode(VIDEO_NORMAL) failed" << log::endl;
+    }
+
+    // SD card recording uses square per-lens resolution (e.g. RES_3840_3840P30),
+    // matching demo option 6. The 2:1 equirectangular resolutions are for USB streaming only.
     ins_camera::RecordParams record_params;
-    record_params.resolution = map_video_resolution(resolution);
+    record_params.resolution = map_record_resolution(resolution);
     record_params.bitrate = std::max<int32_t>(131072, video_bitrate);
 
     if (!camera->SetVideoCaptureParams(record_params, ins_camera::CameraFunctionMode::FUNCTION_MODE_NORMAL_VIDEO)) {
@@ -173,12 +259,19 @@ bool start_recording_normal_video(const std::shared_ptr<ins_camera::Camera>& cam
     return camera->StartRecording();
 }
 
+// SDK 2.1.1 changed SyncLocalTimeToCamera(uint64_t utc, uint32_t tz_offset_s).
+// Compute the local timezone offset so the camera shows local time.
 template <typename CameraType>
-auto sync_local_time_impl(CameraType* cam, uint64_t t, int) -> decltype(cam->SyncLocalTimeToCamera(t, 0), bool())
+auto sync_local_time_impl(CameraType* cam, uint64_t t, int) -> decltype(cam->SyncLocalTimeToCamera(t, 0u), bool())
 {
-    return cam->SyncLocalTimeToCamera(t, 0);
+    std::time_t t_val = static_cast<std::time_t>(t);
+    std::tm tm{};
+    localtime_r(&t_val, &tm);
+    const auto tz_offset = static_cast<uint32_t>(timegm(&tm) - t_val);
+    return cam->SyncLocalTimeToCamera(t, tz_offset);
 }
 
+// SDK 2.0.x single-argument fallback.
 template <typename CameraType>
 auto sync_local_time_impl(CameraType* cam, uint64_t t, long) -> decltype(cam->SyncLocalTimeToCamera(t), bool())
 {
@@ -341,6 +434,7 @@ std::atomic<bool> record_started_{false};
 std::atomic<bool> runtime_auto_download_{true};
 std::string runtime_download_dir_{"."};
 std::mutex camera_op_mutex_;
+uint64_t record_start_host_ns_{0};
 
 static void maybe_log_stats(const std::shared_ptr<RuntimeState>& rt)
 {
@@ -483,9 +577,15 @@ HeraErrno DevicePlugin::connect()
         stream_delegate_ = std::make_shared<HeraStreamDelegate>(runtime_, local_parameters_.get_EnableGyro());
         camera_->SetStreamDelegate(stream_delegate_);
 
+        // SDK 2.1.1: EnableInCameraStitching must be called BEFORE SetVideoSubMode/
+        // SetVideoCaptureParams — once the mode is committed the stitching flag is locked.
+        // With 2.1.1 this actually works for the live stream: OnVideoData receives
+        // stitched equirectangular frames directly when enabled.
         if (local_parameters_.get_EnableInCameraStitching()) {
             if (!camera_->EnableInCameraStitching(true)) {
-                log::warn << "Insta: EnableInCameraStitching failed (device may not support it)" << log::endl;
+                log::warn << "Insta: EnableInCameraStitching (stream) failed" << log::endl;
+            } else {
+                log::info << "Insta: EnableInCameraStitching OK — stream will be equirectangular" << log::endl;
             }
         }
 
@@ -496,8 +596,20 @@ HeraErrno DevicePlugin::connect()
         param.enable_audio = local_parameters_.get_EnableAudio();
         param.using_lrv = local_parameters_.get_UsingLrv();
 
-        // Note: Do NOT call SetVideoCaptureParams for FUNCTION_MODE_LIVE_STREAM in 2.0.2 SDK
-        // It causes USB timeouts and device disconnect. StartLiveStreaming handles the mode setup.
+        // SDK 2.1.1 requires SetVideoSubMode(VIDEO_LIVEVIEW) + SetVideoCaptureParams
+        // before StartLiveStreaming for X4/X5. (SDK 2.0.x did not have VIDEO_LIVEVIEW
+        // and calling SetVideoCaptureParams before StartLiveStreaming caused USB timeouts.)
+        if (!camera_->SetVideoSubMode(ins_camera::SubVideoMode::VIDEO_LIVEVIEW)) {
+            log::warn << "Insta: SetVideoSubMode(VIDEO_LIVEVIEW) failed" << log::endl;
+        }
+        {
+            ins_camera::RecordParams rp;
+            rp.resolution = param.video_resolution;
+            rp.bitrate = 0;
+            if (!camera_->SetVideoCaptureParams(rp, ins_camera::CameraFunctionMode::FUNCTION_MODE_LIVE_STREAM)) {
+                log::warn << "Insta: SetVideoCaptureParams(FUNCTION_MODE_LIVE_STREAM) failed" << log::endl;
+            }
+        }
 
         try {
             if (!camera_->StartLiveStreaming(param)) {
@@ -530,8 +642,10 @@ HeraErrno DevicePlugin::connect()
     } else {
         if (local_parameters_.get_AutoStartRecording()) {
             try {
+                const bool stitching = local_parameters_.get_EnableInCameraStitching();
                 if (!start_recording_normal_video(
-                        camera_, local_parameters_.get_VideoResolution(), local_parameters_.get_VideoBitrate())) {
+                        camera_, local_parameters_.get_VideoResolution(), local_parameters_.get_VideoBitrate(),
+                        stitching)) {
                     camera_->Close();
                     camera_.reset();
                     runtime_.reset();
@@ -554,7 +668,8 @@ HeraErrno DevicePlugin::connect()
                 return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StartRecording unknown exception");
             }
             record_started_.store(true);
-            log::info << "Insta: RecordDownload mode started recording" << log::endl;
+            record_start_host_ns_ = static_cast<uint64_t>(time::Timestamp::now());
+            log::info << "Insta: RecordDownload mode started recording (start_ns=" << record_start_host_ns_ << ")" << log::endl;
         } else {
             log::info << "Insta: RecordDownload mode, waiting external start" << log::endl;
         }
@@ -577,9 +692,13 @@ void DevicePlugin::disconnect()
         if (!is_stream_mode_.load() && record_started_.load()) {
             try {
                 record_started_.store(false);
-                if (!stop_recording_with_optional_download(
-                        camera_, runtime_auto_download_.load(), runtime_download_dir_)) {
+                const auto downloaded = stop_recording_with_optional_download(
+                    camera_, runtime_auto_download_.load(), runtime_download_dir_);
+                if (downloaded.empty() && runtime_auto_download_.load()) {
                     log::warn << "Insta: stop recording completed with errors" << log::endl;
+                }
+                if (!downloaded.empty() && record_start_host_ns_ != 0) {
+                    write_session_json(runtime_download_dir_, record_start_host_ns_, downloaded);
                 }
             } catch (const std::exception& e) {
                 log::warn << "Insta: StopRecording exception: " << e.what() << log::endl;
@@ -721,7 +840,8 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
         }
         try {
             if (!start_recording_normal_video(camera_, local_parameters_.get_VideoResolution(),
-                                              local_parameters_.get_VideoBitrate())) {
+                                              local_parameters_.get_VideoBitrate(),
+                                              local_parameters_.get_EnableInCameraStitching())) {
                 return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StartRecording command failed");
             }
             record_started_.store(true);
@@ -742,8 +862,12 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
         }
         try {
             const bool auto_download = (type == "StopAndDownload") ? true : runtime_auto_download_.load();
-            if (!stop_recording_with_optional_download(camera_, auto_download, runtime_download_dir_)) {
+            const auto downloaded = stop_recording_with_optional_download(camera_, auto_download, runtime_download_dir_);
+            if (auto_download && downloaded.empty()) {
                 return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StopRecording command failed");
+            }
+            if (!downloaded.empty() && record_start_host_ns_ != 0) {
+                write_session_json(runtime_download_dir_, record_start_host_ns_, downloaded);
             }
             record_started_.store(false);
             log::info << "Insta: " << type << " command success" << log::endl;

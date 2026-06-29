@@ -56,6 +56,7 @@ immutable boolean EnableGyro = true;
 immutable boolean SyncLocalTime = true;
 
 # 启用机内拼接（X4/X5）
+# 注意：X4 固件实测不响应此 API，录制格式始终为双鱼眼，建议保持 false
 immutable boolean EnableInCameraStitching = false;
 
 # SDK 日志等级

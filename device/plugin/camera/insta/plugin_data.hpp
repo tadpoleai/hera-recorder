@@ -17,3 +17,17 @@ uint32_t payload_size;         ///< Raw gyro payload bytes
 uint8_t payload[0];            ///< Raw bytes copied from std::vector<GyroData>
 
 HERA_PLUGIN_DATA_DEFINE_END
+
+// Single JPEG camera frame decoded from the downloaded MP4.
+// Written by hera-storage-ingest-insta-video after RecordDownload session.
+// Timestamp is derived from record_start_host_ns + frame PTS.
+HERA_PLUGIN_DATA_DEFINE_START(InstaJpegFramePacket, 0x0423)
+
+uint64_t timestamp_host_ns;    ///< Absolute host timestamp (ns)
+uint32_t frame_index;          ///< 0-based frame counter in the MP4
+uint32_t width;                ///< Image width (pixels)
+uint32_t height;               ///< Image height (pixels)
+uint32_t payload_size;         ///< JPEG byte size
+uint8_t payload[0];            ///< JPEG bytes
+
+HERA_PLUGIN_DATA_DEFINE_END

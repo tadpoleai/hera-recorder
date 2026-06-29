@@ -1,0 +1,95 @@
+# =============================================================================
+# Alibaba Cloud Serverless Workflow (云工作流 FnF)
+# hera-convert: Hera 原始数据 → ROS Bag 转换流程
+#
+# 调用方式（通过 Serverless Workflow 控制台或 SDK）：
+#
+# 输入参数 JSON:
+# {
+#   "oss_endpoint":   "oss-cn-hangzhou-internal.aliyuncs.com",
+#   "oss_bucket":     "your-data-bucket",
+#   "src_oss_prefix": "hera-data/session-20240101/",
+#   "dst_oss_path":   "rosbag/session-20240101.bag",
+#   "remap_oss_path": "configs/remap-tron4.json",   // 可选
+#   "start_time":     0,                            // 可选，单位秒
+#   "duration":       0                             // 可选，单位秒
+# }
+# =============================================================================
+
+version: v1
+type: flow
+
+# 全局超时：24 小时（以秒为单位）。大文件转换可能耗时较长。
+timeoutSeconds: 86400
+
+steps:
+
+  # ---------------------------------------------------------------------------
+  # Step 1: 调用 FC 函数执行转换
+  # FC 函数使用自定义容器镜像（hera-convert），内部流程：
+  #   下载 OSS 数据 → hera-convert → 上传 ROS bag 到 OSS
+  # ---------------------------------------------------------------------------
+  - type: task
+    name: ConvertHeraToRosBag
+    timeoutSeconds: 86400
+    resourceArn: "acs:fc:{region}:{account-id}:services/{fc-service-name}.LATEST/functions/{fc-function-name}"
+    inputMappings:
+      - target: oss_endpoint
+        source: $input.oss_endpoint
+      - target: oss_bucket
+        source: $input.oss_bucket
+      - target: src_oss_prefix
+        source: $input.src_oss_prefix
+      - target: dst_oss_path
+        source: $input.dst_oss_path
+      - target: remap_oss_path
+        source: $input.remap_oss_path
+      - target: start_time
+        source: $input.start_time
+      - target: duration
+        source: $input.duration
+    outputMappings:
+      - target: convert_status
+        source: $local.status
+      - target: convert_message
+        source: $local.message
+      - target: dst_oss_path
+        source: $local.dst_oss_path
+    retry:
+      - errors:
+          - FC:ServiceUnavailable
+          - FC:ResourceThrottling
+        intervalSeconds: 30
+        maxAttempts: 3
+        multiplier: 2.0
+    catch:
+      - errors:
+          - "*"
+        steps:
+          - type: fail
+            name: ConvertFailed
+            error: ConversionError
+            cause: "hera-convert FC function returned an error. Check FC logs for details."
+
+  # ---------------------------------------------------------------------------
+  # Step 2: 检查转换结果
+  # ---------------------------------------------------------------------------
+  - type: choice
+    name: CheckResult
+    inputMappings:
+      - target: status
+        source: $local.convert_status
+    choices:
+      - condition: $.status == "success"
+        steps:
+          - type: succeed
+            name: ConvertSucceeded
+      - condition: $.status == "error"
+        steps:
+          - type: fail
+            name: ConvertErrorResult
+            error: ConversionFailed
+            cause: "FC function reported conversion error"
+
+  - type: succeed
+    name: Done

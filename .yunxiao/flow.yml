@@ -1,0 +1,112 @@
+# 云效流水线配置 - hera-daemon 自动发布
+#
+# 触发条件：推送 v* 格式的 git tag（如 v1.2.3）
+# 构建产物：hera-daemon_<version>_amd64.deb，上传至云效制品仓库
+#
+# 使用前置条件：
+#   1. 在云效流水线 → 制品管理 中创建一个"通用制品仓库"，记录其 repo-name
+#   2. 将 repo-name 填入下方 ARTIFACT_REPO 变量
+#   3. 构建机需能访问 apt 源并已开放 Docker 权限（或使用公共资源组）
+
+version: "1.0"
+name: hera-release
+displayName: Hera 发布流水线
+
+triggers:
+  push:
+    tags:
+      - refs/tags/v*
+
+# ── 全局环境变量 ───────────────────────────────────────────────────────
+env:
+  # 云效通用制品仓库名称，需提前在云效控制台创建
+  ARTIFACT_REPO: "hera-packages"
+
+stages:
+  # ── Stage 1: 编译 ────────────────────────────────────────────────────
+  - stage:
+      name: build
+      displayName: 编译
+
+      jobs:
+        - job:
+            name: build-amd64
+            displayName: 编译 amd64
+
+            # 使用云效公共资源组（Ubuntu 20.04+）
+            # 若有自建机器，改为对应 label
+            machine:
+              type: public
+              label: linux
+
+            # 在 Ubuntu 容器中运行，确保环境一致
+            container:
+              image: ubuntu:22.04
+
+            steps:
+              - step: command@1
+                name: 安装编译依赖
+                properties:
+                  run: |
+                    export DEBIAN_FRONTEND=noninteractive
+                    apt-get update -qq
+                    apt-get install -y --no-install-recommends \
+                      build-essential cmake make git \
+                      libusb-1.0-0-dev \
+                      libboost-all-dev \
+                      thrift-compiler libthrift-dev \
+                      libconfig++-dev \
+                      libturbojpeg0-dev \
+                      dpkg-dev
+
+              - step: command@1
+                name: 提取版本号
+                properties:
+                  # PIPELINE_GIT_BRANCH 在 tag 触发时值为 refs/tags/v1.2.3
+                  # 去掉 refs/tags/v 前缀得到纯版本号
+                  run: |
+                    RAW_TAG="${PIPELINE_GIT_BRANCH#refs/tags/v}"
+                    echo "VERSION=${RAW_TAG}" >> "$PIPELINE_ENV"
+                    echo "[ci] version = ${RAW_TAG}"
+
+              - step: command@1
+                name: 编译
+                properties:
+                  run: |
+                    bash scripts/build_amd64.sh "${VERSION}"
+
+              - step: command@1
+                name: 收集产物
+                properties:
+                  run: |
+                    bash scripts/make_artifacts.sh
+
+              - step: command@1
+                name: 打包 .deb
+                properties:
+                  run: |
+                    bash scripts/make_deb.sh "${VERSION}"
+                    echo "[ci] deb: $(ls dist/)"
+
+  # ── Stage 2: 发布制品 ─────────────────────────────────────────────────
+  - stage:
+      name: release
+      displayName: 发布
+
+      jobs:
+        - job:
+            name: upload-deb
+            displayName: 上传 .deb 至制品仓库
+
+            machine:
+              type: public
+              label: linux
+
+            steps:
+              - step: upload_artifact@1
+                name: 上传至云效制品仓库
+                properties:
+                  # source 目录下所有文件都会上传
+                  source: dist/
+                  artifactName: "hera-daemon_${VERSION}_amd64"
+                  repository: "${ARTIFACT_REPO}"

@@ -88,9 +88,12 @@ foreach(PLUGIN_SRC ${PLUGIN_SRC_LIST})
 endforeach(PLUGIN_SRC)
 
 file(GLOB_RECURSE TOOL_SRC "tool/*.cpp")
-# Separate extract_insta and extract_mid360 from main tool
+# Separate per-device tools from the main tool binary
 list(REMOVE_ITEM TOOL_SRC "${CMAKE_CURRENT_SOURCE_DIR}/tool/extract_insta.cpp")
 list(REMOVE_ITEM TOOL_SRC "${CMAKE_CURRENT_SOURCE_DIR}/tool/extract_mid360.cpp")
+list(REMOVE_ITEM TOOL_SRC "${CMAKE_CURRENT_SOURCE_DIR}/tool/ingest_insta_video.cpp")
+list(REMOVE_ITEM TOOL_SRC "${CMAKE_CURRENT_SOURCE_DIR}/tool/ingest_stream_hera.cpp")
+list(REMOVE_ITEM TOOL_SRC "${CMAKE_CURRENT_SOURCE_DIR}/tool/validate_stitch_mediasdk.cpp")
 add_executable(${PROJECT_NAME}-tool ${TOOL_SRC})
 target_link_libraries(${PROJECT_NAME}-tool hera-common hera-storage hera-device)
 
@@ -108,6 +111,81 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_link_options(${PROJECT_NAME}-extract-mid360 PRIVATE -Wl,--no-as-needed)
 endif()
 
+# Build ingest-insta-video (decode RecordDownload MP4 -> InstaJpegFramePacket .hera)
+add_executable(${PROJECT_NAME}-ingest-insta-video tool/ingest_insta_video.cpp)
+target_compile_definitions(${PROJECT_NAME}-ingest-insta-video PRIVATE HERA_COMPILE_IN_REPO)
+target_link_libraries(${PROJECT_NAME}-ingest-insta-video hera-common hera-storage hera-device ${CMAKE_DL_LIBS})
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_link_options(${PROJECT_NAME}-ingest-insta-video PRIVATE -Wl,--no-as-needed)
+endif()
+
+# Build ingest-stream-hera (decode Stream-mode H.264 .hera -> InstaJpegFramePacket .hera)
+add_executable(${PROJECT_NAME}-ingest-stream-hera tool/ingest_stream_hera.cpp)
+target_compile_definitions(${PROJECT_NAME}-ingest-stream-hera PRIVATE HERA_COMPILE_IN_REPO)
+target_link_libraries(${PROJECT_NAME}-ingest-stream-hera hera-common hera-storage hera-device ${CMAKE_DL_LIBS})
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_link_options(${PROJECT_NAME}-ingest-stream-hera PRIVATE -Wl,--no-as-needed)
+endif()
+
+# Optional: MediaSDK stitching backend (amd64 only, requires libMediaSDK installed).
+# Install via: sudo dpkg -i libMediaSDK-dev-*.deb
+# then rebuild with: cmake --build . --target hera-storage-ingest-insta-video
+#                                            hera-storage-validate-stitch-mediasdk
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
+  find_path(_MEDIASDK_INC NAMES ins_stitcher.h ins_realtime_stitcher.h
+            PATHS /usr /usr/local
+            PATH_SUFFIXES include)
+  find_library(_MEDIASDK_LIB NAMES MediaSDK
+               PATHS /usr /usr/local
+               PATH_SUFFIXES lib lib64)
+  if(_MEDIASDK_INC AND _MEDIASDK_LIB)
+    message(STATUS "MediaSDK found: ${_MEDIASDK_LIB}")
+
+    # Wire MediaSDK into ingest-insta-video
+    message(STATUS "  → ingest-insta-video will use Insta360 stitcher")
+    target_compile_definitions(${PROJECT_NAME}-ingest-insta-video PRIVATE HAVE_MEDIASDK)
+    target_include_directories(${PROJECT_NAME}-ingest-insta-video PRIVATE ${_MEDIASDK_INC})
+    target_link_libraries(${PROJECT_NAME}-ingest-insta-video ${_MEDIASDK_LIB})
+
+    # Validation tool: RealTimeStitcher on stored hera data
+    # Prefer turbojpeg for JPEG output; fall back to PPM if not installed.
+    find_library(_TURBOJPEG_LIB NAMES turbojpeg
+                 PATHS /opt/libjpeg-turbo/lib64 /usr/lib/x86_64-linux-gnu /usr/lib /usr/local/lib)
+    find_path(_TURBOJPEG_INC NAMES turbojpeg.h
+              PATHS /opt/libjpeg-turbo/include /usr/include /usr/local/include)
+
+    add_executable(${PROJECT_NAME}-validate-stitch-mediasdk
+                   tool/validate_stitch_mediasdk.cpp)
+    target_compile_definitions(${PROJECT_NAME}-validate-stitch-mediasdk
+                               PRIVATE HERA_COMPILE_IN_REPO)
+    target_include_directories(${PROJECT_NAME}-validate-stitch-mediasdk
+                               PRIVATE ${_MEDIASDK_INC})
+    target_link_libraries(${PROJECT_NAME}-validate-stitch-mediasdk
+                          hera-common hera-storage hera-device
+                          ${_MEDIASDK_LIB}
+                          Threads::Threads
+                          ${CMAKE_DL_LIBS})
+    if(_TURBOJPEG_LIB AND _TURBOJPEG_INC)
+      target_compile_definitions(${PROJECT_NAME}-validate-stitch-mediasdk
+                                 PRIVATE HAVE_TURBOJPEG)
+      target_include_directories(${PROJECT_NAME}-validate-stitch-mediasdk
+                                 PRIVATE ${_TURBOJPEG_INC})
+      target_link_libraries(${PROJECT_NAME}-validate-stitch-mediasdk ${_TURBOJPEG_LIB})
+      message(STATUS "  → validate-stitch-mediasdk: JPEG output via turbojpeg")
+    else()
+      message(STATUS "  → validate-stitch-mediasdk: turbojpeg not found, will output PPM")
+    endif()
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+      target_link_options(${PROJECT_NAME}-validate-stitch-mediasdk
+                          PRIVATE -Wl,--no-as-needed)
+    endif()
+    message(STATUS "  → validate-stitch-mediasdk target added")
+  else()
+    message(STATUS "MediaSDK not found — ingest-insta-video will use ffmpeg v360 fallback")
+    message(STATUS "  validate-stitch-mediasdk target skipped")
+  endif()
+endif()
+
 # Install shared libraries
 install(
   TARGETS ${PROJECT_NAME}
@@ -122,6 +200,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
 # Install tools
 install(
   TARGETS ${PROJECT_NAME}-tool ${PROJECT_NAME}-extract-insta ${PROJECT_NAME}-extract-mid360
+          ${PROJECT_NAME}-ingest-insta-video ${PROJECT_NAME}-ingest-stream-hera
   PERMISSIONS OWNER_EXECUTE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE
               WORLD_READ
   DESTINATION bin)
