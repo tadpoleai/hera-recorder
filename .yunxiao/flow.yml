@@ -66,17 +66,33 @@ stages:
             name: 安装 Docker + 注册 QEMU arm64 模拟器
             with:
               run: |
-                # 公共 runner 未预装 Docker，通过 apt 安装
+                # 安装 docker.io（如未预装）
                 if ! command -v docker &>/dev/null; then
                   export DEBIAN_FRONTEND=noninteractive
                   apt-get update -qq
                   apt-get install -y docker.io
-                  service docker start || dockerd --host=unix:///var/run/docker.sock &
-                  for i in $(seq 1 15); do
-                    docker info &>/dev/null && break || true
-                    echo "waiting for docker daemon... ($i/15)"
+                fi
+                # service start 在容器环境下会谎报成功但 daemon 未启动；
+                # 改为直接启动 dockerd：vfs 不依赖 overlay2，iptables=false 避免权限问题
+                if ! docker info &>/dev/null 2>&1; then
+                  echo "[ci] starting dockerd directly (vfs driver)..."
+                  nohup dockerd \
+                    --storage-driver=vfs \
+                    --data-root=/tmp/docker-data \
+                    --exec-root=/tmp/docker-exec \
+                    --iptables=false \
+                    >/tmp/dockerd.log 2>&1 &
+                  for i in $(seq 1 30); do
+                    docker info &>/dev/null 2>&1 && echo "[ci] docker daemon ready ($i)" && break || true
+                    echo "waiting... ($i/30)"
                     sleep 2
                   done
+                  if ! docker info &>/dev/null 2>&1; then
+                    echo "=== dockerd.log ==="
+                    cat /tmp/dockerd.log || true
+                    echo "=== dockerd failed to start ==="
+                    exit 1
+                  fi
                 fi
                 docker version
                 docker run --rm --privileged \
