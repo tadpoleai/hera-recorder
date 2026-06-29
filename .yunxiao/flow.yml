@@ -1,203 +1,212 @@
-# 云效流水线配置 - hera-daemon 自动发布
+# 云效 Flow 流水线 - hera-daemon 自动发布
 #
-# 触发条件：推送 v* 格式的 git tag（如 v4.10.0）
+# 触发：推送 v* tag（如 v4.10.0）自动构建 arm64 + amd64 deb
 #
-# 产物：
-#   - hera-daemon_<version>_arm64.deb  → Jetson 安装包（主要产物）
-#   - hera-daemon_<version>_amd64.deb  → x86 安装包
-#
-# 前置准备（一次性操作）：
-#   1. 云效 → 制品管理 → 新建"通用制品仓库"，名称填入下方 ARTIFACT_REPO
-#   2. （可选）将 Insta360 CameraSDK arm64 压缩包上传到 OSS，
-#      获取 presigned URL 后在流水线变量中设置 INSTA_SDK_OSS_URL（私密变量）
-#   3. arm64 构建耗时较长（QEMU 模拟约 30-60 分钟），建议使用云效私有资源组
-#      绑定 Jetson 作为 arm64 原生 runner，详见下方注释
+# ── 一次性前置配置 ────────────────────────────────────────────────────
+# 1. 云效 → 服务连接 → 新建 Codeup 服务连接，将 serviceConnection ID
+#    填入下方 sources.recorder.certificate.serviceConnection
+# 2. 云效 → 制品仓库 → 新建通用制品仓库（名称随意，ArtifactUpload 使用
+#    流水线内置存储 flowPublic，无需额外配置）
+# 3. （可选）流水线 → 环境变量 → 新增私密变量 INSTA_SDK_OSS_URL
+#    值为 Insta360 CameraSDK arm64 包的 OSS presigned URL
+#    未设置时构建不含摄像头驱动，其余功能正常
+# ─────────────────────────────────────────────────────────────────────
 
-version: "1.0"
 name: hera-release
-displayName: Hera 发布流水线
 
-triggers:
-  push:
-    tags:
-      - refs/tags/v*
+# ── 代码源与触发条件 ──────────────────────────────────────────────────
+sources:
+  recorder:
+    type: codeup
+    name: recorder
+    endpoint: git@codeup.aliyun.com:67b2bda9b5800b3679b8680e/hera/recorder.git
+    branch: master
+    triggerEvents:
+      - tagPush
+    # 只有 v 开头的 tag（如 v4.10.0）才触发流水线
+    branchesFilter: "v.*"
+    certificate:
+      type: serviceConnection
+      # 替换为实际的服务连接 ID（云效 → 服务连接 → Codeup → 复制 ID）
+      serviceConnection: "<YOUR_SERVICE_CONNECTION_ID>"
 
-env:
-  ARTIFACT_REPO: "hera-packages"
-
+# ── 流水线阶段 ────────────────────────────────────────────────────────
 stages:
-  # ── Stage 1: 并行构建 amd64 + arm64 ────────────────────────────────────────
-  - stage:
-      name: build
-      displayName: 编译
+  # ── Stage 1: 并行构建 arm64 + amd64 ─────────────────────────────────
+  build_stage:
+    name: 编译
+    jobs:
 
-      jobs:
-        # ── Job A: arm64 Jetson deb（主要产物）─────────────────────────────
-        - job:
-            name: build-arm64
-            displayName: 编译 arm64 (Jetson)
+      # ── Job A: arm64 Jetson deb（主要产物）────────────────────────────
+      # 使用 Docker buildx + QEMU 在 x86 runner 上模拟 arm64 环境编译。
+      # 若要更快的原生构建，将 runsOn 改为注册了 Jetson 的私有资源组：
+      #   runsOn: private/<your-runner-group-id>
+      # 并在 Jetson 上安装云效 Runner Agent 后注册。
+      build_arm64:
+        name: 编译 arm64 (Jetson)
+        runsOn: public/cn-hangzhou
 
-            # 若有 Jetson 自建机器（原生 arm64），将 type 改为 private，
-            # label 改为在云效私有资源组中注册的机器标签，速度可提升 5-10x。
-            # 方法：在 Jetson 上安装云效 Agent（docs.aliyun.com/yunxiao/runner）
-            # 注册后将 label 改为机器标签，并删除下方 steps 中的 QEMU 注册步骤。
-            machine:
-              type: public
-              label: linux
+        steps:
+          extract_version_arm64:
+            step: Command
+            name: 提取版本号
+            with:
+              run: |
+                # tag push 时 PIPELINE_GIT_BRANCH 通常为 refs/tags/v4.10.0
+                TAG="${PIPELINE_GIT_BRANCH:-}"
+                VERSION="${TAG#refs/tags/}"
+                VERSION="${VERSION#v}"
+                [ -z "${VERSION}" ] && VERSION="dev"
+                echo "VERSION=${VERSION}" >> "${PIPELINE_ENV}"
+                echo "[ci] arm64 version = ${VERSION}"
 
-            steps:
-              - step: command@1
-                name: 提取版本号
-                properties:
-                  run: |
-                    VERSION="${PIPELINE_GIT_BRANCH#refs/tags/v}"
-                    echo "VERSION=${VERSION}" >> "$PIPELINE_ENV"
-                    echo "[ci] version = ${VERSION}"
+          setup_qemu:
+            step: Command
+            name: 注册 QEMU arm64 模拟器
+            with:
+              run: |
+                docker version
+                docker run --rm --privileged \
+                  tonistiigi/binfmt:latest --install arm64
+                docker buildx create --use --name arm64-builder \
+                  --driver docker-container 2>/dev/null || true
+                docker buildx inspect arm64-builder --bootstrap
 
-              - step: command@1
-                name: 安装 Docker + 注册 QEMU arm64 模拟器
-                properties:
-                  run: |
-                    # 公共资源组已预装 Docker；若报错则取消注释下方安装步骤
-                    # apt-get update -qq && apt-get install -y docker.io
-                    docker version
-                    # 注册 arm64 binfmt，使 x86 机器可运行 arm64 容器
-                    docker run --rm --privileged \
-                      tonistiigi/binfmt:latest --install arm64
-                    docker buildx create --use --name arm64-builder \
-                      --driver docker-container 2>/dev/null || true
-                    docker buildx inspect arm64-builder --bootstrap
+          build_deb_arm64:
+            step: Command
+            name: 构建 arm64 deb
+            with:
+              run: |
+                SDK_ARG=""
+                if [ -n "${INSTA_SDK_OSS_URL:-}" ]; then
+                  SDK_ARG="--build-arg INSTA_SDK_URL=${INSTA_SDK_OSS_URL}"
+                fi
 
-              - step: command@1
-                name: 构建 arm64 deb（Docker buildx + QEMU）
-                properties:
-                  run: |
-                    # INSTA_SDK_OSS_URL 是私密变量，不设置时不编译摄像头驱动
-                    SDK_ARG=""
-                    if [ -n "${INSTA_SDK_OSS_URL:-}" ]; then
-                      SDK_ARG="--build-arg INSTA_SDK_URL=${INSTA_SDK_OSS_URL}"
-                    fi
+                mkdir -p dist
+                docker buildx build \
+                  --platform linux/arm64 \
+                  --builder arm64-builder \
+                  --build-arg VERSION="${VERSION}" \
+                  ${SDK_ARG} \
+                  --output "type=local,dest=./dist" \
+                  -f cloud/docker/Dockerfile.build-arm64 \
+                  .
 
-                    mkdir -p dist
-                    docker buildx build \
-                      --platform linux/arm64 \
-                      --builder arm64-builder \
-                      --build-arg VERSION="${VERSION}" \
-                      ${SDK_ARG} \
-                      --output "type=local,dest=./dist" \
-                      -f cloud/docker/Dockerfile.build-arm64 \
-                      .
+                echo "[ci] arm64 产物："
+                ls -lh dist/*.deb
 
-                    echo "[ci] arm64 deb:"
-                    ls -lh dist/*.deb
+          upload_arm64:
+            step: ArtifactUpload
+            name: 上传 arm64 deb
+            with:
+              uploadType: flowPublic
+              artifact: arm64_deb
+              filePath:
+                - dist/
 
-              - step: upload_artifact@1
-                name: 上传 arm64 deb
-                properties:
-                  source: dist/
-                  artifactName: "hera-daemon_${VERSION}_arm64"
-                  repository: "${ARTIFACT_REPO}"
+      # ── Job B: amd64 deb ─────────────────────────────────────────────
+      build_amd64:
+        name: 编译 amd64
+        runsOn:
+          group: public/cn-hangzhou
+          container: ubuntu:22.04
 
-        # ── Job B: amd64 deb ────────────────────────────────────────────────
-        - job:
-            name: build-amd64
-            displayName: 编译 amd64
+        steps:
+          extract_version_amd64:
+            step: Command
+            name: 提取版本号
+            with:
+              run: |
+                TAG="${PIPELINE_GIT_BRANCH:-}"
+                VERSION="${TAG#refs/tags/}"
+                VERSION="${VERSION#v}"
+                [ -z "${VERSION}" ] && VERSION="dev"
+                echo "VERSION=${VERSION}" >> "${PIPELINE_ENV}"
+                echo "[ci] amd64 version = ${VERSION}"
 
-            machine:
-              type: public
-              label: linux
+          install_deps:
+            step: Command
+            name: 安装编译依赖
+            with:
+              run: |
+                export DEBIAN_FRONTEND=noninteractive
+                apt-get update -qq
+                apt-get install -y --no-install-recommends \
+                  build-essential cmake make git pkg-config \
+                  libusb-1.0-0-dev \
+                  libboost-dev libboost-filesystem-dev libboost-thread-dev \
+                  libboost-program-options-dev \
+                  libevent-dev libconfig++-dev \
+                  libthrift-dev thrift-compiler \
+                  libturbojpeg0-dev \
+                  dpkg-dev
+                # turbojpeg cmake 路径适配
+                mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include
+                ln -sf /usr/lib/x86_64-linux-gnu/libturbojpeg.so \
+                       /opt/libjpeg-turbo/lib64/libturbojpeg.so
+                ln -sf /usr/include/turbojpeg.h \
+                       /opt/libjpeg-turbo/include/turbojpeg.h
 
-            container:
-              image: ubuntu:22.04
+          compile_amd64:
+            step: Command
+            name: 编译
+            with:
+              run: |
+                mkdir -p build_amd64 && cd build_amd64
+                cmake .. \
+                  -DCMAKE_BUILD_TYPE=Release \
+                  -DWITH_DAEMON=ON \
+                  -DWITH_REPLAY=ON \
+                  -DWITH_CONVERT=OFF \
+                  -DWITH_SLAM=OFF \
+                  -DWITH_GIT_INFO=OFF \
+                  -DJPEG_TURBO_ROOT_DIR=/opt/libjpeg-turbo \
+                  -Dforce-git-info="${VERSION}"
+                make -j"$(nproc)"
 
-            steps:
-              - step: command@1
-                name: 安装编译依赖
-                properties:
-                  run: |
-                    export DEBIAN_FRONTEND=noninteractive
-                    apt-get update -qq
-                    apt-get install -y --no-install-recommends \
-                      build-essential cmake make git pkg-config \
-                      libusb-1.0-0-dev \
-                      libboost-dev libboost-filesystem-dev libboost-thread-dev \
-                      libboost-program-options-dev \
-                      libevent-dev libconfig++-dev \
-                      libthrift-dev thrift-compiler \
-                      libturbojpeg0-dev \
-                      dpkg-dev
+          package_amd64:
+            step: Command
+            name: 打包 deb
+            with:
+              run: |
+                bash scripts/make_artifacts.sh amd64
+                mkdir -p dist
+                bash scripts/make_deb.sh "${VERSION}" artifacts dist amd64
+                echo "[ci] amd64 产物："
+                ls -lh dist/*.deb
 
-                    # turbojpeg 路径适配
-                    mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include
-                    ln -sf /usr/lib/x86_64-linux-gnu/libturbojpeg.so \
-                           /opt/libjpeg-turbo/lib64/libturbojpeg.so
-                    ln -sf /usr/include/turbojpeg.h \
-                           /opt/libjpeg-turbo/include/turbojpeg.h
+          upload_amd64:
+            step: ArtifactUpload
+            name: 上传 amd64 deb
+            with:
+              uploadType: flowPublic
+              artifact: amd64_deb
+              filePath:
+                - dist/
 
-              - step: command@1
-                name: 提取版本号
-                properties:
-                  run: |
-                    VERSION="${PIPELINE_GIT_BRANCH#refs/tags/v}"
-                    echo "VERSION=${VERSION}" >> "$PIPELINE_ENV"
-                    echo "[ci] version = ${VERSION}"
-
-              - step: command@1
-                name: 编译 amd64
-                properties:
-                  run: |
-                    mkdir -p build_amd64 && cd build_amd64
-                    cmake .. \
-                      -DCMAKE_BUILD_TYPE=Release \
-                      -DWITH_DAEMON=ON \
-                      -DWITH_REPLAY=ON \
-                      -DWITH_CONVERT=OFF \
-                      -DWITH_SLAM=OFF \
-                      -DWITH_GIT_INFO=OFF \
-                      -DJPEG_TURBO_ROOT_DIR=/opt/libjpeg-turbo \
-                      -Dforce-git-info="${VERSION}"
-                    make -j"$(nproc)"
-
-              - step: command@1
-                name: 收集产物 + 打包 deb
-                properties:
-                  run: |
-                    bash scripts/make_artifacts.sh amd64
-                    bash scripts/make_deb.sh "${VERSION}" artifacts dist amd64
-                    echo "[ci] amd64 deb:"
-                    ls -lh dist/*.deb
-
-              - step: upload_artifact@1
-                name: 上传 amd64 deb
-                properties:
-                  source: dist/
-                  artifactName: "hera-daemon_${VERSION}_amd64"
-                  repository: "${ARTIFACT_REPO}"
-
-  # ── Stage 2: 发布汇总 ───────────────────────────────────────────────────────
-  - stage:
-      name: release
-      displayName: 发布汇总
-
-      jobs:
-        - job:
-            name: notify
-            displayName: 发布完成通知
-
-            machine:
-              type: public
-              label: linux
-
-            steps:
-              - step: command@1
-                name: 打印产物信息
-                properties:
-                  run: |
-                    VERSION="${PIPELINE_GIT_BRANCH#refs/tags/v}"
-                    echo "=== hera-daemon v${VERSION} 发布完成 ==="
-                    echo "arm64 deb: 制品仓库 ${ARTIFACT_REPO} / hera-daemon_${VERSION}_arm64"
-                    echo "amd64 deb: 制品仓库 ${ARTIFACT_REPO} / hera-daemon_${VERSION}_amd64"
-                    echo ""
-                    echo "Jetson 安装命令："
-                    echo "  # 从制品仓库下载后："
-                    echo "  sudo dpkg -i hera-daemon_${VERSION}_arm64.deb"
+  # ── Stage 2: 汇总 ────────────────────────────────────────────────────
+  release_stage:
+    name: 发布汇总
+    jobs:
+      notify:
+        name: 打印产物信息
+        runsOn: public/cn-hangzhou
+        steps:
+          print_info:
+            step: Command
+            name: 发布完成
+            with:
+              run: |
+                TAG="${PIPELINE_GIT_BRANCH:-}"
+                VERSION="${TAG#refs/tags/}"
+                VERSION="${VERSION#v}"
+                echo "=========================================="
+                echo "  hera-daemon v${VERSION} 发布完成"
+                echo "=========================================="
+                echo ""
+                echo "制品（可在云效 → 制品 中下载）："
+                echo "  arm64: hera-daemon_${VERSION}_arm64.deb"
+                echo "  amd64: hera-daemon_${VERSION}_amd64.deb"
+                echo ""
+                echo "Jetson 安装："
+                echo "  sudo dpkg -i hera-daemon_${VERSION}_arm64.deb"
