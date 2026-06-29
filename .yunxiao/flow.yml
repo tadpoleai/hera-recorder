@@ -28,7 +28,7 @@ sources:
     certificate:
       type: serviceConnection
       # 替换为实际的服务连接 ID（云效 → 服务连接 → Codeup → 复制 ID）
-      serviceConnection: "t164ron9pe7x3gru"
+      serviceConnection: "chpyo6irermpccfa"
 
 # ── 流水线阶段 ────────────────────────────────────────────────────────
 stages:
@@ -61,11 +61,23 @@ stages:
                 echo "${VERSION}" > "${WORK_SPACE}/build_version_arm64"
                 echo "[ci] arm64 version = ${VERSION}"
 
-          setup_qemu:
+          setup_docker_qemu:
             step: Command
-            name: 注册 QEMU arm64 模拟器
+            name: 安装 Docker + 注册 QEMU arm64 模拟器
             with:
               run: |
+                # 公共 runner 未预装 Docker，通过 apt 安装
+                if ! command -v docker &>/dev/null; then
+                  export DEBIAN_FRONTEND=noninteractive
+                  apt-get update -qq
+                  apt-get install -y docker.io
+                  service docker start || dockerd --host=unix:///var/run/docker.sock &
+                  for i in $(seq 1 15); do
+                    docker info &>/dev/null && break || true
+                    echo "waiting for docker daemon... ($i/15)"
+                    sleep 2
+                  done
+                fi
                 docker version
                 docker run --rm --privileged \
                   tonistiigi/binfmt:latest --install arm64
