@@ -24,6 +24,7 @@
 
 #include "plugin_common.hpp"
 #include "plugin_param.hpp"
+#include "data/camera_data.hpp"
 
 #ifdef WITH_DRIVER
 #include <camera/camera.h>
@@ -888,9 +889,20 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
 data::SensorDataPtr DevicePlugin::do_convert(const data::DeviceDataPtr& storage_data,
                                              const ParametersInterface* parameters)
 {
-    (void)storage_data;
     (void)parameters;
-    // Phase 1 only requires stable raw capture to storage.
+    if (storage_data->is_type(InstaJpegFramePacket::TypeVal)) {
+        auto* raw = static_cast<InstaJpegFramePacket*>(storage_data.get());
+        const uint32_t jpeg_size = raw->payload_size;
+        const uint32_t length = static_cast<uint32_t>(sizeof(data::CompressedImage)) + jpeg_size;
+        auto sensor_data = data::SensorData::create_from(
+            storage_data, SensorDataType::CompressedImage, length);
+        auto* img = static_cast<data::CompressedImage*>(sensor_data.get());
+        img->timestamp_intrinsic_ns  = raw->timestamp_host_ns;
+        img->compress_format         = data::CompressedImage::CompressFormat::JPEG;
+        img->image_data_size         = jpeg_size;
+        std::memcpy(img->image_data, raw->payload, jpeg_size);
+        return sensor_data;
+    }
     return data::SensorData::broken_data();
 }
 

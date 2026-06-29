@@ -1,38 +1,41 @@
 # =============================================================================
 # Alibaba Cloud Serverless Workflow (云工作流 FnF)
-# hera-convert: Hera 原始数据 → ROS Bag 转换流程
+# hera 全流程：原始双鱼眼采集数据 → 后处理拼接 → ROS Bag
 #
-# 调用方式（通过 Serverless Workflow 控制台或 SDK）：
+# 两步流程：
+#   Step 1 (hera-stitch)  : 下载原始 .hera → 双鱼眼拼接 → 上传 stitched .hera
+#   Step 2 (hera-convert) : 下载 stitched .hera → 转 ROS Bag → 上传 .bag
 #
 # 输入参数 JSON:
 # {
-#   "oss_endpoint":   "oss-cn-hangzhou-internal.aliyuncs.com",
-#   "oss_bucket":     "your-data-bucket",
-#   "src_oss_prefix": "hera-data/session-20240101/",
-#   "dst_oss_path":   "rosbag/session-20240101.bag",
-#   "remap_oss_path": "configs/remap-tron4.json",   // 可选
-#   "start_time":     0,                            // 可选，单位秒
-#   "duration":       0                             // 可选，单位秒
+#   "oss_endpoint":        "oss-cn-hangzhou-internal.aliyuncs.com",
+#   "oss_bucket":          "your-data-bucket",
+#   "src_oss_prefix":      "hera-data/session-20240101/",      // 原始数据
+#   "stitched_oss_prefix": "hera-stitched/session-20240101/",  // 拼接中间结果
+#   "dst_oss_path":        "rosbag/session-20240101.bag",      // 最终 ROS bag
+#   "mode":                "auto",        // stream | record_download | auto
+#   "fps":                 1,             // 可选，拼接帧率，默认 1
+#   "quality":             3,             // 可选，JPEG 质量 1-31，默认 3
+#   "remap_oss_path":      "configs/remap.json",  // 可选，hera-convert remap
+#   "start_time":          0,             // 可选，转换起始秒
+#   "duration":            0             // 可选，转换时长秒
 # }
 # =============================================================================
 
 version: v1
 type: flow
-
-# 全局超时：24 小时（以秒为单位）。大文件转换可能耗时较长。
-timeoutSeconds: 86400
+timeoutSeconds: 172800
 
 steps:
 
   # ---------------------------------------------------------------------------
-  # Step 1: 调用 FC 函数执行转换
-  # FC 函数使用自定义容器镜像（hera-convert），内部流程：
-  #   下载 OSS 数据 → hera-convert → 上传 ROS bag 到 OSS
+  # Step 1: 双鱼眼拼接（hera-stitch FC 函数）
+  #   下载原始 .hera → ingest-stream-hera 或 ingest-insta-video → 写回 OSS
   # ---------------------------------------------------------------------------
   - type: task
-    name: ConvertHeraToRosBag
+    name: StitchHera
     timeoutSeconds: 86400
-    resourceArn: "acs:fc:{region}:{account-id}:services/{fc-service-name}.LATEST/functions/{fc-function-name}"
+    resourceArn: "acs:fc:{region}:{account-id}:services/{fc-stitch-service}.LATEST/functions/{fc-stitch-function}"
     inputMappings:
       - target: oss_endpoint
         source: $input.oss_endpoint
@@ -40,6 +43,52 @@ steps:
         source: $input.oss_bucket
       - target: src_oss_prefix
         source: $input.src_oss_prefix
+      - target: dst_oss_prefix
+        source: $input.stitched_oss_prefix
+      - target: mode
+        source: $input.mode
+      - target: fps
+        source: $input.fps
+      - target: quality
+        source: $input.quality
+    outputMappings:
+      - target: stitch_status
+        source: $local.status
+      - target: stitch_mode
+        source: $local.mode
+      - target: stitch_message
+        source: $local.message
+    retry:
+      - errors:
+          - FC:ServiceUnavailable
+          - FC:ResourceThrottling
+        intervalSeconds: 30
+        maxAttempts: 3
+        multiplier: 2.0
+    catch:
+      - errors:
+          - "*"
+        steps:
+          - type: fail
+            name: StitchFailed
+            error: StitchError
+            cause: "hera-stitch FC function failed. Check FC logs."
+
+  # ---------------------------------------------------------------------------
+  # Step 2: 转 ROS Bag（hera-convert FC 函数）
+  #   下载 stitched .hera → hera-convert → 上传 .bag
+  # ---------------------------------------------------------------------------
+  - type: task
+    name: ConvertToRosBag
+    timeoutSeconds: 86400
+    resourceArn: "acs:fc:{region}:{account-id}:services/{fc-convert-service}.LATEST/functions/{fc-convert-function}"
+    inputMappings:
+      - target: oss_endpoint
+        source: $input.oss_endpoint
+      - target: oss_bucket
+        source: $input.oss_bucket
+      - target: src_oss_prefix
+        source: $input.stitched_oss_prefix
       - target: dst_oss_path
         source: $input.dst_oss_path
       - target: remap_oss_path
@@ -69,27 +118,7 @@ steps:
           - type: fail
             name: ConvertFailed
             error: ConversionError
-            cause: "hera-convert FC function returned an error. Check FC logs for details."
-
-  # ---------------------------------------------------------------------------
-  # Step 2: 检查转换结果
-  # ---------------------------------------------------------------------------
-  - type: choice
-    name: CheckResult
-    inputMappings:
-      - target: status
-        source: $local.convert_status
-    choices:
-      - condition: $.status == "success"
-        steps:
-          - type: succeed
-            name: ConvertSucceeded
-      - condition: $.status == "error"
-        steps:
-          - type: fail
-            name: ConvertErrorResult
-            error: ConversionFailed
-            cause: "FC function reported conversion error"
+            cause: "hera-convert FC function failed. Check FC logs."
 
   - type: succeed
     name: Done
