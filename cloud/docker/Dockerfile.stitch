@@ -1,0 +1,111 @@
+# =============================================================================
+# hera-stitch: 后处理拼接服务
+#
+# 功能：从 OSS 下载原始 .hera 文件（Stream 或 RecordDownload 模式），
+#       调用 hera-storage-ingest-stream-hera / hera-storage-ingest-insta-video
+#       完成双鱼眼 → 等矩形 JPEG 拼接，将拼接后的 .hera 写回 OSS。
+#
+# 本地运行示例：
+#   docker run --rm \
+#     -e OSS_ACCESS_KEY_ID=xxx \
+#     -e OSS_ACCESS_KEY_SECRET=xxx \
+#     -p 9001:9001 \
+#     hera-stitch
+#
+# 阿里云函数计算部署：参考 cloud/workflow/deploy.sh stitch 子命令
+# =============================================================================
+
+# ── Stage 1: 系统依赖 ─────────────────────────────────────────────────────────
+FROM ubuntu:focal AS base
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN sed -i 's|http://archive.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list && \
+    sed -i 's|http://security.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list
+
+RUN apt-get update && apt-get install -y \
+    build-essential g++ cmake git wget curl \
+    libevent-dev libconfig++-dev \
+    ffmpeg \
+    libturbojpeg0-dev \
+    python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Thrift 0.12.0（hera-storage 依赖）
+FROM base AS deps-builder
+
+WORKDIR /build
+
+RUN wget -q "http://mirrors.tuna.tsinghua.edu.cn/apache/thrift/0.12.0/thrift-0.12.0.tar.gz" && \
+    tar -zxf thrift-0.12.0.tar.gz && \
+    cd thrift-0.12.0 && \
+    ./bootstrap.sh && \
+    ./configure \
+        --with-cpp \
+        --without-qt4 --without-qt5 --without-c_glib --without-csharp \
+        --without-java --without-erlang --without-nodejs --without-lua \
+        --without-python --without-py3 --without-perl --without-php \
+        --without-ruby --without-haskell --without-go --without-rs \
+        --without-swift --disable-tests --disable-tutorial \
+        CFLAGS="-g -O2" CXXFLAGS="-g -O2" && \
+    make -j"$(nproc)" && make install && \
+    cp /usr/local/lib/libthrift-0.12.0.so /usr/lib/libthrift-0.12.0.so && \
+    ldconfig && \
+    cd /build && rm -rf thrift*
+
+# libturbojpeg symlink（Ubuntu focal 的包路径与 cmake 期望路径不同）
+RUN mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include && \
+    ln -sf /usr/lib/x86_64-linux-gnu/libturbojpeg.so \
+           /opt/libjpeg-turbo/lib64/libturbojpeg.so && \
+    ln -sf /usr/include/turbojpeg.h \
+           /opt/libjpeg-turbo/include/turbojpeg.h && \
+    ldconfig
+
+# ── Stage 2: 构建 hera-stitch 工具 ───────────────────────────────────────────
+FROM deps-builder AS hera-builder
+
+WORKDIR /workspace
+COPY . /workspace/hera-recorder
+
+RUN mkdir -p /workspace/hera-recorder/build_cloud_stitch && \
+    cd /workspace/hera-recorder/build_cloud_stitch && \
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DWITH_DAEMON=OFF \
+        -DWITH_REPLAY=OFF \
+        -DWITH_CONVERT=OFF \
+        -DWITH_SLAM=OFF \
+        -DWITH_GIT_INFO=OFF \
+        -DJPEG_TURBO_ROOT_DIR=/opt/libjpeg-turbo \
+        -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    # 只编译 storage 工具（ingest-stream-hera + ingest-insta-video）
+    make -j"$(nproc)" \
+        hera-storage-ingest-stream-hera \
+        hera-storage-ingest-insta-video && \
+    cp storage/hera-storage-ingest-stream-hera /usr/local/bin/ && \
+    cp storage/hera-storage-ingest-insta-video /usr/local/bin/ && \
+    cd .. && make -j"$(nproc)" hera-storage && \
+    make install
+
+# ── Stage 3: Runtime ──────────────────────────────────────────────────────────
+FROM base AS runtime
+
+COPY --from=deps-builder /usr/local/lib/libthrift*.so* /usr/local/lib/
+COPY --from=deps-builder /usr/lib/libthrift*.so* /usr/lib/
+COPY --from=hera-builder /usr/local/lib/libhera*.so* /usr/local/lib/
+COPY --from=hera-builder /usr/local/lib/hera/ /usr/local/lib/hera/
+COPY --from=hera-builder /usr/local/bin/hera-storage-ingest-stream-hera \
+                         /usr/local/bin/hera-storage-ingest-insta-video \
+                         /usr/local/bin/
+
+RUN ldconfig
+RUN pip3 install --no-cache-dir oss2
+
+COPY cloud/docker/stitch_handler.py /opt/stitch_handler.py
+
+EXPOSE 9001
+
+ENV HERA_DEVICE_PLUGIN_PATH=/usr/local/lib/hera/plugin
+ENV HERA_DEVICE_LOAD_DRIVER=0
+
+CMD ["python3", "/opt/stitch_handler.py"]

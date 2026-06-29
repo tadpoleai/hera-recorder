@@ -90,8 +90,9 @@ git_info.cpp
 # ! deploy script
 !deploy/*.sh
 
-# docker folder
+# docker folder（排除云服务 docker 定义）
 docker/
+!cloud/docker/
 setup/
 
 # Doxygen
