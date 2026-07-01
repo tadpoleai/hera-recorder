@@ -23,8 +23,6 @@ sources:
     branch: master
     triggerEvents:
       - tagPush
-    # 只有 v 开头的 tag（如 v4.10.0）才触发流水线
-    branchesFilter: "v.*"
     certificate:
       type: serviceConnection
       # 替换为实际的服务连接 ID（云效 → 服务连接 → Codeup → 复制 ID）
@@ -79,9 +77,12 @@ stages:
                   libthrift-dev:arm64 \
                   libturbojpeg0-dev:arm64 \
                   libusb-1.0-0-dev:arm64
+                # turbojpeg: cmake 期望库在 /opt/libjpeg-turbo/lib64/
+                # libturbojpeg0-dev:arm64 将 .so 装到 /usr/lib/aarch64-linux-gnu/
                 mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include
                 ln -sf /usr/lib/aarch64-linux-gnu/libturbojpeg.so \
                        /opt/libjpeg-turbo/lib64/libturbojpeg.so
+                # turbojpeg.h 由 dev 包写入 /usr/include（与架构无关）
                 ln -sf /usr/include/turbojpeg.h \
                        /opt/libjpeg-turbo/include/turbojpeg.h
 
@@ -91,6 +92,11 @@ stages:
             with:
               run: |
                 VERSION="$(cat "${WORK_SPACE}/build_version_arm64")"
+                # 告知 system_arch.cmake 目标架构，使插件命名为 *-aarch64-*.so
+                # 若不设置，uname -m 返回 x86_64，插件名错误导致 Jetson 运行时加载失败
+                export ARCH=aarch64
+                # 云效公共 runner 以 root 运行，git 会拒绝读取非 root 拥有的目录
+                git config --global --add safe.directory "${WORK_SPACE}"
                 export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
                 export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig
                 mkdir -p build_arm64 && cd build_arm64
@@ -119,14 +125,16 @@ stages:
                 echo "[ci] arm64 产物："
                 ls -lh dist/*.deb
 
-          upload_arm64:
-            step: ArtifactUpload
-            name: 上传 arm64 deb
+          show_arm64:
+            step: Command
+            name: 展示 arm64 产物
             with:
-              uploadType: flowPublic
-              artifact: arm64_deb
-              filePath:
-                - dist/
+              run: |
+                echo "=== arm64 deb 产物 ==="
+                ls -lh dist/*.deb
+                echo ""
+                echo "可在云效 → 流水线 → 本次构建 → 下载日志 获取文件路径。"
+                echo "如需制品仓库上传，在 Yunxiao 创建通用包仓库后将此步骤改为 ArtifactUpload。"
 
       # ── Job B: amd64 deb ─────────────────────────────────────────────
       build_amd64:
@@ -164,7 +172,8 @@ stages:
                   libthrift-dev thrift-compiler \
                   libturbojpeg0-dev \
                   dpkg-dev
-                # turbojpeg cmake 路径适配
+                # turbojpeg: cmake 期望库在 /opt/libjpeg-turbo/lib64/
+                # libturbojpeg0-dev 将 .so 装到 /usr/lib/x86_64-linux-gnu/
                 mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include
                 ln -sf /usr/lib/x86_64-linux-gnu/libturbojpeg.so \
                        /opt/libjpeg-turbo/lib64/libturbojpeg.so
@@ -177,6 +186,8 @@ stages:
             with:
               run: |
                 VERSION="$(cat "${WORK_SPACE}/build_version_amd64")"
+                # 云效公共 runner 以 root 运行，git 会拒绝读取非 root 拥有的目录
+                git config --global --add safe.directory "${WORK_SPACE}"
                 mkdir -p build_amd64 && cd build_amd64
                 cmake .. \
                   -DCMAKE_BUILD_TYPE=Release \
@@ -201,14 +212,15 @@ stages:
                 echo "[ci] amd64 产物："
                 ls -lh dist/*.deb
 
-          upload_amd64:
-            step: ArtifactUpload
-            name: 上传 amd64 deb
+          show_amd64:
+            step: Command
+            name: 展示 amd64 产物
             with:
-              uploadType: flowPublic
-              artifact: amd64_deb
-              filePath:
-                - dist/
+              run: |
+                echo "=== amd64 deb 产物 ==="
+                ls -lh dist/*.deb
+                echo ""
+                echo "如需制品仓库上传，在 Yunxiao 创建通用包仓库后将此步骤改为 ArtifactUpload。"
 
   # ── Stage 2: 汇总 ────────────────────────────────────────────────────
   release_stage:
