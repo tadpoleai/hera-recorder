@@ -53,6 +53,13 @@ jobs:
           echo "===== artifacts ====="
           ls -lh dist/*.deb
 
+      - name: Upload artifact (always, for download from Actions UI)
+        uses: actions/upload-artifact@v4
+        with:
+          name: hera-daemon_${{ env.VERSION }}_arm64.deb
+          path: dist/*.deb
+          retention-days: 7
+
       - name: Upload to GitHub Releases
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
