@@ -10,17 +10,10 @@ jobs:
   build-arm64:
     name: Cross-compile arm64 .deb
     runs-on: ubuntu-22.04
-    # Use the pre-built cross-compile environment — has aarch64 toolchain,
-    # boost/thrift/libconfig/libjpeg-turbo for arm64 already installed.
-    container:
-      image: ghcr.io/tadpoleai/jetson-builder:r36.4
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
 
     permissions:
-      contents: write   # needed to create GitHub Releases
-      packages: read    # needed to pull from ghcr.io
+      contents: write   # create GitHub Releases
+      packages: read    # pull from ghcr.io
 
     steps:
       - name: Checkout
@@ -28,60 +21,67 @@ jobs:
 
       - name: Extract version
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          VERSION="${TAG#v}"
+          VERSION="${GITHUB_REF_NAME#v}"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "[ci] version = ${VERSION}"
 
-      - name: Install host tools (dpkg-dev, thrift-compiler)
-        # The container has arm64 cross-compile libs pre-installed.
-        # Only install host-side tools that may be missing.
+      - name: Login to ghcr.io
         run: |
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update -qq
-          apt-get install -y --no-install-recommends \
-            dpkg-dev thrift-compiler git
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Cross-compile and install Livox SDK2
+      - name: Build arm64 .deb inside builder container
         run: |
-          git clone --depth 1 https://github.com/Livox-SDK/Livox-SDK2.git /tmp/Livox-SDK2
-          cd /tmp/Livox-SDK2
-          mkdir build && cd build
-          cmake .. \
-            -DCMAKE_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/cmake/toolchain-aarch64.cmake" \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=/usr/local
-          make -j$(nproc)
-          make install
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            -e VERSION="${{ env.VERSION }}" \
+            ghcr.io/tadpoleai/jetson-builder:r36.4 \
+            bash -c '
+              set -e
 
-      - name: Cross-compile arm64
-        run: |
-          export ARCH=aarch64
-          export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
-          export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig
-          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-          mkdir -p build_arm64 && cd build_arm64
-          cmake .. \
-            -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain-aarch64.cmake \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DWITH_DAEMON=ON \
-            -DWITH_REPLAY=ON \
-            -DWITH_CONVERT=OFF \
-            -DWITH_SLAM=OFF \
-            -DWITH_GIT_INFO=OFF \
-            -DCMAKE_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu \
-            -DJPEG_TURBO_ROOT_DIR=/opt/libjpeg-turbo \
-            -DLIVOX_SDK2_ROOT=/usr/local \
-            -Dforce-git-info="${VERSION}"
-          make -j$(nproc)
+              # Install host-side tools the image may not include
+              apt-get update -qq
+              apt-get install -y --no-install-recommends dpkg-dev thrift-compiler git
 
-      - name: Package .deb
-        run: |
-          bash scripts/make_artifacts.sh arm64
-          mkdir -p dist
-          bash scripts/make_deb.sh "${VERSION}" artifacts dist arm64
-          echo "===== artifacts ====="
-          ls -lh dist/*.deb
+              # Cross-compile Livox SDK2 (open-source, not bundled in image)
+              git clone --depth 1 https://github.com/Livox-SDK/Livox-SDK2.git /tmp/Livox-SDK2
+              cd /tmp/Livox-SDK2 && mkdir build && cd build
+              cmake .. \
+                -DCMAKE_TOOLCHAIN_FILE=/workspace/cmake/toolchain-aarch64.cmake \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX=/usr/local
+              make -j$(nproc) && make install
+
+              # Cross-compile recorder
+              cd /workspace
+              export ARCH=aarch64
+              export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+              export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig
+              git config --global --add safe.directory /workspace
+              mkdir -p build_arm64 && cd build_arm64
+              cmake .. \
+                -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain-aarch64.cmake \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DWITH_DAEMON=ON \
+                -DWITH_REPLAY=ON \
+                -DWITH_CONVERT=OFF \
+                -DWITH_SLAM=OFF \
+                -DWITH_GIT_INFO=OFF \
+                -DCMAKE_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu \
+                -DJPEG_TURBO_ROOT_DIR=/opt/libjpeg-turbo \
+                -DLIVOX_SDK2_ROOT=/usr/local \
+                -Dforce-git-info="${VERSION}"
+              make -j$(nproc)
+
+              # Package .deb
+              cd /workspace
+              bash scripts/make_artifacts.sh arm64
+              mkdir -p dist
+              bash scripts/make_deb.sh "${VERSION}" artifacts dist arm64
+              echo "===== artifacts ====="
+              ls -lh dist/*.deb
+            '
 
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2
