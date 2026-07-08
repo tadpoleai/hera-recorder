@@ -1,18 +1,22 @@
 name: Build Jetson Daemon
 
 # Triggers on v* tag push (e.g. v4.10.0)
+# workflow_dispatch allows manual runs for verifying the runner/image setup
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch: {}
 
 jobs:
   build-arm64:
-    name: Cross-compile arm64 .deb
-    runs-on: ubuntu-22.04
+    name: Build arm64 .deb (native)
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: ghcr.io/tadpoleai/jetson-builder:r36.4
 
     permissions:
-      contents: write   # create GitHub Releases
+      contents: write
 
     steps:
       - name: Checkout
@@ -21,72 +25,18 @@ jobs:
       - name: Extract version
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${VERSION:-0.0.0-ci}"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "[ci] version = ${VERSION}"
 
-      - name: Install aarch64 cross-compile deps
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo dpkg --add-architecture arm64
-          # Restrict default sources to amd64; arm64 packages come from ports
-          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list 2>/dev/null || true
-          for f in /etc/apt/sources.list.d/*.list; do
-            sudo sed -i 's/^deb /deb [arch=amd64] /' "$f" 2>/dev/null || true
-          done
-          cat <<'EOF' | sudo tee /etc/apt/sources.list.d/arm64-ports.list
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse
-          EOF
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-            cmake make git pkg-config dpkg-dev \
-            thrift-compiler \
-            libboost-dev:arm64 libboost-filesystem-dev:arm64 \
-            libboost-thread-dev:arm64 libboost-program-options-dev:arm64 \
-            libevent-dev:arm64 libconfig++-dev:arm64 \
-            libthrift-dev:arm64 \
-            libturbojpeg0-dev:arm64 \
-            libusb-1.0-0-dev:arm64
-          # cmake's turbojpeg.cmake on aarch64 expects /opt/libjpeg-turbo/lib64/
-          sudo mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include
-          sudo ln -sf /usr/lib/aarch64-linux-gnu/libturbojpeg.so \
-                      /opt/libjpeg-turbo/lib64/libturbojpeg.so
-          sudo ln -sf /usr/include/turbojpeg.h \
-                      /opt/libjpeg-turbo/include/turbojpeg.h
+      - name: Setup git safe directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
-      - name: Cross-compile and install Livox SDK2
-        run: |
-          git clone --depth 1 https://github.com/Livox-SDK/Livox-SDK2.git /tmp/Livox-SDK2
-          cd /tmp/Livox-SDK2 && mkdir build && cd build
-          cmake .. \
-            -DCMAKE_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/cmake/toolchain-aarch64.cmake" \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=/usr/local
-          make -j$(nproc)
-          sudo make install
+      - name: Build and install Livox SDK2
+        run: bash scripts/build_livox_sdk2.sh
 
-      - name: Cross-compile arm64
-        run: |
-          export ARCH=aarch64
-          export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
-          export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig
-          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-          mkdir -p build_arm64 && cd build_arm64
-          cmake .. \
-            -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain-aarch64.cmake \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DWITH_DAEMON=ON \
-            -DWITH_REPLAY=ON \
-            -DWITH_CONVERT=OFF \
-            -DWITH_SLAM=OFF \
-            -DWITH_GIT_INFO=OFF \
-            -DCMAKE_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu \
-            -DJPEG_TURBO_ROOT_DIR=/opt/libjpeg-turbo \
-            -DLIVOX_SDK2_ROOT=/usr/local \
-            -Dforce-git-info="${{ env.VERSION }}"
-          make -j$(nproc)
+      - name: Build hera-daemon (native arm64, with Insta360 SDK)
+        run: INSTA_SDK_ROOT=/opt/insta_sdk bash scripts/build_arm64.sh "${{ env.VERSION }}"
 
       - name: Package .deb
         run: |

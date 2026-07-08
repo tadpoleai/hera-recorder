@@ -1,0 +1,2 @@
+FROM ghcr.io/tadpoleai/jetson-builder:r36.4
+COPY CameraSDK-2.1.1-jetson /opt/insta_sdk/
