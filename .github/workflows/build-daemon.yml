@@ -28,8 +28,11 @@ jobs:
 
       - name: Extract version
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          VERSION="${VERSION:-0.0.0-ci}"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="0.0.0-ci"
+          fi
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "[ci] version = ${VERSION}"
 
