@@ -32,7 +32,8 @@ add_custom_command(
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/rpc/hera.thrift"
   COMMAND "mkdir" "-p" "${RPC_GEN_CPP}"
   COMMAND "thrift" "-out" "${RPC_GEN_CPP}" "--gen" "cpp:no_skeleton"
-          "${CMAKE_CURRENT_SOURCE_DIR}/rpc/hera.thrift")
+          "${CMAKE_CURRENT_SOURCE_DIR}/rpc/hera.thrift"
+  COMMAND sh -c "touch '${RPC_GEN_CPP}/hera_constants.cpp' '${RPC_GEN_CPP}/hera_constants.h'")
 
 # Build daemon
 file(GLOB_RECURSE ALL_SRC "src/*.cpp" "src/**/*.cpp")

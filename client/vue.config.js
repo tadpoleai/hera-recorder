@@ -1,4 +1,7 @@
 module.exports = {
   productionSourceMap: false,
-  lintOnSave: true
+  lintOnSave: true,
+  pwa: {
+    workboxPluginMode: 'GenerateSW'
+  }
 };

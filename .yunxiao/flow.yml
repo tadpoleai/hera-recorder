@@ -1,20 +1,6 @@
-# 云效 Flow 流水线 - hera-daemon 自动发布
-#
-# 触发：推送 v* tag（如 v4.10.0）自动构建 arm64 + amd64 deb
-#
-# ── 一次性前置配置 ────────────────────────────────────────────────────
-# 1. 云效 → 服务连接 → 新建 Codeup 服务连接，将 serviceConnection ID
-#    填入下方 sources.recorder.certificate.serviceConnection
-# 2. 云效 → 制品仓库 → 新建通用制品仓库（名称随意，ArtifactUpload 使用
-#    流水线内置存储 flowPublic，无需额外配置）
-# 3. （可选）流水线 → 环境变量 → 新增私密变量 INSTA_SDK_OSS_URL
-#    值为 Insta360 CameraSDK arm64 包的 OSS presigned URL
-#    未设置时构建不含摄像头驱动，其余功能正常
-# ─────────────────────────────────────────────────────────────────────
-
 name: hera-release
 
-# ── 代码源与触发条件 ──────────────────────────────────────────────────
+# 触发：推送 v* tag（如 v4.10.0）自动构建 arm64 deb
 sources:
   recorder:
     type: codeup
@@ -25,29 +11,23 @@ sources:
       - tagPush
     certificate:
       type: serviceConnection
-      # 替换为实际的服务连接 ID（云效 → 服务连接 → Codeup → 复制 ID）
       serviceConnection: "chpyo6irermpccfa"
 
-# ── 流水线阶段 ────────────────────────────────────────────────────────
 stages:
-  # ── Stage 1: 并行构建 arm64 + amd64 ─────────────────────────────────
   build_stage:
     name: 编译
     jobs:
 
-      # ── Job A: arm64 Jetson deb（aarch64 交叉编译）─────────────────────
-      # 在 ubuntu:22.04 容器内用 gcc-aarch64-linux-gnu 交叉编译。
-      # 云效公共 runner 无 network namespace 权限，Docker+QEMU 方案不可用。
-      # 若要使用 Jetson 原生构建，可将 runsOn 改为自托管 arm64 runner：
-      #   runsOn: private/<your-runner-group-id>
+      # arm64 Jetson deb —— aarch64 交叉编译（公共 runner ubuntu:22.04）
+      # export ARCH=aarch64 确保插件命名为 *-aarch64-*.so，否则 Jetson 加载失败
       build_arm64:
-        name: 编译 arm64 (aarch64 交叉编译)
+        name: 编译 arm64
         runsOn:
           group: public/cn-hangzhou
-          container: ubuntu:22.04
+          container: crpi-wzvoh0tsm7bwb22w.cn-shanghai.personal.cr.aliyuncs.com/glim/cicd:ubuntu2204
 
         steps:
-          extract_version_arm64:
+          extract_version:
             step: Command
             name: 提取版本号
             with:
@@ -56,16 +36,39 @@ stages:
                 VERSION="${TAG#refs/tags/}"
                 VERSION="${VERSION#v}"
                 [ -z "${VERSION}" ] && VERSION="dev"
-                echo "${VERSION}" > "${WORK_SPACE}/build_version_arm64"
-                echo "[ci] arm64 version = ${VERSION}"
+                echo "${VERSION}" > "${WORK_SPACE}/build_version"
+                echo "[ci] version = ${VERSION}"
 
-          install_deps_arm64:
+          install_deps:
             step: Command
             name: 安装 aarch64 交叉编译依赖
             with:
               run: |
+                echo "OS: $(. /etc/os-release && echo $PRETTY_NAME)"
                 export DEBIAN_FRONTEND=noninteractive
                 dpkg --add-architecture arm64
+                # 限制默认源只走 amd64，arm64 单独指向 ports
+                sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list \
+                  2>/dev/null || true
+                if [ -d /etc/apt/sources.list.d ]; then
+                  for f in /etc/apt/sources.list.d/*.list; do
+                    sed -i 's/^deb /deb [arch=amd64] /' "$f" 2>/dev/null || true
+                  done
+                fi
+                # 添加 arm64 包源（Debian ports）
+                . /etc/os-release
+                CODENAME="${VERSION_CODENAME:-bookworm}"
+                cat > /etc/apt/sources.list.d/arm64-ports.list << EOF
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${CODENAME} main restricted universe multiverse
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${CODENAME}-updates main restricted universe multiverse
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${CODENAME}-security main restricted universe multiverse
+EOF
+                # Debian 用 debian ports
+                if [ "${ID}" = "debian" ]; then
+                  cat > /etc/apt/sources.list.d/arm64-ports.list << EOF
+deb [arch=arm64] http://ftp.ports.debian.org/debian-ports/ ${CODENAME} main
+EOF
+                fi
                 apt-get update -qq
                 apt-get install -y --no-install-recommends \
                   gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
@@ -77,25 +80,19 @@ stages:
                   libthrift-dev:arm64 \
                   libturbojpeg0-dev:arm64 \
                   libusb-1.0-0-dev:arm64
-                # turbojpeg: cmake 期望库在 /opt/libjpeg-turbo/lib64/
-                # libturbojpeg0-dev:arm64 将 .so 装到 /usr/lib/aarch64-linux-gnu/
                 mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include
                 ln -sf /usr/lib/aarch64-linux-gnu/libturbojpeg.so \
                        /opt/libjpeg-turbo/lib64/libturbojpeg.so
-                # turbojpeg.h 由 dev 包写入 /usr/include（与架构无关）
                 ln -sf /usr/include/turbojpeg.h \
                        /opt/libjpeg-turbo/include/turbojpeg.h
 
-          compile_arm64:
+          compile:
             step: Command
             name: 交叉编译 arm64
             with:
               run: |
-                VERSION="$(cat "${WORK_SPACE}/build_version_arm64")"
-                # 告知 system_arch.cmake 目标架构，使插件命名为 *-aarch64-*.so
-                # 若不设置，uname -m 返回 x86_64，插件名错误导致 Jetson 运行时加载失败
+                VERSION="$(cat "${WORK_SPACE}/build_version")"
                 export ARCH=aarch64
-                # 云效公共 runner 以 root 运行，git 会拒绝读取非 root 拥有的目录
                 git config --global --add safe.directory "${WORK_SPACE}"
                 export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
                 export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig
@@ -113,138 +110,14 @@ stages:
                   -Dforce-git-info="${VERSION}"
                 make -j"$(nproc)"
 
-          package_arm64:
+          package:
             step: Command
             name: 打包 arm64 deb
             with:
               run: |
-                VERSION="$(cat "${WORK_SPACE}/build_version_arm64")"
+                VERSION="$(cat "${WORK_SPACE}/build_version")"
                 bash scripts/make_artifacts.sh arm64
                 mkdir -p dist
                 bash scripts/make_deb.sh "${VERSION}" artifacts dist arm64
-                echo "[ci] arm64 产物："
+                echo "===== 产物 ====="
                 ls -lh dist/*.deb
-
-          show_arm64:
-            step: Command
-            name: 展示 arm64 产物
-            with:
-              run: |
-                echo "=== arm64 deb 产物 ==="
-                ls -lh dist/*.deb
-                echo ""
-                echo "可在云效 → 流水线 → 本次构建 → 下载日志 获取文件路径。"
-                echo "如需制品仓库上传，在 Yunxiao 创建通用包仓库后将此步骤改为 ArtifactUpload。"
-
-      # ── Job B: amd64 deb ─────────────────────────────────────────────
-      build_amd64:
-        name: 编译 amd64
-        runsOn:
-          group: public/cn-hangzhou
-          container: ubuntu:22.04
-
-        steps:
-          extract_version_amd64:
-            step: Command
-            name: 提取版本号
-            with:
-              run: |
-                TAG="${GIT_BRANCH:-${PIPELINE_GIT_BRANCH:-}}"
-                VERSION="${TAG#refs/tags/}"
-                VERSION="${VERSION#v}"
-                [ -z "${VERSION}" ] && VERSION="dev"
-                echo "${VERSION}" > "${WORK_SPACE}/build_version_amd64"
-                echo "[ci] amd64 version = ${VERSION}"
-
-          install_deps:
-            step: Command
-            name: 安装编译依赖
-            with:
-              run: |
-                export DEBIAN_FRONTEND=noninteractive
-                apt-get update -qq
-                apt-get install -y --no-install-recommends \
-                  build-essential cmake make git pkg-config \
-                  libusb-1.0-0-dev \
-                  libboost-dev libboost-filesystem-dev libboost-thread-dev \
-                  libboost-program-options-dev \
-                  libevent-dev libconfig++-dev \
-                  libthrift-dev thrift-compiler \
-                  libturbojpeg0-dev \
-                  dpkg-dev
-                # turbojpeg: cmake 期望库在 /opt/libjpeg-turbo/lib64/
-                # libturbojpeg0-dev 将 .so 装到 /usr/lib/x86_64-linux-gnu/
-                mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include
-                ln -sf /usr/lib/x86_64-linux-gnu/libturbojpeg.so \
-                       /opt/libjpeg-turbo/lib64/libturbojpeg.so
-                ln -sf /usr/include/turbojpeg.h \
-                       /opt/libjpeg-turbo/include/turbojpeg.h
-
-          compile_amd64:
-            step: Command
-            name: 编译
-            with:
-              run: |
-                VERSION="$(cat "${WORK_SPACE}/build_version_amd64")"
-                # 云效公共 runner 以 root 运行，git 会拒绝读取非 root 拥有的目录
-                git config --global --add safe.directory "${WORK_SPACE}"
-                mkdir -p build_amd64 && cd build_amd64
-                cmake .. \
-                  -DCMAKE_BUILD_TYPE=Release \
-                  -DWITH_DAEMON=ON \
-                  -DWITH_REPLAY=ON \
-                  -DWITH_CONVERT=OFF \
-                  -DWITH_SLAM=OFF \
-                  -DWITH_GIT_INFO=OFF \
-                  -DJPEG_TURBO_ROOT_DIR=/opt/libjpeg-turbo \
-                  -Dforce-git-info="${VERSION}"
-                make -j"$(nproc)"
-
-          package_amd64:
-            step: Command
-            name: 打包 deb
-            with:
-              run: |
-                VERSION="$(cat "${WORK_SPACE}/build_version_amd64")"
-                bash scripts/make_artifacts.sh amd64
-                mkdir -p dist
-                bash scripts/make_deb.sh "${VERSION}" artifacts dist amd64
-                echo "[ci] amd64 产物："
-                ls -lh dist/*.deb
-
-          show_amd64:
-            step: Command
-            name: 展示 amd64 产物
-            with:
-              run: |
-                echo "=== amd64 deb 产物 ==="
-                ls -lh dist/*.deb
-                echo ""
-                echo "如需制品仓库上传，在 Yunxiao 创建通用包仓库后将此步骤改为 ArtifactUpload。"
-
-  # ── Stage 2: 汇总 ────────────────────────────────────────────────────
-  release_stage:
-    name: 发布汇总
-    jobs:
-      notify:
-        name: 打印产物信息
-        runsOn: public/cn-hangzhou
-        steps:
-          print_info:
-            step: Command
-            name: 发布完成
-            with:
-              run: |
-                TAG="${GIT_BRANCH:-${PIPELINE_GIT_BRANCH:-}}"
-                VERSION="${TAG#refs/tags/}"
-                VERSION="${VERSION#v}"
-                echo "=========================================="
-                echo "  hera-daemon v${VERSION} 发布完成"
-                echo "=========================================="
-                echo ""
-                echo "制品（可在云效 → 制品 中下载）："
-                echo "  arm64: hera-daemon_${VERSION}_arm64.deb"
-                echo "  amd64: hera-daemon_${VERSION}_amd64.deb"
-                echo ""
-                echo "Jetson 安装："
-                echo "  sudo dpkg -i hera-daemon_${VERSION}_arm64.deb"

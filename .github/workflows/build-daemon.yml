@@ -1,0 +1,102 @@
+name: Build Jetson Daemon
+
+# Triggers on v* tag push (e.g. v4.10.0)
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-arm64:
+    name: Cross-compile arm64 .deb
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "[ci] version = ${VERSION}"
+
+      - name: Install cross-compile deps
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo dpkg --add-architecture arm64
+          # Restrict default sources to amd64 only; arm64 uses ports
+          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list 2>/dev/null || true
+          for f in /etc/apt/sources.list.d/*.list; do
+            sudo sed -i 's/^deb /deb [arch=amd64] /' "$f" 2>/dev/null || true
+          done
+          cat <<'EOF' | sudo tee /etc/apt/sources.list.d/arm64-ports.list
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse
+          EOF
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+            cmake make git pkg-config dpkg-dev \
+            thrift-compiler \
+            libboost-dev:arm64 libboost-filesystem-dev:arm64 \
+            libboost-thread-dev:arm64 libboost-program-options-dev:arm64 \
+            libevent-dev:arm64 libconfig++-dev:arm64 \
+            libthrift-dev:arm64 \
+            libturbojpeg0-dev:arm64 \
+            libusb-1.0-0-dev:arm64
+          # Create symlinks cmake turbojpeg.cmake expects on aarch64
+          sudo mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include
+          sudo ln -sf /usr/lib/aarch64-linux-gnu/libturbojpeg.so \
+                      /opt/libjpeg-turbo/lib64/libturbojpeg.so
+          sudo ln -sf /usr/include/turbojpeg.h \
+                      /opt/libjpeg-turbo/include/turbojpeg.h
+
+      - name: Cross-compile and install Livox SDK2
+        run: |
+          git clone --depth 1 https://github.com/Livox-SDK/Livox-SDK2.git /tmp/Livox-SDK2
+          cd /tmp/Livox-SDK2
+          mkdir build && cd build
+          cmake .. \
+            -DCMAKE_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/cmake/toolchain-aarch64.cmake" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr/local
+          make -j$(nproc)
+          sudo make install
+
+      - name: Cross-compile arm64
+        run: |
+          export ARCH=aarch64
+          export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+          export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          mkdir -p build_arm64 && cd build_arm64
+          cmake .. \
+            -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchain-aarch64.cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DWITH_DAEMON=ON \
+            -DWITH_REPLAY=ON \
+            -DWITH_CONVERT=OFF \
+            -DWITH_SLAM=OFF \
+            -DWITH_GIT_INFO=OFF \
+            -DCMAKE_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu \
+            -DJPEG_TURBO_ROOT_DIR=/opt/libjpeg-turbo \
+            -DLIVOX_SDK2_ROOT=/usr/local \
+            -Dforce-git-info="${VERSION}"
+          make -j$(nproc)
+
+      - name: Package .deb
+        run: |
+          bash scripts/make_artifacts.sh arm64
+          mkdir -p dist
+          bash scripts/make_deb.sh "${VERSION}" artifacts dist arm64
+          echo "===== artifacts ====="
+          ls -lh dist/*.deb
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.deb
+          generate_release_notes: true
