@@ -10,6 +10,17 @@ jobs:
   build-arm64:
     name: Cross-compile arm64 .deb
     runs-on: ubuntu-22.04
+    # Use the pre-built cross-compile environment — has aarch64 toolchain,
+    # boost/thrift/libconfig/libjpeg-turbo for arm64 already installed.
+    container:
+      image: ghcr.io/tadpoleai/jetson-builder:r36.4
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    permissions:
+      contents: write   # needed to create GitHub Releases
+      packages: read    # needed to pull from ghcr.io
 
     steps:
       - name: Checkout
@@ -22,37 +33,14 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "[ci] version = ${VERSION}"
 
-      - name: Install cross-compile deps
+      - name: Install host tools (dpkg-dev, thrift-compiler)
+        # The container has arm64 cross-compile libs pre-installed.
+        # Only install host-side tools that may be missing.
         run: |
           export DEBIAN_FRONTEND=noninteractive
-          sudo dpkg --add-architecture arm64
-          # Restrict default sources to amd64 only; arm64 uses ports
-          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list 2>/dev/null || true
-          for f in /etc/apt/sources.list.d/*.list; do
-            sudo sed -i 's/^deb /deb [arch=amd64] /' "$f" 2>/dev/null || true
-          done
-          cat <<'EOF' | sudo tee /etc/apt/sources.list.d/arm64-ports.list
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse
-          EOF
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
-            cmake make git pkg-config dpkg-dev \
-            thrift-compiler \
-            libboost-dev:arm64 libboost-filesystem-dev:arm64 \
-            libboost-thread-dev:arm64 libboost-program-options-dev:arm64 \
-            libevent-dev:arm64 libconfig++-dev:arm64 \
-            libthrift-dev:arm64 \
-            libturbojpeg0-dev:arm64 \
-            libusb-1.0-0-dev:arm64
-          # Create symlinks cmake turbojpeg.cmake expects on aarch64
-          sudo mkdir -p /opt/libjpeg-turbo/lib64 /opt/libjpeg-turbo/include
-          sudo ln -sf /usr/lib/aarch64-linux-gnu/libturbojpeg.so \
-                      /opt/libjpeg-turbo/lib64/libturbojpeg.so
-          sudo ln -sf /usr/include/turbojpeg.h \
-                      /opt/libjpeg-turbo/include/turbojpeg.h
+          apt-get update -qq
+          apt-get install -y --no-install-recommends \
+            dpkg-dev thrift-compiler git
 
       - name: Cross-compile and install Livox SDK2
         run: |
@@ -64,7 +52,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/usr/local
           make -j$(nproc)
-          sudo make install
+          make install
 
       - name: Cross-compile arm64
         run: |
