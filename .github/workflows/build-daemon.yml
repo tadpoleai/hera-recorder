@@ -47,7 +47,7 @@ jobs:
 
       - name: Package .deb
         run: |
-          bash scripts/make_artifacts.sh arm64
+          INSTA_SDK_ROOT=/opt/insta_sdk bash scripts/make_artifacts.sh arm64
           mkdir -p dist
           bash scripts/make_deb.sh "${{ env.VERSION }}" artifacts dist arm64
           echo "===== artifacts ====="

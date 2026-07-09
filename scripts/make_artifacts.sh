@@ -70,6 +70,13 @@ if compgen -G "${BUILD_DIR}/storage/upload/libhera-storage-upload-*.so" > /dev/n
        "artifacts/plugin/${ARCH}/upload/"
 fi
 
+# ── Vendor SDK runtime libraries ──────────────────────────────────────────────
+# libCameraSDK.so must ship in the .deb; it's a closed-source binary not in apt.
+if [ -n "${INSTA_SDK_ROOT:-}" ] && [ -f "${INSTA_SDK_ROOT}/lib/libCameraSDK.so" ]; then
+    cp "${INSTA_SDK_ROOT}/lib/libCameraSDK.so" "artifacts/lib/${ARCH}/"
+    echo "  + libCameraSDK.so (Insta360 runtime, from ${INSTA_SDK_ROOT}/lib)"
+fi
+
 # ── Systemd + config ──────────────────────────────────────────────────────────
 cp daemon/script/hera-daemon.service artifacts/script/daemon/
 cp daemon/script/udiskie.service     artifacts/script/daemon/ 2>/dev/null || true
