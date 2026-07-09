@@ -64,9 +64,16 @@ install -m 644 "${ARTIFACTS_DIR}/script/daemon/udiskie.service" \
 install -m 644 "${ARTIFACTS_DIR}/script/daemon/daemon.conf" \
     "${STAGING}/etc/hera.conf"
 
+# Livox Mid360 SDK config (template — edit host_ip to match Jetson's interface IP)
+if [ -f "${ARTIFACTS_DIR}/script/daemon/mid360_config.json" ]; then
+    install -m 644 "${ARTIFACTS_DIR}/script/daemon/mid360_config.json" \
+        "${STAGING}/etc/mid360_config.json"
+fi
+
 # ── DEBIAN/conffiles ──────────────────────────────────────────────────
 cat > "${STAGING}/DEBIAN/conffiles" <<'EOF'
 /etc/hera.conf
+/etc/mid360_config.json
 EOF
 
 # ── DEBIAN/control ────────────────────────────────────────────────────

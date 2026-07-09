@@ -23,6 +23,8 @@
 #include "plugin_param.hpp"
 
 #ifdef WITH_DRIVER
+#include <cerrno>
+#include <cstdio>
 #include "livox_lidar_api.h"
 #include "livox_lidar_def.h"
 #endif
@@ -337,6 +339,15 @@ HeraErrno DevicePlugin::connect()
     auto config_path = local_parameters_.get_ConfigPath();
     if (config_path.empty()) {
         return handle_error(HeraErrno::InvalidParameterValue, "ConfigPath is empty");
+    }
+    {
+        FILE* f = fopen(config_path.c_str(), "r");
+        if (!f) {
+            return handle_error(HeraErrno::InvalidParameterValue,
+                                "Livox config file not found: " + config_path +
+                                " — deploy /etc/mid360_config.json or set ConfigPath");
+        }
+        fclose(f);
     }
 
     runtime_ = std::make_shared<RuntimeState>();

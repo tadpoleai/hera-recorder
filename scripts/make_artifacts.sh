@@ -105,6 +105,9 @@ fi
 cp daemon/script/hera-daemon.service ${ARTIFACTS_DIR}/script/daemon/
 cp daemon/script/udiskie.service     ${ARTIFACTS_DIR}/script/daemon/ 2>/dev/null || true
 cp daemon/config/daemon.conf         ${ARTIFACTS_DIR}/script/daemon/
+# Livox Mid360 SDK config — default host_ip is 192.168.1.5; edit after install
+[ -f config/mid360_config.json ] && \
+    cp config/mid360_config.json ${ARTIFACTS_DIR}/script/daemon/mid360_config.json
 
 echo "Artifacts ready in ${ARTIFACTS_DIR}/ (arch=${ARCH})"
 echo "  bins:    $(ls ${ARTIFACTS_DIR}/bin/${ARCH}/ | wc -l) files"
