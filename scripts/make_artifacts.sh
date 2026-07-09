@@ -71,10 +71,29 @@ if compgen -G "${BUILD_DIR}/storage/upload/libhera-storage-upload-*.so" > /dev/n
 fi
 
 # ── Vendor SDK runtime libraries ──────────────────────────────────────────────
-# libCameraSDK.so must ship in the .deb; it's a closed-source binary not in apt.
+# These closed-source / non-apt .so files must ship inside the .deb so the
+# driver plugins can dlopen them on the target machine.
+
+# Insta360 CameraSDK runtime (closed-source, not in apt)
 if [ -n "${INSTA_SDK_ROOT:-}" ] && [ -f "${INSTA_SDK_ROOT}/lib/libCameraSDK.so" ]; then
     cp "${INSTA_SDK_ROOT}/lib/libCameraSDK.so" "artifacts/lib/${ARCH}/"
     echo "  + libCameraSDK.so (Insta360 runtime, from ${INSTA_SDK_ROOT}/lib)"
+fi
+
+# Livox SDK2 runtime (MIT-licensed, not in apt for aarch64)
+LIVOX_SO=""
+for candidate in \
+    "${LIVOX_SDK2_ROOT:-}/lib/liblivox_lidar_sdk_shared.so" \
+    "${LIVOX_SDK2_ROOT:-}/build/sdk_core/liblivox_lidar_sdk_shared.so" \
+    "/usr/local/lib/liblivox_lidar_sdk_shared.so"; do
+    if [ -f "${candidate}" ]; then
+        LIVOX_SO="${candidate}"
+        break
+    fi
+done
+if [ -n "${LIVOX_SO}" ]; then
+    cp "${LIVOX_SO}" "artifacts/lib/${ARCH}/"
+    echo "  + liblivox_lidar_sdk_shared.so (Livox SDK2 runtime, from ${LIVOX_SO})"
 fi
 
 # ── Systemd + config ──────────────────────────────────────────────────────────
