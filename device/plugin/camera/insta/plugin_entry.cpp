@@ -5,17 +5,21 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cerrno>
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <deque>
 #include <cstdlib>
 #include <cctype>
+#include <iomanip>
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -100,10 +104,33 @@ std::string basename_from_url(const std::string& url)
     return url.substr(slash + 1);
 }
 
+// Strips directory and ".hera" extension from a StorageManager::filename()-style path,
+// e.g. "/var/hera/data/20260711180536_fred_office.hera" -> "20260711180536_fred_office".
+// Returns "" if hera_path is empty (e.g. no storage attached), signaling callers to fall
+// back to their pre-existing naming instead of renaming to an empty string.
+std::string hera_basename(const std::string& hera_path)
+{
+    if (hera_path.empty()) {
+        return "";
+    }
+    const auto slash = hera_path.find_last_of("/\\");
+    std::string base = (slash == std::string::npos) ? hera_path : hera_path.substr(slash + 1);
+    static const std::string kSuffix = ".hera";
+    if (base.size() > kSuffix.size() && base.compare(base.size() - kSuffix.size(), kSuffix.size(), kSuffix) == 0) {
+        base = base.substr(0, base.size() - kSuffix.size());
+    }
+    return base;
+}
+
 // Returns list of successfully downloaded local paths (empty on failure).
+// `hera_session_path` (StorageManager::filename()) drives renaming the downloaded file(s)
+// to share the .hera session's basename, so .hera/.insv/.session.json can be correlated
+// and copied around as a group by filename alone instead of relying on a single shared
+// insta_session.json that gets overwritten every session.
 std::vector<std::string> download_media_urls(const std::shared_ptr<ins_camera::Camera>& camera,
                                              const ins_camera::MediaUrl& media_url,
-                                             const std::string& output_dir)
+                                             const std::string& output_dir,
+                                             const std::string& hera_session_path)
 {
     if (!camera || media_url.Empty()) {
         return {};
@@ -116,6 +143,8 @@ std::vector<std::string> download_media_urls(const std::shared_ptr<ins_camera::C
 
     static constexpr int kDownloadRetries = 3;
     static constexpr auto kDownloadRetryDelay = std::chrono::milliseconds(1000);
+
+    const std::string session_basename = hera_basename(hera_session_path);
 
     std::vector<std::string> downloaded;
     const auto& urls = media_url.OriginUrls();
@@ -161,7 +190,32 @@ std::vector<std::string> download_media_urls(const std::shared_ptr<ins_camera::C
         }
 
         log::info << "Insta: downloaded " << actual << log::endl;
-        downloaded.push_back(actual);
+
+        // Rename to share the .hera session's basename (see comment on this function).
+        // Falls back to leaving the SDK's own filename alone if there's no session basename
+        // (e.g. no storage attached) or the rename fails for some reason.
+        std::string final_path = actual;
+        if (!session_basename.empty()) {
+            const auto dot = actual.rfind('.');
+            const std::string ext = (dot != std::string::npos) ? actual.substr(dot) : ".insv";
+            std::ostringstream target_name;
+            target_name << session_basename;
+            if (urls.size() > 1) {
+                target_name << "_" << std::setfill('0') << std::setw(2) << i;
+            }
+            target_name << ext;
+            const std::string target_path = join_path(output_dir, target_name.str());
+            if (target_path != actual) {
+                if (std::rename(actual.c_str(), target_path.c_str()) == 0) {
+                    final_path = target_path;
+                    log::info << "Insta: renamed to " << final_path << log::endl;
+                } else {
+                    log::warn << "Insta: failed to rename " << actual << " -> " << target_path
+                              << " (" << std::strerror(errno) << "), keeping original name" << log::endl;
+                }
+            }
+        }
+        downloaded.push_back(final_path);
 
         // NOTE: intentionally NOT calling camera->DeleteCameraFile(remote) here yet —
         // auto-deleting footage from the SD card needs an explicit go-ahead before it
@@ -195,7 +249,9 @@ void write_session_json(const std::string& output_dir,
                         const std::vector<std::string>& mp4_paths,
                         const std::string& hera_session_path)
 {
-    const auto path = join_path(output_dir, "insta_session.json");
+    const std::string base = hera_basename(hera_session_path);
+    const std::string filename = base.empty() ? "insta_session.json" : (base + ".session.json");
+    const auto path = join_path(output_dir, filename);
     std::ofstream f(path);
     if (!f) {
         log::warn << "Insta: cannot write session JSON to " << path << log::endl;
@@ -240,7 +296,8 @@ bool parse_bool(const std::string& value, const bool default_value)
 std::vector<std::string> stop_recording_with_optional_download(
     const std::shared_ptr<ins_camera::Camera>& camera,
     const bool auto_download,
-    const std::string& download_dir)
+    const std::string& download_dir,
+    const std::string& hera_session_path)
 {
     if (!camera) {
         return {};
@@ -259,16 +316,16 @@ std::vector<std::string> stop_recording_with_optional_download(
         return {};
     }
 
-    return download_media_urls(camera, media_url, download_dir);
+    return download_media_urls(camera, media_url, download_dir, hera_session_path);
 }
 
 // Resolutions for USB live-streaming (equirectangular, 2:1 ratio).
-ins_camera::VideoResolution map_video_resolution(const VideoResolution value)
+ins_camera::VideoResolution map_video_resolution(const StreamResolution value)
 {
-    if (value._to_integral() == static_cast<int32_t>(VideoResolution::R2560x1280P30)) {
+    if (value._to_integral() == static_cast<int32_t>(StreamResolution::R2560x1280P30)) {
         return ins_camera::VideoResolution::RES_2560_1280P30;
     }
-    if (value._to_integral() == static_cast<int32_t>(VideoResolution::R1440x720P30)) {
+    if (value._to_integral() == static_cast<int32_t>(StreamResolution::R1440x720P30)) {
         return ins_camera::VideoResolution::RES_1440_720P30;
     }
     return ins_camera::VideoResolution::RES_3840_1920P30;
@@ -276,15 +333,15 @@ ins_camera::VideoResolution map_video_resolution(const VideoResolution value)
 
 // Resolutions for SD card recording (square per-lens, as used in SDK demo option 6).
 // EnableInCameraStitching() then stitches the two lenses to equirectangular on-device.
-ins_camera::VideoResolution map_record_resolution(const VideoResolution value)
+// Unlike the old VideoResolution-based mapping this replaced, each RecordResolution
+// option maps to exactly one distinct SDK resolution -- no more "R1440x720P30" secretly
+// producing a full 5.7K recording.
+ins_camera::VideoResolution map_record_resolution(const RecordResolution value)
 {
-    if (value._to_integral() == static_cast<int32_t>(VideoResolution::R1440x720P30)) {
-        return ins_camera::VideoResolution::RES_2880_2880P30;  // 5.7K per-lens
+    if (value._to_integral() == static_cast<int32_t>(RecordResolution::R8K)) {
+        return ins_camera::VideoResolution::RES_3840_3840P30;  // 8K per-lens
     }
-    if (value._to_integral() == static_cast<int32_t>(VideoResolution::R2560x1280P30)) {
-        return ins_camera::VideoResolution::RES_2880_2880P30;  // 5.7K per-lens
-    }
-    return ins_camera::VideoResolution::RES_3840_3840P30;  // 8K per-lens (matches R3840x1920P30 intent)
+    return ins_camera::VideoResolution::RES_2880_2880P30;  // R57K (default): 5.7K per-lens
 }
 
 ins_camera::VideoResolution map_lrv_resolution(const bool fixed_lrv_resolution)
@@ -294,7 +351,7 @@ ins_camera::VideoResolution map_lrv_resolution(const bool fixed_lrv_resolution)
 }
 
 bool start_recording_normal_video(const std::shared_ptr<ins_camera::Camera>& camera,
-                                  const VideoResolution resolution,
+                                  const RecordResolution resolution,
                                   const int32_t video_bitrate,
                                   const bool enable_stitching = false)
 {
@@ -724,7 +781,7 @@ HeraErrno DevicePlugin::connect()
         }
 
         ins_camera::LiveStreamParam param;
-        param.video_resolution = map_video_resolution(local_parameters_.get_VideoResolution());
+        param.video_resolution = map_video_resolution(local_parameters_.get_StreamResolution());
         param.lrv_video_resulution = map_lrv_resolution(local_parameters_.get_FixedLrvResolution());
         param.video_bitrate = std::max<int32_t>(131072, local_parameters_.get_VideoBitrate());
         param.enable_audio = local_parameters_.get_EnableAudio();
@@ -778,7 +835,7 @@ HeraErrno DevicePlugin::connect()
             try {
                 const bool stitching = local_parameters_.get_EnableInCameraStitching();
                 if (!start_recording_normal_video(
-                        camera_, local_parameters_.get_VideoResolution(), local_parameters_.get_VideoBitrate(),
+                        camera_, local_parameters_.get_RecordResolution(), local_parameters_.get_VideoBitrate(),
                         stitching)) {
                     camera_->Close();
                     camera_.reset();
@@ -833,7 +890,7 @@ void DevicePlugin::disconnect()
             try {
                 record_started_.store(false);
                 const auto downloaded = stop_recording_with_optional_download(
-                    camera_, runtime_auto_download_.load(), runtime_download_dir_);
+                    camera_, runtime_auto_download_.load(), runtime_download_dir_, storage_filename());
                 if (downloaded.empty() && runtime_auto_download_.load()) {
                     log::warn << "Insta: stop recording completed with errors" << log::endl;
                 }
@@ -991,7 +1048,7 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
             return HeraErrno::Success;
         }
         try {
-            if (!start_recording_normal_video(camera_, local_parameters_.get_VideoResolution(),
+            if (!start_recording_normal_video(camera_, local_parameters_.get_RecordResolution(),
                                               local_parameters_.get_VideoBitrate(),
                                               local_parameters_.get_EnableInCameraStitching())) {
                 return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StartRecording command failed");
@@ -1020,7 +1077,8 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
         }
         try {
             const bool auto_download = (type == "StopAndDownload") ? true : runtime_auto_download_.load();
-            const auto downloaded = stop_recording_with_optional_download(camera_, auto_download, runtime_download_dir_);
+            const auto downloaded = stop_recording_with_optional_download(
+                camera_, auto_download, runtime_download_dir_, storage_filename());
             if (auto_download && downloaded.empty()) {
                 return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StopRecording command failed");
             }

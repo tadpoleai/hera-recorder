@@ -16,30 +16,48 @@ immutable string DeviceSn = ""; regex ^.*$
 immutable enum WorkMode = RecordDownload; options Stream, RecordDownload
 
 # 在 RecordDownload 模式连接后自动开始录制
+requires #WorkMode == 'RecordDownload'
 immutable boolean AutoStartRecording = true;
 
 # 在 RecordDownload 模式断开时自动下载录制文件
+requires #WorkMode == 'RecordDownload'
 immutable boolean AutoDownload = true;
 
 # 在 RecordDownload 模式断开时下载目录
 # 注意：daemon 的 systemd unit 没有设置 WorkingDirectory，"." 在生产环境下会
 # 解析到 systemd 默认工作目录（"/"），必须用绝对路径
+requires #WorkMode == 'RecordDownload'
 immutable string DownloadDir = "/var/hera/data/insta_insv"; regex ^.*$
 
 # 开启音频流
+requires #WorkMode == 'Stream'
 immutable boolean EnableAudio = false;
 
 # 使用 LRV 低分辨率流
+requires #WorkMode == 'Stream'
 immutable boolean UsingLrv = false;
 
-# 预览视频分辨率
+# 直播预览分辨率
+# 仅用于 Stream 模式的实时预览流，跟 RecordDownload 模式的录制分辨率
+# （见 RecordResolution）无关，两者互不影响
 # Options:
 # - R3840x1920P30
 # - R2560x1280P30
 # - R1440x720P30
-immutable enum VideoResolution = R3840x1920P30; options R3840x1920P30, R2560x1280P30, R1440x720P30
+requires #WorkMode == 'Stream'
+immutable enum StreamResolution = R3840x1920P30; options R3840x1920P30, R2560x1280P30, R1440x720P30
+
+# 录制分辨率（相机SD卡，文件较大）
+# 仅用于 RecordDownload 模式的 SD 卡录制。全景数据本身很大，5.7K 每分钟
+# 数据量明显小于 8K，优先选 R57K；画质要求高再切 R8K
+# Options:
+# - R57K: 5.7K per-lens（推荐，数据量小很多）
+# - R8K: 8K per-lens（画质最好，文件最大）
+requires #WorkMode == 'RecordDownload'
+immutable enum RecordResolution = R57K; options R57K, R8K
 
 # 使用固定 LRV 预览分辨率(1440x720P30)
+requires #WorkMode == 'Stream'
 immutable boolean FixedLrvResolution = true;
 
 # 视频码率[bps]
