@@ -433,6 +433,7 @@ HERA_PLUGIN_DEFINE_START("camera/insta", 0x0421, 128)
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
+virtual bool wants_auto_record() const noexcept override;
 
 struct RawSample {
     bool is_video;
@@ -1098,6 +1099,13 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
     }
 
     return HeraErrno::OK;
+}
+
+bool DevicePlugin::wants_auto_record() const noexcept
+{
+    const bool record_download_mode =
+            local_parameters_.get_WorkMode()._to_integral() == static_cast<int32_t>(WorkMode::RecordDownload);
+    return record_download_mode && local_parameters_.get_AutoStartRecording();
 }
 
 #endif

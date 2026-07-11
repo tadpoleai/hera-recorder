@@ -147,6 +147,26 @@ void Service::start(AcquisitionStatus& result)
 #endif
         }
         started_ = true;
+
+        // Some devices (e.g. Insta360 in RecordDownload mode with AutoStartRecording) begin
+        // capturing data on their own as soon as they connect, independent of recording_. For
+        // those, auto-enable recording_ right away instead of requiring a separate setRecord(true)
+        // call, so the .hera persistence window doesn't lag behind the device's own capture start.
+        bool auto_record = false;
+        for (const auto& device : devices_) {
+            if (device->wants_auto_record()) {
+                auto_record = true;
+                break;
+            }
+        }
+        if (auto_record) {
+            log::info << "Daemon:: auto-starting record (device requested)" << log::endl;
+            recording_ = true;
+            for (const auto& device : devices_) {
+                device->record(true);
+            }
+        }
+
         return handle_success(result);
     }
 }
