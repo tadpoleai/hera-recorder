@@ -56,6 +56,41 @@ std::string join_path(const std::string& dir, const std::string& name)
     return dir + "/" + name;
 }
 
+// RecordDownload sessions are 8K/5.7K per-lens; refuse to start a new recording
+// with less than this much free space on the SD card rather than let it fail
+// mid-session.
+constexpr uint64_t kMinFreeStorageBytes = 2ull * 1024 * 1024 * 1024;  // 2 GiB
+
+bool has_enough_storage(const std::shared_ptr<ins_camera::Camera>& camera, const uint64_t min_free_bytes)
+{
+    if (!camera) {
+        return false;
+    }
+    ins_camera::StorageStatus status{};
+    if (!camera->GetStorageState(status)) {
+        log::warn << "Insta: GetStorageState failed, proceeding without a free-space check" << log::endl;
+        return true;
+    }
+    if (status.state == ins_camera::CardState::STOR_CS_NOCARD) {
+        log::warn << "Insta: no SD card detected" << log::endl;
+        return false;
+    }
+    if (status.state == ins_camera::CardState::STOR_CS_WPCARD) {
+        log::warn << "Insta: SD card is write-protected" << log::endl;
+        return false;
+    }
+    if (status.state != ins_camera::CardState::STOR_CS_PASS && status.state != ins_camera::CardState::STOR_CS_NOSPACE) {
+        log::warn << "Insta: SD card in bad state (" << static_cast<int>(status.state) << ")" << log::endl;
+        return false;
+    }
+    if (status.free_space < min_free_bytes) {
+        log::warn << "Insta: SD card free space too low: " << status.free_space << " bytes (need "
+                  << min_free_bytes << ")" << log::endl;
+        return false;
+    }
+    return true;
+}
+
 std::string basename_from_url(const std::string& url)
 {
     const auto slash = url.find_last_of("/\\");
@@ -79,13 +114,30 @@ std::vector<std::string> download_media_urls(const std::shared_ptr<ins_camera::C
         return {};
     }
 
+    static constexpr int kDownloadRetries = 3;
+    static constexpr auto kDownloadRetryDelay = std::chrono::milliseconds(1000);
+
     std::vector<std::string> downloaded;
     const auto& urls = media_url.OriginUrls();
     for (size_t i = 0; i < urls.size(); ++i) {
         const auto& remote = urls[i];
         const auto local = join_path(output_dir, basename_from_url(remote));
-        if (!camera->DownloadCameraFile(remote, local)) {
-            log::warn << "Insta: download failed: " << remote << " -> " << local << log::endl;
+
+        bool ok = false;
+        for (int attempt = 1; attempt <= kDownloadRetries; ++attempt) {
+            ok = camera->DownloadCameraFile(remote, local);
+            if (ok) {
+                break;
+            }
+            log::warn << "Insta: download attempt " << attempt << "/" << kDownloadRetries
+                      << " failed: " << remote << " -> " << local << log::endl;
+            if (attempt < kDownloadRetries) {
+                std::this_thread::sleep_for(kDownloadRetryDelay);
+            }
+        }
+        if (!ok) {
+            log::warn << "Insta: giving up on " << remote << " after " << kDownloadRetries
+                      << " attempts; leaving it on the SD card" << log::endl;
             continue;
         }
 
@@ -110,16 +162,38 @@ std::vector<std::string> download_media_urls(const std::shared_ptr<ins_camera::C
 
         log::info << "Insta: downloaded " << actual << log::endl;
         downloaded.push_back(actual);
+
+        // NOTE: intentionally NOT calling camera->DeleteCameraFile(remote) here yet —
+        // auto-deleting footage from the SD card needs an explicit go-ahead before it
+        // ships. See TODO in the retention-policy discussion; SD card accumulation must
+        // be handled some other way (manual cleanup / separate opt-in tool) until then.
     }
 
     return downloaded;
 }
 
+std::string json_escape(const std::string& s)
+{
+    std::string out;
+    out.reserve(s.size());
+    for (char c : s) {
+        if (c == '"' || c == '\\') {
+            out.push_back('\\');
+        }
+        out.push_back(c);
+    }
+    return out;
+}
+
 // Write a minimal JSON sidecar so hera-storage-ingest-insta-video can locate
 // the MP4 and anchor frames to the hera timeline via record_start_host_ns.
+// `hera_session_path` is this run's .hera file (StorageManager::filename()) — an explicit
+// correlation key, so ingest doesn't have to guess which .hera a .insv belongs to purely
+// from directory/timestamp proximity.
 void write_session_json(const std::string& output_dir,
                         uint64_t record_start_host_ns,
-                        const std::vector<std::string>& mp4_paths)
+                        const std::vector<std::string>& mp4_paths,
+                        const std::string& hera_session_path)
 {
     const auto path = join_path(output_dir, "insta_session.json");
     std::ofstream f(path);
@@ -131,10 +205,11 @@ void write_session_json(const std::string& output_dir,
     f << "{\n";
     f << "  \"record_start_host_ns\": " << record_start_host_ns << ",\n";
     f << "  \"device_vendor_type\": 1057,\n";  // 0x0421
+    f << "  \"hera_session_path\": \"" << json_escape(hera_session_path) << "\",\n";
     f << "  \"mp4_files\": [";
     for (size_t i = 0; i < mp4_paths.size(); ++i) {
         if (i > 0) f << ", ";
-        f << "\"" << mp4_paths[i] << "\"";
+        f << "\"" << json_escape(mp4_paths[i]) << "\"";
     }
     f << "]\n}\n";
 
@@ -224,6 +299,11 @@ bool start_recording_normal_video(const std::shared_ptr<ins_camera::Camera>& cam
                                   const bool enable_stitching = false)
 {
     if (!camera) {
+        return false;
+    }
+
+    if (!has_enough_storage(camera, kMinFreeStorageBytes)) {
+        log::warn << "Insta: refusing to start recording, insufficient SD card space" << log::endl;
         return false;
     }
 
@@ -699,7 +779,8 @@ void DevicePlugin::disconnect()
                     log::warn << "Insta: stop recording completed with errors" << log::endl;
                 }
                 if (!downloaded.empty() && record_start_host_ns_ != 0) {
-                    write_session_json(runtime_download_dir_, record_start_host_ns_, downloaded);
+                    write_session_json(runtime_download_dir_, record_start_host_ns_, downloaded,
+                                       storage_filename());
                 }
             } catch (const std::exception& e) {
                 log::warn << "Insta: StopRecording exception: " << e.what() << log::endl;
@@ -868,7 +949,8 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
                 return handle_error(HeraErrno::CanNotOpenCamera, "Insta: StopRecording command failed");
             }
             if (!downloaded.empty() && record_start_host_ns_ != 0) {
-                write_session_json(runtime_download_dir_, record_start_host_ns_, downloaded);
+                write_session_json(runtime_download_dir_, record_start_host_ns_, downloaded,
+                                   storage_filename());
             }
             record_started_.store(false);
             log::info << "Insta: " << type << " command success" << log::endl;

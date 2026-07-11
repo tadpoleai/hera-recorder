@@ -5,6 +5,7 @@ After=network.target
 [Service]
 Type=simple
 PIDFile=/run/hera-daemon.pid
+WorkingDirectory=/var/hera/data
 # Reset Insta360 USB session state before starting (avoids "no device found" after daemon crash)
 ExecStartPre=/bin/bash -c 'for dev in /sys/bus/usb/devices/*/; do vid="${dev}idVendor"; [ -f "$vid" ] && [ "$(cat "$vid" 2>/dev/null)" = "2e1a" ] && devpath=$(printf /dev/bus/usb/%%03d/%%03d $(cat "${dev}busnum") $(cat "${dev}devnum")) && usbreset "$devpath" 2>/dev/null && echo "Insta360 USB reset: $devpath"; done; sleep 4'
 ExecStart=/usr/local/bin/hera-daemon

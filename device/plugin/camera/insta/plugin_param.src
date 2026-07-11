@@ -22,7 +22,9 @@ immutable boolean AutoStartRecording = true;
 immutable boolean AutoDownload = true;
 
 # 在 RecordDownload 模式断开时下载目录
-immutable string DownloadDir = "."; regex ^.*$
+# 注意：daemon 的 systemd unit 没有设置 WorkingDirectory，"." 在生产环境下会
+# 解析到 systemd 默认工作目录（"/"），必须用绝对路径
+immutable string DownloadDir = "/var/hera/data/insta_insv"; regex ^.*$
 
 # 开启音频流
 immutable boolean EnableAudio = false;
@@ -41,7 +43,9 @@ immutable enum VideoResolution = R3840x1920P30; options R3840x1920P30, R2560x128
 immutable boolean FixedLrvResolution = true;
 
 # 视频码率[bps]
-immutable integer VideoBitrate = 524288; range 131072, 8000000, 65536
+# 注意：RecordDownload 模式下这个值直接传给 SD 卡录制（8K/5.7K per-lens），
+# 524288(0.5Mbps) 对这个分辨率明显偏低；SDK demo 对 8K 录制用的是 10Mbps 参考值
+immutable integer VideoBitrate = 524288; range 131072, 20000000, 65536
 
 # SDK 超时设置[ms]
 immutable integer CameraTimeoutMs = 10000; range 1000, 60000, 100

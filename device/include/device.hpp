@@ -364,6 +364,17 @@ protected:
     ///
     void clear_display_history();
 
+    ///
+    /// @brief Get the filename of the global storage this device writes into
+    ///
+    /// @return const std::string& the .hera path/session name, or an empty string if
+    /// there is no storage (e.g. read-only/replay contexts)
+    const std::string& storage_filename() const
+    {
+        static const std::string kEmpty;
+        return storage_ ? storage_->filename() : kEmpty;
+    }
+
 private:
     ///
     /// @brief Check whether parameters of a specific device are all settled

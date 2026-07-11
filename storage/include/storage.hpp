@@ -158,6 +158,16 @@ public:
     /// @return 0 if device id out of range
     uint64_t get_volume(const uint32_t device_id) const;
 
+    ///
+    /// @brief Get the filename this storage was opened with
+    ///
+    /// @return const std::string& the .hera path/session name, useful for plugins that need
+    /// to correlate their own sidecar files (e.g. downloaded media) with this session
+    const std::string& filename() const
+    {
+        return filename_;
+    }
+
 private:
     ///
     /// @brief Construct a new Storage Manager object

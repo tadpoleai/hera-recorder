@@ -20,7 +20,7 @@
         },
         {
           "type": "WorkMode",
-          "value": "Stream"
+          "value": "RecordDownload"
         },
         {
           "type": "AutoStartRecording",
@@ -32,7 +32,7 @@
         },
         {
           "type": "DownloadDir",
-          "value": "."
+          "value": "/var/hera/data/insta_insv"
         },
         {
           "type": "EnableAudio",
@@ -52,7 +52,7 @@
         },
         {
           "type": "VideoBitrate",
-          "value": "524288"
+          "value": "10485760"
         },
         {
           "type": "CameraTimeoutMs",
