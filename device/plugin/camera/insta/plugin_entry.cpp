@@ -404,8 +404,8 @@ struct RuntimeState {
 
 class HeraStreamDelegate : public ins_camera::StreamDelegate {
 public:
-    HeraStreamDelegate(const std::shared_ptr<RuntimeState>& runtime, bool enable_gyro) :
-        runtime_(runtime), enable_gyro_(enable_gyro)
+    HeraStreamDelegate(const std::shared_ptr<RuntimeState>& runtime, bool enable_gyro, bool capture_video = true) :
+        runtime_(runtime), enable_gyro_(enable_gyro), capture_video_(capture_video)
     {
     }
 
@@ -422,7 +422,7 @@ public:
                      uint8_t streamType,
                      int stream_index) override
     {
-        if (!runtime_ || !data || size == 0) {
+        if (!runtime_ || !capture_video_ || !data || size == 0) {
             return;
         }
         if (size > kMaxVideoPayloadBytes) {
@@ -504,6 +504,7 @@ private:
 private:
     std::shared_ptr<RuntimeState> runtime_;
     bool enable_gyro_;
+    bool capture_video_;
 };
 
 std::shared_ptr<RuntimeState> runtime_;
@@ -512,10 +513,62 @@ std::shared_ptr<ins_camera::StreamDelegate> stream_delegate_;
 std::atomic<bool> stream_started_{false};
 std::atomic<bool> is_stream_mode_{true};
 std::atomic<bool> record_started_{false};
+// Separate from stream_started_: that flag means "Stream-mode's own live view is
+// active"; this one means "a gyro-only live stream is running alongside a
+// RecordDownload SD-card recording" -- distinct modes, distinct lifecycles.
+std::atomic<bool> gyro_stream_started_{false};
 std::atomic<bool> runtime_auto_download_{true};
 std::string runtime_download_dir_{"."};
 std::mutex camera_op_mutex_;
 uint64_t record_start_host_ns_{0};
+
+// Starts a gyro-only live stream (no video/audio) alongside an already-running
+// SD-card recording, so RecordDownload sessions still get continuous
+// InstaGyroPacket data into .hera (needed for lidar-camera time sync). Must be
+// called AFTER StartRecording() -- verified on real hardware that calling
+// SetVideoSubMode/SetVideoCaptureParams here (like Stream mode does before its
+// own StartLiveStreaming) resets camera mode state and would disrupt the
+// already-active recording, so those calls are deliberately skipped.
+// Failure here is non-fatal: video recording already succeeded, so losing
+// gyro is an acceptable degradation, not a reason to fail connect().
+bool start_gyro_only_stream(const std::shared_ptr<ins_camera::Camera>& camera,
+                            std::shared_ptr<ins_camera::StreamDelegate>& out_delegate,
+                            const std::shared_ptr<RuntimeState>& runtime)
+{
+    if (!camera) {
+        return false;
+    }
+
+    out_delegate = std::make_shared<HeraStreamDelegate>(runtime, /*enable_gyro=*/true, /*capture_video=*/false);
+    camera->SetStreamDelegate(out_delegate);
+
+    ins_camera::LiveStreamParam param;
+    param.enable_video = false;
+    param.enable_audio = false;
+    param.enable_gyro = true;
+    param.using_lrv = false;
+    // The SDK does not fully honor enable_video=false (video packets still
+    // arrive), so pick the smallest resolution to at least minimize the
+    // wasted bandwidth/CPU from the video pipe we're going to discard.
+    param.video_resolution = ins_camera::VideoResolution::RES_1440_720P30;
+
+    try {
+        if (!camera->StartLiveStreaming(param)) {
+            log::warn << "Insta: gyro-only StartLiveStreaming failed -- RecordDownload continues without gyro"
+                      << log::endl;
+            return false;
+        }
+    } catch (const std::exception& e) {
+        log::warn << "Insta: gyro-only StartLiveStreaming exception: " << e.what()
+                  << " -- RecordDownload continues without gyro" << log::endl;
+        return false;
+    } catch (...) {
+        log::warn << "Insta: gyro-only StartLiveStreaming unknown exception -- RecordDownload continues without gyro"
+                  << log::endl;
+        return false;
+    }
+    return true;
+}
 
 static void maybe_log_stats(const std::shared_ptr<RuntimeState>& rt)
 {
@@ -751,6 +804,12 @@ HeraErrno DevicePlugin::connect()
             record_started_.store(true);
             record_start_host_ns_ = static_cast<uint64_t>(time::Timestamp::now());
             log::info << "Insta: RecordDownload mode started recording (start_ns=" << record_start_host_ns_ << ")" << log::endl;
+
+            if (local_parameters_.get_EnableGyro()) {
+                gyro_stream_started_.store(start_gyro_only_stream(camera_, stream_delegate_, runtime_));
+                log::info << "Insta: gyro-only stream " << (gyro_stream_started_.load() ? "started" : "NOT started")
+                          << log::endl;
+            }
         } else {
             log::info << "Insta: RecordDownload mode, waiting external start" << log::endl;
         }
@@ -794,6 +853,16 @@ void DevicePlugin::disconnect()
             // Closing the camera session directly is stable and sufficient for cleanup.
             stream_started_.store(false);
         }
+        if (gyro_stream_started_.load()) {
+            // Same StopLiveStreaming() crash risk as above applies to the RecordDownload
+            // gyro-only stream -- skip it and let Close() below tear both sessions down
+            // together. NOTE: StopRecording() above therefore runs while the gyro stream
+            // is still active -- the real-hardware test that validated concurrent
+            // record+stream stopped the stream *before* StopRecording, so this exact
+            // ordering (stop recording first, stream still running) has not itself been
+            // verified yet. Confirm on real hardware that the downloaded file is intact.
+            gyro_stream_started_.store(false);
+        }
         camera_->Close();
     }
 
@@ -809,9 +878,10 @@ data::DeviceDataPtr DevicePlugin::fetch()
         return nullptr;
     }
 
-    if (!is_stream_mode_.load()) {
-        return nullptr;
-    }
+    // No is_stream_mode_ gate here: RecordDownload sessions with a gyro-only
+    // stream running also need to drain this queue. When no stream_delegate_
+    // is active (RecordDownload with gyro disabled), the queue is simply
+    // always empty and cv.wait_for() below times out naturally.
 
     RawSample sample;
     {
@@ -928,6 +998,12 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
             }
             record_started_.store(true);
             log::info << "Insta: StartRecording command success" << log::endl;
+
+            if (local_parameters_.get_EnableGyro()) {
+                gyro_stream_started_.store(start_gyro_only_stream(camera_, stream_delegate_, runtime_));
+                log::info << "Insta: gyro-only stream " << (gyro_stream_started_.load() ? "started" : "NOT started")
+                          << log::endl;
+            }
             return HeraErrno::Success;
         } catch (const std::exception& e) {
             return handle_error(HeraErrno::CanNotOpenCamera,
