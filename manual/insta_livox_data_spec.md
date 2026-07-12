@@ -166,5 +166,7 @@ with open('insta_session_local.json', 'w') as f:
 ## 6. 时间同步与已知问题
 
 - 各数据流的**绝对**锚点时间都是 host 端 `timestamp_host_ns`（daemon 收到数据时的本机 UTC 时间），除了 Insta360 陀螺仪 CSV 当前导出的样本级 `timestamp`（见 §2.1 的坑，只能定位到"批"级别的绝对时间）
-- **已知问题（2026-07-11 已修复）**：RecordDownload 模式下，SD 卡录制在前端"采集开关"打开时（`AutoStartRecording`）立即开始，但 `.hera`（陀螺仪 + Livox）的持久化过去依赖前端另一个独立的"录制数据"开关（daemon 的全局 `setRecord`），如果操作者没有几乎同时按下两个开关，`.hera` 窗口会比 SD 卡视频晚开始——某次实测晚了 25.6 秒。已改为 `AutoStartRecording` 触发时daemon自动 `setRecord(true)`，不再依赖操作员手动对齐两个开关的时机。细节见 [troubleshooting_gyro_record_gap.md](troubleshooting_gyro_record_gap.md)。
+- **已知问题（操作规范，非代码修复）**：RecordDownload 模式下，SD 卡录制在前端"采集开关"打开时（`AutoStartRecording`）立即开始，但 `.hera`（陀螺仪 + Livox）的持久化依赖前端另一个独立的"录制数据"开关（daemon 的全局 `setRecord`），如果操作者没有几乎同时按下两个开关，`.hera` 窗口会比 SD 卡视频晚开始——某次实测晚了 25.6 秒。曾经尝试过让 `AutoStartRecording` 触发时 daemon 自动 `setRecord(true)`，但这会导致"录制数据"永远处于"开"状态，跟"不点录制数据就不下载视频"这个需求直接冲突，已回退（见 [troubleshooting_gyro_record_gap.md](troubleshooting_gyro_record_gap.md)）。当前只能靠操作员自己把两个开关几乎同时打开。
+- **已知问题（已修复）**：不点"录制数据"、只用"采集开关"的会话，关闭时视频依然会被下载——因为下载逻辑原来只看 `AutoDownload` 静态配置，跟"录制数据"是否被打开过无关。现在 `disconnect()` 会看会话期间"录制数据"是否被打开过，没打开就不下载（视频还在相机 SD 卡上，没丢，只是不会同步到 Jetson 本地）。细节见 [troubleshooting_gyro_record_gap.md](troubleshooting_gyro_record_gap.md) 问题三。
+- **已知问题（已修复）**：Jetson 作为 WiFi 热点时没有上行外网，NTP 同步不上，系统时钟可能停留在离线前最后一次成功同步的旧值，导致 `.hera`/`.insv` 文件名时间戳不准。现在前端调用 `start()` 时会带上浏览器自己的 `Date.now()`，daemon 侧发现系统时钟跟这个值偏差过大（默认阈值 5s）会自动纠正。细节见 [troubleshooting_gyro_record_gap.md](troubleshooting_gyro_record_gap.md) 问题四。
 - `multi_source_synchronizer` 要求重叠窗口内有一段明显的晃动/加速度变化模式，静止或运动特征太弱会导致互相关置信度不够（"Outbound error too low"），需要提前规划采集动作，不要只是站着不动

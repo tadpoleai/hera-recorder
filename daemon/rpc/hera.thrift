@@ -199,7 +199,15 @@ service Service
 
     // AcquisitionControl
     AcquisitionStatus getStatus();
-    AcquisitionStatus start();
+    // clientEpochMs: caller's own wall-clock time (ms since epoch) at the moment of the call.
+    // Devices without a reliable RTC (e.g. a Jetson used offline as a WiFi hotspot, with no
+    // NTP source) can drift or reset to a bogus boot-time value; if the daemon's system clock
+    // differs from this by more than a small threshold, it corrects itself before recording,
+    // so filenames/timestamps in the resulting .hera/.insv are meaningful. Optional and 0
+    // (unset) for older clients -- no correction is attempted in that case.
+    // double (not i64): a JS number safely represents integer ms-since-epoch for millennia to
+    // come, and it avoids the generated TS client needing the Int64 wrapper type for this field.
+    AcquisitionStatus start(1: optional double clientEpochMs);
     AcquisitionStatus stop();
     AcquisitionStatus setRecord(1: bool on);
 

@@ -433,7 +433,6 @@ HERA_PLUGIN_DEFINE_START("camera/insta", 0x0421, 128)
 
 #ifdef WITH_DRIVER
 HERA_PLUGIN_DEFINE_FUNCTIONS
-virtual bool wants_auto_record() const noexcept override;
 
 struct RawSample {
     bool is_video;
@@ -579,6 +578,13 @@ std::atomic<bool> runtime_auto_download_{true};
 std::string runtime_download_dir_{"."};
 std::mutex camera_op_mutex_;
 uint64_t record_start_host_ns_{0};
+// Device::stop() forces is_record_ (get_record()) to false *before* calling
+// disconnect(), so disconnect() can never observe "was the daemon-level 录制数据
+// switch on" by reading get_record() itself. fetch() runs continuously on the
+// same session and can still see the true value while it lasts, so it latches
+// it here; disconnect() reads the latch instead. Reset at the top of connect()
+// so each session starts fresh.
+std::atomic<bool> recording_ever_enabled_{false};
 
 // Starts a gyro-only live stream (no video/audio) alongside an already-running
 // SD-card recording, so RecordDownload sessions still get continuous
@@ -657,6 +663,7 @@ HeraErrno DevicePlugin::connect()
 {
     stream_started_.store(false);
     record_started_.store(false);
+    recording_ever_enabled_.store(false);
     runtime_ = std::make_shared<RuntimeState>();
 
     if (local_parameters_.get_LogLevel()._to_integral() == static_cast<int32_t>(LogLevel::Verbose)) {
@@ -890,9 +897,20 @@ void DevicePlugin::disconnect()
         if (!is_stream_mode_.load() && record_started_.load()) {
             try {
                 record_started_.store(false);
+                // Only pull the SD-card video onto disk if 录制数据 (setRecord) was ever
+                // actually turned on this session. The camera keeps recording internally
+                // regardless (AutoStartRecording is independent of the daemon's recording_
+                // flag), but downloading footage the operator never asked to persist just
+                // pollutes the download dir. The recording stays on the SD card either way
+                // (no auto-delete), so nothing is lost -- it's just not copied off.
+                const bool should_download = runtime_auto_download_.load() && recording_ever_enabled_.load();
                 const auto downloaded = stop_recording_with_optional_download(
-                    camera_, runtime_auto_download_.load(), runtime_download_dir_, storage_filename());
-                if (downloaded.empty() && runtime_auto_download_.load()) {
+                    camera_, should_download, runtime_download_dir_, storage_filename());
+                if (!recording_ever_enabled_.load()) {
+                    log::info << "Insta: 录制数据 was never enabled this session, skipping download"
+                              << log::endl;
+                }
+                if (downloaded.empty() && should_download) {
                     log::warn << "Insta: stop recording completed with errors" << log::endl;
                 }
                 if (!downloaded.empty() && record_start_host_ns_ != 0) {
@@ -934,6 +952,10 @@ data::DeviceDataPtr DevicePlugin::fetch()
     auto local_rt = runtime_;
     if (!local_rt) {
         return nullptr;
+    }
+
+    if (get_record()) {
+        recording_ever_enabled_.store(true);
     }
 
     // No is_stream_mode_ gate here: RecordDownload sessions with a gyro-only
@@ -1099,13 +1121,6 @@ HeraErrno DevicePlugin::adjust_parameter(const std::string& type, const std::str
     }
 
     return HeraErrno::OK;
-}
-
-bool DevicePlugin::wants_auto_record() const noexcept
-{
-    const bool record_download_mode =
-            local_parameters_.get_WorkMode()._to_integral() == static_cast<int32_t>(WorkMode::RecordDownload);
-    return record_download_mode && local_parameters_.get_AutoStartRecording();
 }
 
 #endif

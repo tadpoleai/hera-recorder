@@ -2,6 +2,9 @@
 // Copyright 2018 Wayz.ai. All Rights Reserved.
 //
 
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 #include <future>
 #include <regex>
 #include <thread>
@@ -16,6 +19,54 @@ namespace wayz {
 namespace hera {
 namespace daemon {
 
+namespace {
+
+// Devices without a reliable RTC (e.g. a Jetson used offline as a WiFi hotspot with no NTP
+// source) can boot with a bogus clock and never correct it, since NTP has nothing to reach.
+// A client's own wall clock (phone/laptop connecting to the hotspot) is a much better source
+// in that situation, so start() accepts one and self-corrects if the drift is large enough
+// to matter for filenames/timestamps, but small enough drift (normal NTP jitter, RPC latency)
+// is left alone to avoid needlessly stepping the clock on every start().
+constexpr int64_t kClockCorrectionThresholdMs = 5000;
+
+void maybe_correct_system_clock(const double client_epoch_ms_raw)
+{
+    if (client_epoch_ms_raw <= 0.0) {
+        return;  // Unset (old client, or client didn't supply one) -- don't touch the clock.
+    }
+    const int64_t client_epoch_ms = static_cast<int64_t>(client_epoch_ms_raw);
+
+    struct timespec now{};
+    clock_gettime(CLOCK_REALTIME, &now);
+    const int64_t system_epoch_ms = static_cast<int64_t>(now.tv_sec) * 1000 + now.tv_nsec / 1000000;
+    const int64_t drift_ms = client_epoch_ms - system_epoch_ms;
+
+    if (drift_ms < kClockCorrectionThresholdMs && drift_ms > -kClockCorrectionThresholdMs) {
+        return;
+    }
+
+    struct timespec corrected{};
+    corrected.tv_sec = static_cast<time_t>(client_epoch_ms / 1000);
+    corrected.tv_nsec = static_cast<long>((client_epoch_ms % 1000) * 1000000);
+    if (clock_settime(CLOCK_REALTIME, &corrected) != 0) {
+        log::warn << "Daemon: failed to correct system clock (drift=" << drift_ms
+                  << "ms): " << std::strerror(errno) << log::endl;
+        return;
+    }
+
+    log::info << "Daemon: corrected system clock by " << drift_ms
+              << "ms using client-supplied time (no reliable RTC/NTP source)" << log::endl;
+
+    // Best-effort: also push the corrected time to the hardware RTC so a reboot without
+    // network access starts closer to correct. Not fatal if there's no writable RTC --
+    // the system clock correction above is what actually matters for this session.
+    if (std::system("hwclock --systohc 2>/dev/null") != 0) {
+        log::warn << "Daemon: hwclock --systohc failed (system clock is still corrected)" << log::endl;
+    }
+}
+
+}  // namespace
+
 void Service::getStatus(AcquisitionStatus& result)
 {
     std::unique_lock<std::mutex> _(mutex_);
@@ -23,9 +74,11 @@ void Service::getStatus(AcquisitionStatus& result)
     append_acquisition_status(result);
 }
 
-void Service::start(AcquisitionStatus& result)
+void Service::start(AcquisitionStatus& result, const double clientEpochMs)
 {
     log::info << "Daemon::start called" << log::endl;
+
+    maybe_correct_system_clock(clientEpochMs);
 
     std::unique_lock<std::mutex> _(mutex_);
     // Check if already started
@@ -147,26 +200,6 @@ void Service::start(AcquisitionStatus& result)
 #endif
         }
         started_ = true;
-
-        // Some devices (e.g. Insta360 in RecordDownload mode with AutoStartRecording) begin
-        // capturing data on their own as soon as they connect, independent of recording_. For
-        // those, auto-enable recording_ right away instead of requiring a separate setRecord(true)
-        // call, so the .hera persistence window doesn't lag behind the device's own capture start.
-        bool auto_record = false;
-        for (const auto& device : devices_) {
-            if (device->wants_auto_record()) {
-                auto_record = true;
-                break;
-            }
-        }
-        if (auto_record) {
-            log::info << "Daemon:: auto-starting record (device requested)" << log::endl;
-            recording_ = true;
-            for (const auto& device : devices_) {
-                device->record(true);
-            }
-        }
-
         return handle_success(result);
     }
 }

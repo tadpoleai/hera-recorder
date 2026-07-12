@@ -66,7 +66,7 @@ public:
     virtual void setOperatorInfo(AcquisitionSetting& _return, const OperatorInfo& operatorInfo) override;
 
     virtual void getStatus(AcquisitionStatus& _return) override;
-    virtual void start(AcquisitionStatus& _return) override;
+    virtual void start(AcquisitionStatus& _return, const double clientEpochMs) override;
     virtual void stop(AcquisitionStatus& _return) override;
     virtual void setRecord(AcquisitionStatus& _return, const bool on) override;
 

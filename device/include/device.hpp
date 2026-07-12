@@ -345,21 +345,6 @@ protected:
     }
 
     ///
-    /// @brief Whether this device already began capturing data as a side effect of connect(),
-    /// independent of the daemon's global recording_ flag (e.g. an SD-card recording that a
-    /// camera starts on its own as soon as it connects). Devices like this want the daemon to
-    /// flip global recording on automatically right after a successful start(), instead of
-    /// requiring a separate manual setRecord(true) call that could otherwise leave a gap between
-    /// when the device started capturing and when the daemon starts persisting its data.
-    ///
-    /// @return true if this device wants recording_ auto-enabled after start()
-    /// @note Default is false: most devices only capture what the daemon persists.
-    virtual bool wants_auto_record() const noexcept
-    {
-        return false;
-    }
-
-    ///
     /// @brief Convert from device data to sensor data
     ///
     /// @param storage_data device data to convert

@@ -35,7 +35,11 @@ const actions: ActionTree<State, RootState> = {
     const client = connect((err: any) => {
       dispatch('Main/onConnectionError', err.toString(), { root: true });
     });
-    const data = await client.start();
+    // The Jetson may have no reliable clock source of its own (e.g. run as a WiFi
+    // hotspot with no NTP uplink), so send the browser's own wall clock along --
+    // the daemon self-corrects if its system clock has drifted far enough that
+    // .hera/.insv filenames would otherwise carry a bogus timestamp.
+    const data = await client.start(Date.now());
     commit('setFromFetch', data);
   },
 
